@@ -1,0 +1,30 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "@permaweb/aoconnect": "^0.0.51",
+    "@pinia/nuxt": "^0.5.1",
+    "@xterm/xterm": "^5.5.0",
+    "arweave-wallet-connector": "^1.0.2",
+    "nuxt": "^3.11.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "xterm-readline": "^1.1.1"
+  },
+  "devDependencies": {
+    "@pinia-plugin-persistedstate/nuxt": "^1.2.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "vite-plugin-vuetify": "^2.0.3",
+    "vuetify": "^3.5.14"
+  }
+}
