@@ -12,9 +12,23 @@ const pid = computed(() => usePersistStore().pid);
 
 const interval = ref<NodeJS.Timeout | null>(null);
 const errors = ref<string[]>([]);
-const output = ref<string[]>([]);
+
+const listeners = ref<((lines: string[]) => void)[]>([]);
 
 export const useAO = () => {
+
+
+  function addListener(listener: (lines: string[]) => void) {
+    listeners.value.push(listener);
+  }
+
+  function removeListener(listener: (lines: string[]) => void) {
+    listeners.value = listeners.value.filter(l => l !== listener);
+  }
+
+  function broadcast(lines: string[]) {
+    listeners.value.forEach(l => l(lines));
+  }
 
   async function command(text: string) {
 
@@ -24,7 +38,8 @@ export const useAO = () => {
       const bpName = text.match(/\.load-blueprint\s+(\w*)/)?.[1];
       if (!bpName) throw new Error('No blueprint name provided');
       text = await loadBlueprint(bpName);
-      output.value.push('loading ' + bpName + '...');
+      // output.value.push('loading ' + bpName + '...');
+      broadcast(['loading ' + bpName + '...']);
     }
 
     if (pid.value?.length !== 43) {
@@ -35,7 +50,8 @@ export const useAO = () => {
 
     try {
       const result = await evaluate(pid.value, text);
-      output.value = [ ...output.value, ...String(result).split('\n') ];
+      // output.value = [ ...output.value, ...String(result).split('\n') ];
+      broadcast(String(result).split('\n'));
     } catch (e: any) {
       errors.value.push(e.message);
     }
@@ -44,23 +60,28 @@ export const useAO = () => {
 
 
   async function doLive() {
-    let liveMsg = '';
+    // let liveMsg = '';
+    
     console.log('starting live');
+
     if (interval.value) {
       console.log('clearing interval');
       clearInterval(interval.value);
       interval.value = null;
     }
+
     interval.value = setInterval(async () => {
       if (!pid.value) {
         console.log('no pid');
         return;
       }
-      const msg = await live(pid.value);
-      if (msg !== null && msg !== liveMsg) {
-        liveMsg = msg;
-        liveMsg.split('\n').map((m) => output.value.push(m));
-      }
+      const msgs = await live(pid.value);
+
+      // if (msg !== null && msg !== liveMsg) {
+      //   liveMsg = msg;
+      if (msgs?.length) broadcast(msgs);
+      // }
+
     }, 3000);
   }
 
@@ -75,7 +96,7 @@ export const useAO = () => {
     try {
       const pid = await register(name);
       usePersistStore().setCurrent({ pid, name });
-      doLive();
+      await doLive();
     } catch (e: any) {
       errors.value.push(e.message);
     }
@@ -98,11 +119,11 @@ export const useAO = () => {
 
       pid = _pid;
     }
-  
-    if (! name ) name = pidOrName;
+
+    if (!name) name = pidOrName;
 
     usePersistStore().setCurrent({ pid, name });
-    doLive();
+    await doLive();
   }
 
   async function disconnect() {
@@ -112,17 +133,13 @@ export const useAO = () => {
     interval.value = null;
   }
 
-  function flushOutput() {
-    output.value = [];
-  }
-
   function flushErrors() {
     errors.value = [];
   }
 
   const online = computed(() => pid.value?.length === 43 && interval.value !== null);
 
-  watch ( () => pid.value, (pid) => {
+  watch(() => pid.value, (pid) => {
 
     if (pid?.length !== 43) {
       if (interval.value) {
@@ -137,6 +154,6 @@ export const useAO = () => {
 
   }, { immediate: true });
 
-  return { pid, online, errors, output, command, newProcess, connect, disconnect, flushOutput, flushErrors };
+  return { pid, online, errors, addListener, removeListener, command, newProcess, connect, disconnect, flushErrors };
 
 }

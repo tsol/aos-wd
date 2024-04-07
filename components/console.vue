@@ -2,6 +2,20 @@
   <div>
       <div ref="divRef" style="height: 50vh; border: 1px solid black; padding-left: 1em;">
       </div>
+      <v-alert
+        v-if="errors.length > 0"
+        type="error"
+        elevation="2"
+        class="mt-2"
+        clearable
+        colored-border
+        dense
+        outlined
+        v-for="error in errors"
+        :key="error"
+      >
+        {{ error }}
+      </v-alert>
   </div>
 </template>
 
@@ -18,7 +32,9 @@ import { useAO } from '~/composables/useAO';
 
 const ao = useAO();
 const errors = computed(() => ao.errors.value);
-const output = computed(() => ao.output.value);
+
+ao.addListener(listen);
+
 
 const divRef = ref<HTMLDivElement | null>(null);
 const pid = computed(() => ao.pid.value);
@@ -39,20 +55,11 @@ onMounted(() => {
 });
 
 
-watch( errors, (newErrors) => {
-  if (newErrors.length > 0) {
-    outputArray(newErrors);
-    ao.flushErrors();
+function listen(text: string[]) {
+  if (terminal.value) {
+    outputArray(text);
   }
-}, { deep: true });
-
-watch( output, (newOutput) => {
-  if (terminal.value && newOutput.length > 0) {
-    outputArray(newOutput);
-    ao.flushOutput();
-  }
-}, { deep: true });
-
+}
 
 watch( [pid, divRef], () => {
 
@@ -71,8 +78,12 @@ watch( [pid, divRef], () => {
 function outputArray(strings: string[]) {
   if (! terminal.value)
     throw new Error('Terminal not created');
+  const splitted = strings.reduce((acc, str) => {
+    return acc.concat(str.split('\n'));
+  }, [] as string[]);
+
   terminal.value.writeln('');
-  terminal.value.writeln(strings.join('\r\n'));
+  terminal.value.writeln(splitted.join('\r\n'));
   terminal.value.write(aosPrompt.value);
 }
 
@@ -139,6 +150,9 @@ function readLine() {
   );
 }
 
+onUnmounted(() => {
+  ao.removeListener(listen);
+});
 
 function clear() {
   terminal.value?.reset();

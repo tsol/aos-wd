@@ -52,30 +52,33 @@ const isSelectedCurrent = computed(() => {
 
 const processes = usePersistStore().processes;
 
-function doRegister() {
+async function doRegister() {
   if (!selectedProcess.value) return;
   if (typeof selectedProcess.value !== 'string') return;
-  ao.newProcess(selectedProcess.value);
+  loading.value = true;
+  await ao.newProcess(selectedProcess.value);
+  loading.value = false;
 }
 
-function doConnect() {
+async function doConnect() {
   if (!selectedProcess.value) return;
   if (!isSelectedAProcess) return;
   const pid = typeof selectedProcess.value === 'string' ? selectedProcess.value : selectedProcess.value.pid;
+  loading.value = true;
   ao.connect(pid, selectedProcessName.value);
+  loading.value = false;
 }
 
-function doLogout() {
-  ao.disconnect();
+async function doLogout() {
+  loading.value = true;
+  await ao.disconnect();
+  loading.value = false;
 }
 
 
 </script>
 
 <template>
-  <v-progress-circular v-if="loading" class="px-2" indeterminate color="primary" :size="40" />
-  <div v-else>
-    <!-- location="start" -->
     <v-menu v-model="open" :close-on-content-click="false">
       <template #activator="{ props }">
         <div v-bind="props" class="d-flex align-center">
@@ -127,21 +130,20 @@ function doLogout() {
           <v-spacer />
 
           <v-btn color="primary" variant="elevated" :disabled="isSelectedCurrent || !isSelectedAProcess"
-            @click="doConnect">
+            @click="doConnect" :loading="loading">
             Connect
           </v-btn>
 
-          <v-btn color="primary" variant="elevated" :disabled="isSelectedCurrent || isSelectedAProcess || ! selectedProcessName"
-            @click="doRegister">
+          <v-btn color="primary" variant="elevated"
+            :disabled="isSelectedCurrent || isSelectedAProcess || !selectedProcessName" @click="doRegister" :loading="loading">
             Create
           </v-btn>
 
-          <v-btn color="error" :disabled="!connected" variant="elevated" @click="doLogout()">
+          <v-btn color="error" :disabled="!connected" variant="elevated" @click="doLogout()" :loading="loading">
             Disconnect
           </v-btn>
           <v-spacer />
         </v-card-actions>
       </v-card>
     </v-menu>
-  </div>
 </template>

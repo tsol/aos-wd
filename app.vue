@@ -18,6 +18,9 @@
     </v-navigation-drawer>
     <v-main>
       <v-container>
+
+        <PacksProcessor />
+
         <Console />
       </v-container>
     </v-main>

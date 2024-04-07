@@ -15,14 +15,17 @@
     "@pinia/nuxt": "^0.5.1",
     "@xterm/xterm": "^5.5.0",
     "arweave-wallet-connector": "^1.0.2",
+    "luaparse": "^0.3.1",
     "nuxt": "^3.11.2",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",
-    "xterm-readline": "^1.1.1"
+    "xterm-readline": "^1.1.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@pinia-plugin-persistedstate/nuxt": "^1.2.0",
+    "@types/luaparse": "^0.2.12",
     "@xterm/addon-fit": "^0.10.0",
     "vite-plugin-vuetify": "^2.0.3",
     "vuetify": "^3.5.14"
