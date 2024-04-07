@@ -1,35 +1,147 @@
-<template>
-  <div class="d-flex flex-row">
-      <v-text-field v-model="pid" />
-      <v-btn 
-        @click="doConnect">
-        Connect to Process
-      </v-btn>
-
-      <v-text-field v-model="name" />
-      <v-btn 
-        @click="doRegister">
-        create process
-      </v-btn>
-
-    </div>
-</template>
-
 <script lang="ts" setup>
-import { usePersistStore } from "~/store/persist";
+import { shortenCutMiddle } from '~/lib/utils';
+import { usePersistStore, type Process } from '~/store/persist';
 import { useAO } from "~/composables/useAO";
+import { useDisplay } from 'vuetify';
 const ao = useAO();
 
-const pid = ref('');
-const name = ref('');
+const { xs } = useDisplay();
+
+const width = computed(() => (xs.value ? undefined : 600));
+
+const loading = ref(false);
+const open = ref(false);
+
+const shortPid = computed(() => shortenCutMiddle(usePersistStore().pid || '', 15));
+const processName = computed(() => shortenCutMiddle(usePersistStore().current?.name || '', 30));
+
+const label = computed(() => {
+  if (usePersistStore().pid && shortPid.value) {
+    return shortPid.value;
+  }
+  return 'Not connected';
+});
+
+const selectedProcess = ref<string | Process | undefined>(usePersistStore().current);
+const connected = ao.online;
+
+watch(() => usePersistStore().pid, () => {
+  selectedProcess.value = usePersistStore().current;
+});
+
+const selectedProcessName = computed(() => {
+  if (typeof selectedProcess.value === 'string') {
+    return selectedProcess.value;
+  }
+  return selectedProcess.value?.name;
+});
+
+const selectedProcessPid = computed(() => {
+  const probablyPid = typeof selectedProcess.value === 'string' ? selectedProcess.value : selectedProcess.value?.pid;
+  if (probablyPid?.length === 43) {
+    return probablyPid;
+  }
+  return undefined;
+});
+
+const isSelectedAProcess = computed(() => !!selectedProcessPid.value);
+
+const isSelectedCurrent = computed(() => {
+  return usePersistStore().pid && selectedProcessPid.value === usePersistStore().pid;
+});
+
+const processes = usePersistStore().processes;
 
 function doRegister() {
-  ao.newProcess(name.value);
+  if (!selectedProcess.value) return;
+  if (typeof selectedProcess.value !== 'string') return;
+  ao.newProcess(selectedProcess.value);
 }
 
 function doConnect() {
-  console.log('connect to process', pid.value);
-  ao.connect(pid.value);
+  if (!selectedProcess.value) return;
+  if (!isSelectedAProcess) return;
+  const pid = typeof selectedProcess.value === 'string' ? selectedProcess.value : selectedProcess.value.pid;
+  ao.connect(pid, selectedProcessName.value);
 }
 
+function doLogout() {
+  ao.disconnect();
+}
+
+
 </script>
+
+<template>
+  <v-progress-circular v-if="loading" class="px-2" indeterminate color="primary" :size="40" />
+  <div v-else>
+    <!-- location="start" -->
+    <v-menu v-model="open" :close-on-content-click="false">
+      <template #activator="{ props }">
+        <div v-bind="props" class="d-flex align-center">
+
+          <div>{{ label }}</div>
+          <v-btn icon="mdi-arrow-down-circle" />
+        </div>
+      </template>
+
+      <v-card class="pa-4" :width="width">
+
+        <Wallet />
+        <v-divider class="my-4" />
+
+        <v-list>
+          <v-list-item v-if="shortPid" :title="processName" :subtitle="shortPid">
+            <template #prepend>
+              <v-icon size="x-large" class="bg-blue rounded">mdi-account</v-icon>
+            </template>
+          </v-list-item>
+          <v-list-item v-else>
+            <v-list-item-title>Process not connected</v-list-item-title>
+          </v-list-item>
+        </v-list>
+
+        <v-divider class="my-4" />
+
+        <v-combobox label="A process ID or process name"
+          hint="Select a process to connect to or enter name to create a new one." v-model="selectedProcess"
+          :items="processes" :return-object="true" item-title="name" item-value="pid" clearable
+          @click:clear="console.log('clear')">
+          <template #item="{ item, props }">
+            <v-list-item v-bind="props" title="">
+              <v-list-item-title>
+                {{ item.raw.name }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                {{ item.raw.pid }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </template>
+
+        </v-combobox>
+
+
+        <v-divider class="my-4" />
+
+        <v-card-actions>
+          <v-spacer />
+
+          <v-btn color="primary" variant="elevated" :disabled="isSelectedCurrent || !isSelectedAProcess"
+            @click="doConnect">
+            Connect
+          </v-btn>
+
+          <v-btn color="primary" variant="elevated" :disabled="isSelectedCurrent || isSelectedAProcess || ! selectedProcessName"
+            @click="doRegister">
+            Create
+          </v-btn>
+
+          <v-btn color="error" :disabled="!connected" variant="elevated" @click="doLogout()">
+            Disconnect
+          </v-btn>
+          <v-spacer />
+        </v-card-actions>
+      </v-card>
+    </v-menu>
+  </div>
+</template>

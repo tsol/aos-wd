@@ -1,21 +1,21 @@
 import { defineStore } from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate';
 
-type Process = {
+export type Process = {
   pid: string;
   name: string
 }
 
 export const usePersistStore = defineStore('persist', {
   state: () => ({
-    current: { pid: '', name: 'default' } as Process,
+    current: undefined as Process | undefined,
     processes: [] as Process[],
     cursor: {} as Record<string, string>
   }),
   getters: {
     pid(state) {
       if (! useWallet().connected) return '';
-      return state.current.pid;
+      return state.current?.pid;
     },
     getProcesses(state) {
       return state.processes;
@@ -24,6 +24,7 @@ export const usePersistStore = defineStore('persist', {
       return state.cursor;
     },
     getCurrentCursor(state) {
+      if (! state.current?.pid) return '';
       return state.cursor[ state.current.pid ] || '';
     }
   },
@@ -31,8 +32,9 @@ export const usePersistStore = defineStore('persist', {
     updateCursor(pid: string, cursor: string) {
       this.cursor[pid] = cursor;
     },
-    setCurrent(process: Process) {
+    setCurrent(process: Process | undefined) {
       this.current = process;
+      if (!process) return;
       this.addProcess(process);
     },
     addProcess(process: Process) {

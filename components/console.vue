@@ -1,5 +1,8 @@
 <template>
-      <div ref="divRef" style="height: 50vh; border: 1px solid black; padding-left: 1em;"></div>
+  <div>
+      <div ref="divRef" style="height: 50vh; border: 1px solid black; padding-left: 1em;">
+      </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -9,9 +12,8 @@ import { ref, onMounted } from 'vue';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { Readline } from 'xterm-readline';
-import { splash } from '@/lib/splash.js';
+import { splash } from '@/lib/ao/splash.js';
 
-import { usePersistStore } from '~/store/persist';
 import { useAO } from '~/composables/useAO';
 
 const ao = useAO();
@@ -19,7 +21,7 @@ const errors = computed(() => ao.errors.value);
 const output = computed(() => ao.output.value);
 
 const divRef = ref<HTMLDivElement | null>(null);
-const pid = usePersistStore().pid;
+const pid = computed(() => ao.pid.value);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);
@@ -52,12 +54,18 @@ watch( output, (newOutput) => {
 }, { deep: true });
 
 
-watch( [() => pid, divRef], () => {
-  if (pid && divRef.value) {
+watch( [pid, divRef], () => {
+
+  if (!pid.value && divRef.value && terminal.value) {
+    outputArray(['Connect to a process.']);
+    return;
+  }
+
+  if (pid.value && divRef.value) {
     console.log('creating Terminal instance PID:', pid);
     createTerminal();
   }
-}, { immediate: true });
+}, { immediate: true, deep: true});
 
 
 function outputArray(strings: string[]) {
@@ -69,7 +77,14 @@ function outputArray(strings: string[]) {
 }
 
 function createTerminal() {
-  // Create a new terminal instance
+  
+  if (terminal.value) {
+    // fitAddon.fit();
+    // readLine();
+    outputArray(['Connected.']);
+    return;
+  }
+
   terminal.value = new Terminal({
     theme: {
       background: '#FFF',
@@ -112,7 +127,6 @@ function createTerminal() {
   });
 
   fitAddon.fit();
-
   readLine();
 };
 

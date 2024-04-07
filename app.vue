@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <Wallet />
+      <v-spacer />
       <Process />
     </v-app-bar>
 

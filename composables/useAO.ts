@@ -1,8 +1,8 @@
-import { loadBlueprint } from "~/lib/commands/blueprints";
-import { evaluate } from "~/lib/evaluate";
-import { live } from "~/lib/live";
-import { findPid } from "~/lib/query";
-import { register } from "~/lib/register";
+import { loadBlueprint } from "~/lib/ao/commands/blueprints";
+import { evaluate } from "~/lib/ao/evaluate";
+import { live } from "~/lib/ao/live";
+import { findPid } from "~/lib/ao/query";
+import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
 import { ref } from 'vue';
 
@@ -27,7 +27,7 @@ export const useAO = () => {
       output.value.push('loading ' + bpName + '...');
     }
 
-    if (pid.value.length !== 43) {
+    if (pid.value?.length !== 43) {
       errors.value.push('Connect to a process to get started.');
       return;
     }
@@ -81,9 +81,10 @@ export const useAO = () => {
     }
   }
 
-  async function connect(pidOrName: string) {
+  async function connect(pidOrName: string, setName?: string) {
     // let result = prompt('PID or NAME: ');
     let pid = pidOrName
+    let name = setName;
 
     if (pidOrName.length !== 43) {
 
@@ -97,13 +98,15 @@ export const useAO = () => {
 
       pid = _pid;
     }
+  
+    if (! name ) name = pidOrName;
 
-    usePersistStore().setCurrent({ pid, name: pidOrName });
+    usePersistStore().setCurrent({ pid, name });
     doLive();
   }
 
   async function disconnect() {
-    usePersistStore().setCurrent({ pid: '', name: 'default' });
+    usePersistStore().setCurrent(undefined);
     if (!interval.value) return;
     clearInterval(interval.value);
     interval.value = null;
@@ -117,11 +120,11 @@ export const useAO = () => {
     errors.value = [];
   }
 
-  const online = computed(() => pid.value.length === 43 && interval.value !== null);
+  const online = computed(() => pid.value?.length === 43 && interval.value !== null);
 
   watch ( () => pid.value, (pid) => {
 
-    if (pid.length !== 43) {
+    if (pid?.length !== 43) {
       if (interval.value) {
         clearInterval(interval.value);
         interval.value = null;
@@ -134,6 +137,6 @@ export const useAO = () => {
 
   }, { immediate: true });
 
-  return { online, errors, output, command, newProcess, connect, disconnect, flushOutput, flushErrors };
+  return { pid, online, errors, output, command, newProcess, connect, disconnect, flushOutput, flushErrors };
 
 }
