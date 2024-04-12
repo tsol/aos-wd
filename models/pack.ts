@@ -3,7 +3,9 @@ import { z } from 'zod';
 
 export type Snippet = {
   name: string;
-  code: string;
+  pid?: string;
+  tags?: Array<Tag>;
+  data?: string;
 }
 
 export type ParseHandler<STATE> = {

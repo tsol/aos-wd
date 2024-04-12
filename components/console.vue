@@ -28,7 +28,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Readline } from 'xterm-readline';
 import { splash } from '@/lib/ao/splash.js';
 
-import { useAO } from '~/composables/useAO';
+import { useAO, type BrodcastMsg } from '~/composables/useAO';
 
 const ao = useAO();
 const errors = computed(() => ao.errors.value);
@@ -55,9 +55,9 @@ onMounted(() => {
 });
 
 
-function listen(text: string[]) {
+function listen(text: BrodcastMsg[]) {
   if (terminal.value) {
-    outputArray(text);
+    outputArray(text.map((msg) => msg.data));
   }
 }
 

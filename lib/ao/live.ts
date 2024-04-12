@@ -14,7 +14,7 @@ export async function live(pid: string) {
     limit: 10
   });
 
-  console.log('results', results);
+  // console.log('results', results);
   
   let result: string[] = [];
 

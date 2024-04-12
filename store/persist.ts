@@ -29,6 +29,15 @@ export const usePersistStore = defineStore('persist', {
     }
   },
   actions: {
+    updateCurrentName(name: string) {
+      if (!this.current) return;
+      this.current.name = name;
+
+      const process = this.processes.find(p => p.pid === this.current?.pid);
+      if (process) {
+        process.name = name;
+      }
+    },
     updateCursor(pid: string, cursor: string) {
       this.cursor[pid] = cursor;
     },

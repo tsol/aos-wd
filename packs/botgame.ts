@@ -41,6 +41,11 @@ type State = {
 
 import ViewComponent from './botgame.vue';
 
+// const gamePid = 'tm1jYBC0F2gTZ0EuUQKq5q_esxITDFkAG6QEpLbpI9I'; // demo
+//const gamePid = 'cBlymki3m_hxAMAnAo9S-r-MUZx83ieNqrwLPHov16o'; // my arena 1
+const gamePid = 'tNFHyWKeAq9Y5zzlhx3qHc3ix-h2OnF_Qd04VvyNxwA'; // my arena 2
+const tokenPid = 'qpmnya2SBHNx3QS6IBF98WcooFxLKHOhzjIXzEUfSXg'; // my
+
 const pack: PackDefinition<State> = {
   name: 'BotGame',
   component: ViewComponent,
@@ -58,60 +63,72 @@ const pack: PackDefinition<State> = {
   ],
   snippets: [
     {
-      name: 'Init',
-      code: `
-Game = "tm1jYBC0F2gTZ0EuUQKq5q_esxITDFkAG6QEpLbpI9I"
-`,
+      name: 'Dry-State',
+      pid: gamePid,
+      tags: [{ name: "Action", value: "GetGameState" }],
     },
     {
       name: 'Register',
-      code: 'Send({ Target = Game, Action = "Register" })',
+      data: 'Send({ Target = Game, Action = "Register" })',
     },
     {
       name: 'Request tokens',
-      code: 'Send({ Target = Game, Action = "RequestTokens"})',
+      data: 'Send({ Target = Game, Action = "RequestTokens"})',
     },
     {
       name: 'Bit',
-      code: 'Send({ Target = Game, Action = "Transfer", Recipient = Game, Quantity = "1000"})',
+      data: `Send({ Target = Game, Action = "Transfer", Recipient = "${gamePid}", Quantity = "1000"})`,
     },
     {
       name: 'Move Up',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Up"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Up"})',
     },
     {
       name: 'Move Down',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Down"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Down"})',
     },
     {
       name: 'Move Left',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Left"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Left"})',
     },
     {
       name: 'Move Right',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Right"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "Right"})',
     },
     {
       name: 'Move UpRight',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "UpRight"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "UpRight"})',
     },
     {
       name: 'Move UpLeft',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "UpLeft"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "UpLeft"})',
     },
     {
       name: 'Move DownRight',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "DownRight"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "DownRight"})',
     },
     {
       name: 'Move DownLeft',
-      code: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "DownLeft"})',
+      data: 'Send({ Target = Game, Action = "PlayerMove", Player = ao.id, Direction = "DownLeft"})',
+    },
+    {
+      name: 'Attack-1',
+      data: 'Send({ Target = Game, Action = "PlayerAttack", Player = ao.id, AttackEnergy = "1"})',
+    },
+    {
+      name: 'Attack-3',
+      data: 'Send({ Target = Game, Action = "PlayerAttack", Player = ao.id, AttackEnergy = "3"})',
+    },
+    {
+      name: 'Attack-10',
+      data: 'Send({ Target = Game, Action = "PlayerAttack", Player = ao.id, AttackEnergy = "10"})',
     },
     {
       name: 'Init BOT',
-      code: 
+      data: 
 `
--- Initializing global variables to store the latest game state and game host process.
+Game = "${gamePid}"
+
 LatestGameState = LatestGameState or nil
 InAction = InAction or false -- Prevents the agent from taking multiple actions at once.
 
@@ -214,7 +231,7 @@ Handlers.add(
     local json = require("json")
     LatestGameState = json.decode(msg.Data)
     ao.send({Target = ao.id, Action = "UpdatedGameState"})
-    print("Game state updated. Print \'LatestGameState\' for detailed view.")
+    print(msg.Data)
   end
 )
 
@@ -262,7 +279,7 @@ Handlers.add(
     },
     {
       name: 'GetState',
-      code: 'Send({ Target = Game, Action = "GetGameState" })',
+      data: 'Send({ Target = Game, Action = "GetGameState" })',
     },
   ]
 };

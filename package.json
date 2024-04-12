@@ -17,6 +17,7 @@
     "arweave-wallet-connector": "^1.0.2",
     "luaparse": "^0.3.1",
     "nuxt": "^3.11.2",
+    "p5": "^1.9.2",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@pinia-plugin-persistedstate/nuxt": "^1.2.0",
     "@types/luaparse": "^0.2.12",
+    "@types/p5": "^1.7.6",
     "@xterm/addon-fit": "^0.10.0",
     "vite-plugin-vuetify": "^2.0.3",
     "vuetify": "^3.5.14"
