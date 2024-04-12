@@ -1,6 +1,5 @@
 <template>
   <div>
-    utils
   </div>
 </template>
 

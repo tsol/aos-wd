@@ -1,44 +1,35 @@
 <script lang="ts" setup>
 import { shortenCutMiddle } from '~/lib/utils';
 import { usePersistStore, type Process } from '~/store/persist';
-import { useAO } from "~/composables/useAO";
+import { useProcesses } from "~/composables/useProcesses";
 import { useDisplay } from 'vuetify';
-const ao = useAO();
+
+const ao = useProcesses();
 
 const { xs } = useDisplay();
+const width = computed(() => (xs.value ? undefined : 600));
 
 const editNameDialog = ref(false);
-const width = computed(() => (xs.value ? undefined : 600));
+const editedName = ref('');
 
 const loading = ref(false);
 const open = ref(false);
 const shake = ref(false);
 
-const shortPid = computed(() => shortenCutMiddle(usePersistStore().pid || '', 15));
-const pid = computed(() => usePersistStore().pid || '');
+const selectedProcess = ref<string | Process | undefined>(usePersistStore().getCurrentProcess);
 
-const editedName = ref('');
 const processName = computed({
-
-  get: () => shortenCutMiddle(usePersistStore().current?.name || '', 30),
+  get: () => selectedProcessName.value || '',
   set: (val: string) => {
     editedName.value = val;
   }
-
 });
 
 const label = computed(() => {
-  if (usePersistStore().pid && shortPid.value) {
-    return shortPid.value;
+  if (usePersistStore().currentPid && usePersistStore().currentPid !== undefined) {
+    return shortenCutMiddle(usePersistStore()?.currentPid || '', 15);
   }
   return 'Not connected';
-});
-
-const selectedProcess = ref<string | Process | undefined>(usePersistStore().current);
-const connected = ao.online;
-
-watch(() => usePersistStore().pid, () => {
-  selectedProcess.value = usePersistStore().current;
 });
 
 const selectedProcessName = computed(() => {
@@ -56,10 +47,16 @@ const selectedProcessPid = computed(() => {
   return undefined;
 });
 
-const isSelectedAProcess = computed(() => !!selectedProcessPid.value);
 
 const isSelectedCurrent = computed(() => {
-  return usePersistStore().pid && selectedProcessPid.value === usePersistStore().pid;
+  return usePersistStore().currentPid && selectedProcessPid.value === usePersistStore().currentPid;
+});
+
+const isSelectedAProcess = computed(() => !!selectedProcessPid.value);
+
+const isSelectedRunning = computed(() => {
+  const selectedProcess = usePersistStore().getProcesses.find((p) => p.pid === selectedProcessPid.value);
+  return selectedProcess?.isRunning;
 });
 
 const processes = computed( () => usePersistStore().processes);
@@ -73,38 +70,48 @@ async function doRegister() {
 }
 
 async function doConnect() {
-  if (!selectedProcess.value) return;
-  if (!isSelectedAProcess) return;
-  const pid = typeof selectedProcess.value === 'string' ? selectedProcess.value : selectedProcess.value.pid;
+  const pid = selectedProcessPid.value;
+  if (!pid) return;
   loading.value = true;
   ao.connect(pid, selectedProcessName.value);
+  usePersistStore().setCurrentPid(pid);
   loading.value = false;
 }
 
 async function doLogout() {
   loading.value = true;
-  await ao.disconnect();
+  if (selectedProcessPid.value) {
+    await ao.disconnect(selectedProcessPid.value);
+    usePersistStore().setCurrentPid(undefined);
+  }
   loading.value = false;
 }
 
 function saveProcessName() {
   console.log('saveProcessName', editedName.value);
   editNameDialog.value = false;
+  if (! selectedProcessPid.value) return;
   if (editedName.value) {
-    usePersistStore().updateCurrentName(editedName.value);
+    usePersistStore().updateName(selectedProcessPid.value, editedName.value);
   }
 }
 
 function copyCurrentPidToClipboard() {
-  navigator.clipboard.writeText(usePersistStore().pid || '');
+  navigator.clipboard.writeText(usePersistStore().currentPid || '');
   shake.value = true;
   setTimeout(() => shake.value = false, 500);
+}
+
+function onDialogStateChange(val: boolean) {
+  if (val) {
+    selectedProcess.value = usePersistStore().getCurrentProcess;
+  }
 }
 
 </script>
 
 <template>
-  <v-menu v-model="open" :close-on-content-click="false">
+  <v-menu v-model="open" :close-on-content-click="false" @update:model-value="onDialogStateChange">
     <template #activator="{ props }">
       <div v-bind="props" class="d-flex align-center">
 
@@ -119,11 +126,11 @@ function copyCurrentPidToClipboard() {
       <v-divider class="my-4" />
 
       <v-list>
-        <v-list-item v-if="shortPid">
+        <v-list-item v-if="selectedProcessPid">
           <template #prepend>
             <v-icon size="x-large" class="bg-blue rounded">mdi-account</v-icon>
           </template>
-          <template #title>
+          <template #title v-if="processName">
 
             <span v-if="!editNameDialog" @click="editNameDialog = true">
               {{ processName }}
@@ -138,16 +145,16 @@ function copyCurrentPidToClipboard() {
             </v-text-field>
 
           </template>
-          <template #subtitle>
+          <template #subtitle v-if="selectedProcessPid">
             <!-- Here copy to clipboard icon and onclick event to copy fullPid to clipboard -->
             <div :class="shake ? 'shake' : undefined" @click="copyCurrentPidToClipboard">
-            {{ pid }}
+            {{ selectedProcessPid }}
             <v-icon size="x-small" color="grey" class="ml-2">mdi-content-copy</v-icon>
            </div>
           </template>
         </v-list-item>
         <v-list-item v-else>
-          <v-list-item-title>Process not connected</v-list-item-title>
+          <v-list-item-title>Process not selected</v-list-item-title>
         </v-list-item>
       </v-list>
 
@@ -176,7 +183,7 @@ function copyCurrentPidToClipboard() {
       <v-card-actions>
         <v-spacer />
 
-        <v-btn color="primary" variant="elevated" :disabled="isSelectedCurrent || !isSelectedAProcess"
+        <v-btn color="primary" variant="elevated" :disabled="isSelectedRunning"
           @click="doConnect" :loading="loading">
           Connect
         </v-btn>
@@ -187,7 +194,7 @@ function copyCurrentPidToClipboard() {
           Create
         </v-btn>
 
-        <v-btn color="error" :disabled="!connected" variant="elevated" @click="doLogout()" :loading="loading">
+        <v-btn color="error" :disabled="!isSelectedRunning" variant="elevated" @click="doLogout()" :loading="loading">
           Disconnect
         </v-btn>
         <v-spacer />
@@ -214,4 +221,4 @@ function copyCurrentPidToClipboard() {
   90% { transform: translate(1px, 2px) rotate(0deg); }
   100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
-</style>
+</style>~/composables/useProcesses

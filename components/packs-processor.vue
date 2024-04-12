@@ -1,10 +1,12 @@
 <template>
   <div>
-    <div v-for="pack in packs" :key="pack.name">
-      <p class="text-caption">{{ pack.name }}</p>
-      <v-divider></v-divider>
+    <div v-for="pack in packs" :key="pack.name" class="mb-4">
+      <div class="d-flex align-center">
+        <div class="text-caption name">{{ pack.name }}</div>
+        <v-divider></v-divider>
+      </div>
       <!-- history navigate -->
-      <Component :is="pack.component" :state="states[pack.name]" />
+      <Component :is="pack.component" :pid="pid" :state="states[pack.name]" />
       <v-btn v-for="snippet in pack.snippets" :key="snippet.name" @click="runSnippet(snippet)"
         :loading="snippetLoading[snippet.name]">
         {{ snippet.name }}
@@ -13,15 +15,28 @@
   </div>
 </template>
 
+<style scoped>
+.name {
+  font-weight: bold;
+  border: 1px solid;
+  padding: 0px 5px;
+  border-radius: 5px;
+}
+</style>
+
 <script lang="ts" setup>
 
 import { pack as BotPack, type State as BotState } from '~/packs/botgame';
 import { pack as UtilPack, type State as UtilState } from '~/packs/utils';
 import { pack as ArenaPack, type State as ArenaState } from '~/packs/arena';
 
-import { useAO, type BrodcastMsg } from '~/composables/useAO';
+import { type BrodcastMsg } from '~/composables/useProcesses';
 import { parseLuaObject } from '~/lib/parser';
 import type { Snippet } from '~/models/pack';
+
+const props = defineProps<{
+  pid: string;
+}>();
 
 const packs = [BotPack, UtilPack, ArenaPack];
 const snippetLoading = reactive<Record<string, boolean>>({});
@@ -32,8 +47,8 @@ const states = reactive({
   [ArenaPack.name]: {} as any,
 });
 
-const ao = useAO();
-ao.addListener(listen);
+const proc = useProcess(props.pid);
+proc.addListener({ type: 'parser', handler: listen });
 
 function listen(text: BrodcastMsg[]) {
   // TODO: if brodcast recieved from Dryrun,
@@ -48,7 +63,7 @@ function listen(text: BrodcastMsg[]) {
 }
 
 onUnmounted(() => {
-  ao.removeListener(listen);
+  proc.removeListener(listen);
 });
 
 async function runSnippet(snippet: Snippet) {
@@ -56,7 +71,7 @@ async function runSnippet(snippet: Snippet) {
   if (snippet.pid && snippet.tags) {
     snippetLoading[snippet.name] = true;
     console.log('running dry run: ', snippet);
-    const res = await ao.run(snippet.pid, snippet.tags, snippet.data);
+    const res = await proc.rundry(snippet.pid, snippet.tags, snippet.data);
     snippetLoading[snippet.name] = false;
     console.log('dry run res:', res);
     return res;
@@ -66,7 +81,7 @@ async function runSnippet(snippet: Snippet) {
 
   snippetLoading[snippet.name] = true;
   console.log('running data: ', snippet);
-  const res = await ao.command(snippet.data);
+  const res = await proc.command(snippet.data);
   snippetLoading[snippet.name] = false;
   console.log('command res:', res);
   return res;
@@ -96,3 +111,4 @@ function process(output: string) {
 }
 
 </script>
+~/composables/useProcesses

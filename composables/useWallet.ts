@@ -1,4 +1,4 @@
-import { ArweaveWebWallet } from 'arweave-wallet-connector';
+// import { ArweaveWebWallet } from 'arweave-wallet-connector';
 
 const connected = ref(false);
 
@@ -15,14 +15,6 @@ export const useWallet = () => {
     (window as any).arweaveWallet.disconnect().then(() => (connected.value = false));
   }
   
-  // const arweaveApp = () => {
-//   const wallet = new ArweaveWebWallet({
-//     name: 'AOS-WEB',
-//   });
-//   wallet.setUrl('arweave.app');
-//   wallet.connect().then(() => (connected.value = true));
-// };
-
   return { connected, arConnect, arDisconnect };
 }
 

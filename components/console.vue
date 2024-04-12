@@ -28,16 +28,21 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Readline } from 'xterm-readline';
 import { splash } from '@/lib/ao/splash.js';
 
-import { useAO, type BrodcastMsg } from '~/composables/useAO';
+import {type BrodcastMsg, useProcesses } from '~/composables/useProcesses';
+import { useProcess } from '~/composables/useProcess';
 
-const ao = useAO();
-const errors = computed(() => ao.errors.value);
+const props = defineProps<{
+  pid: string;
+}>();
 
-ao.addListener(listen);
+
+const proc = useProcess(props.pid);
+const errors = computed(() => useProcesses().errors.value);
+
+proc.addListener({ type: 'console', handler: listen });
 
 
 const divRef = ref<HTMLDivElement | null>(null);
-const pid = computed(() => ao.pid.value);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);
@@ -61,15 +66,15 @@ function listen(text: BrodcastMsg[]) {
   }
 }
 
-watch( [pid, divRef], () => {
+watch( [() => props.pid, divRef], () => {
 
-  if (!pid.value && divRef.value && terminal.value) {
+  if (!props.pid && divRef.value && terminal.value) {
     outputArray(['Connect to a process.']);
     return;
   }
 
-  if (pid.value && divRef.value) {
-    console.log('creating Terminal instance PID:', pid);
+  if (props.pid && divRef.value) {
+    console.log('creating Terminal instance PID:', props.pid);
     createTerminal();
   }
 }, { immediate: true, deep: true});
@@ -144,20 +149,16 @@ function createTerminal() {
 function readLine() {
   rl.value?.read(aosPrompt.value).then(
     (res) => {
-      useAO().command(res);
+      proc.command(res, true);
       setTimeout(readLine);
     }
   );
 }
 
 onUnmounted(() => {
-  ao.removeListener(listen);
+  proc.removeListener(listen);
 });
-
-function clear() {
-  terminal.value?.reset();
-  terminal.value?.write('aos> ');
-}
 
 
 </script>
+~/composables/useProcesses

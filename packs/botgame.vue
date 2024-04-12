@@ -15,11 +15,9 @@ import { ref, onMounted, watch } from 'vue';
 import p5 from 'p5';
 import { type State } from './botgame';
 import { shortenCutMiddle } from '~/lib/utils';
-import { useAO } from '#imports';
-
-const me = useAO().pid;
 
 const props = defineProps<{
+  pid: string,
   state?: State
 }>();
 
@@ -57,7 +55,7 @@ const sketch = (p: p5) => {
 
         p.strokeWeight(1);
         
-        if (key === me.value) {
+        if (key === props.pid) {
           p.stroke('blue'); // Set border color to blue
         } else {
           p.stroke('black'); // Set border color to black

@@ -4,47 +4,53 @@ import { createPersistedState } from 'pinia-plugin-persistedstate';
 export type Process = {
   pid: string;
   name: string
+  isRunning?: boolean;
 }
 
 export const usePersistStore = defineStore('persist', {
   state: () => ({
-    current: undefined as Process | undefined,
+    currentPid: undefined as string | undefined,
     processes: [] as Process[],
     cursor: {} as Record<string, string>
   }),
   getters: {
-    pid(state) {
-      if (! useWallet().connected) return '';
-      return state.current?.pid;
-    },
     getProcesses(state) {
       return state.processes;
     },
     getAllCursors(state) {
       return state.cursor;
     },
-    getCurrentCursor(state) {
-      if (! state.current?.pid) return '';
-      return state.cursor[ state.current.pid ] || '';
+    getCurrentProcess(state) {
+      const proc = state.processes.find(p => p.pid === state.currentPid);
+      return proc;
     }
   },
   actions: {
-    updateCurrentName(name: string) {
-      if (!this.current) return;
-      this.current.name = name;
-
-      const process = this.processes.find(p => p.pid === this.current?.pid);
+    setRunning(pid: string, running: boolean) {
+      const process = this.processes.find(p => p.pid === pid);
+      if (process) {
+        process.isRunning = running;
+      }
+    },
+    updateName(pid: string, name: string) {
+      const process = this.processes.find(p => p.pid === pid);
       if (process) {
         process.name = name;
+        console.log('name was updated for pid:', pid, 'name:', name);
       }
     },
     updateCursor(pid: string, cursor: string) {
       this.cursor[pid] = cursor;
     },
-    setCurrent(process: Process | undefined) {
-      this.current = process;
-      if (!process) return;
-      this.addProcess(process);
+    setCurrentPid(pid: string | undefined) {
+      this.currentPid = pid;
+      if (pid === undefined) {
+        // last running
+        const last = this.processes.find(p => p.isRunning);
+        if (last) {
+          this.currentPid = last.pid;
+        }
+      }
     },
     addProcess(process: Process) {
       // find if process already exists
@@ -61,6 +67,20 @@ export const usePersistStore = defineStore('persist', {
     key: 'persist',
     afterRestore: (ctx) => {
       console.log(`just restored '${ctx.store.$id}'`)
+
+      const processes = ctx.store.processes as Process[];
+      const running = processes.filter(p => p.isRunning);
+
+      // if restored current is not in running, set current as first one
+      if (!running.find(p => p.pid === ctx.store.current?.pid)) {
+        ctx.store.setCurrentPid(running[0]?.pid);
+      }
+
+      running.forEach(p => {
+        console.log('PERSIST: connecting to process', p.pid);
+        useProcesses().connect(p.pid, p.name);
+      });
+
     }
   },
 });
