@@ -1,16 +1,27 @@
 <template>
   <div>
-    <div class="mb-2">
+    <div class="mb-2 d-flex">
+
       <v-btn @click="process.command(code)" color="primary" class="mr-2" :disabled="!code">
         <v-icon>mdi-play</v-icon>
       </v-btn>
-      <!-- mdi icon of clipboard -->
+
       <v-btn @click="process.command(selection)" color="primary" :disabled="!selection">
         <template #prepend>
           <v-icon>mdi-play</v-icon>
         </template>
         Selected
       </v-btn>
+
+      <v-spacer></v-spacer>
+
+      <v-btn v-if="lastSender" @click="sendBack()" color="primary">
+        <template #prepend>
+          <v-icon>mdi-content-save-move</v-icon>
+        </template>
+        {{ lastSender }}
+      </v-btn>
+
     </div>
     <prism-editor
       ref="editor"
@@ -63,6 +74,7 @@ let textareaEl = ref<HTMLTextAreaElement | null>(null);
 
 const code = ref(`console.log('Hello, World!');`);
 const selection = ref('');
+const lastSender = ref('');
 
 process.addListener({ client: 'IDE', handler: listen });
 
@@ -90,7 +102,23 @@ function listen(text: BrodcastMsg[]) {
   const internal =  text.filter((msg) => msg.type === 'internal');
   if (!internal.length) return;
   const lastMsg = internal[internal.length - 1];
+  lastSender.value = lastMsg?.fromClient || '';
   code.value = lastMsg?.data;
+}
+
+function sendBack() {
+
+  if (!lastSender.value.includes(':')) return;
+  const [ widgetName, snippetName ] = lastSender.value.split(':');
+
+  const widget = process.widgets.value?.find((w) => w.name === widgetName);
+  if (!widget) throw new Error('Widget not found');
+
+  const snippet = widget.snippets?.find((s) => s.name === snippetName);
+  if (!snippet) throw new Error('Snippet not found');
+
+  snippet.data = code.value;
+
 }
 
 onMounted(() => {
@@ -108,7 +136,7 @@ onUnmounted(() => {
 </script>
 
 <style global>
-/* required class */
+
 .my-editor {
   /* we dont use `language-` classes anymore so thats why we need to add background and text color manually */
   background: #2d2d2d;
@@ -125,14 +153,8 @@ onUnmounted(() => {
   overflow: auto;
 }
 
-/* optional class for removing the outline */
 .prism-editor__textarea:focus {
   outline: none;
 }
 
-/* .prism-editor-wrapper .prism-editor__editor, .prism-editor-wrapper .prism-editor__textarea {
-  white-space: pre !important;
-  overflow-wrap: normal !important;
-  overflow-x: auto !important;
-} */
 </style>

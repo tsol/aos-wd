@@ -25,6 +25,7 @@ export function useProcess<STATE>(pid: string) {
     return process?.widgets || [];
   });
 
+
   function command(text: string, silent?: boolean) {
     if (!silent)
       processes.broadcast(pid, [{ type: 'internal', data: text, tags: [] }], 'Console');
@@ -36,8 +37,8 @@ export function useProcess<STATE>(pid: string) {
     return processes.rundry(pid, toPid, tags, data);
   }
 
-  function addWidget(widget: StoredWidget) {
-    persistStore.enableWidget(pid, widget);
+  function addWidget(name: string) {
+    persistStore.enableWidget(pid, name);
   }
 
   function removeWidget(name: string) {

@@ -13,3 +13,16 @@ export function shortenCutMiddle(st: string, maxLength: number) {
 
   return `${first}...${last}`;
 }
+
+
+export function extractTemplateVariables(code: string): string[] {
+  const variablePattern = /{{(\w+)}}/g;
+  let match;
+  const variableNames = new Set<string>();
+
+  while ((match = variablePattern.exec(code)) !== null) {
+      variableNames.add(match[1]);
+  }
+
+  return Array.from(variableNames);
+}

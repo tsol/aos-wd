@@ -16,6 +16,7 @@
       <!-- <v-col v-for="column in maxColumns" :key="column" :class="`v-col-md-${12 / maxColumns}`"> -->
       <v-col v-for="(column, index) in maxColumns" :key="column"
         :class="`v-col-md-${12 / maxColumns} ${index < maxColumns - 1 ? 'border-right' : ''}`">
+
         <div v-for="widget in proc.widgets.value.filter((w) => (w.column || 1) === column)" :key="widget.name"
           class="mb-6">
 
@@ -32,46 +33,25 @@
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
             :state="(proc.state.value as any)?.[widget.name]" />
 
-          <!-- <v-btn v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name"
-            @click="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
+          <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
+            :loading="snippetLoading[snippet.name]">
             {{ snippet.name }}
-          </v-btn> -->
-
-          <v-btn v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name"
-            @click.stop="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
-            {{ snippet.name }}
-            <v-menu offset-y>
+            <v-dialog v-model="snippetMenu[snippet.name]" offset-y width="600">
               <template v-slot:activator="{ props }">
                 <v-icon large class="ml-2" v-bind="props">mdi-menu-down</v-icon>
               </template>
-              <v-list>
-                <v-list-item v-for="client in listnerNames" :key="client"
-                  @click="sendSnippet(snippet, client)"
-                >
-                {{ client }}
-                </v-list-item>
-              </v-list>
-            </v-menu>
+              <v-card>
+                <v-list>
+                  <v-list-item v-for="client in listnerNames" :key="client"
+                    @click="sendSnippet(snippet, client, `${widget.name}:${snippet.name}`)">
+                    {{ client }}
+                  </v-list-item>
+                </v-list>
+                <VarsForm :pid="pid" :variables="extractTemplateVariables(snippet.data)" />
+              </v-card>
+            </v-dialog>
           </v-btn>
-          <!--
-          <div v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name" class="d-inline mr-2">
 
-            <v-btn @click.stop="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
-              {{ snippet.name }}
-            </v-btn>
-            <v-menu offset-y>
-              <template v-slot:activator="{ props }">
-                <div v-bind="props" class="d-inline">
-                    <v-icon >mdi-menu-down</v-icon>
-                </div>
-              </template>
-              <v-list>
-                <v-list-item>TEST</v-list-item>
-              </v-list>
-            </v-menu>
-
-          </div>
-        -->
 
         </div>
 
@@ -108,9 +88,9 @@
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
 import { parseLuaObject } from '~/lib/parser';
-import type { Snippet } from '~/models/widgets';
 import { getWidgetDefinition } from '~/widgets/';
-import type { StoredWidget } from '~/store/persist';
+import type { StoredSnippet, StoredWidget } from '~/store/persist';
+import { extractTemplateVariables } from '~/lib/utils';
 
 const props = defineProps<{
   pid: string;
@@ -129,6 +109,7 @@ const processName = computed(() => {
 });
 
 const snippetLoading = reactive<Record<string, boolean>>({});
+const snippetMenu = reactive<Record<string, boolean>>({});
 
 const maxColumns = computed(() => {
   return Math.max(...proc.widgets.value.map((widget) => {
@@ -147,30 +128,68 @@ onUnmounted(() => {
   proc.removeListener(listen);
 });
 
-async function runSnippet(snippet: Snippet) {
+function evaluateSnippetTemplate(snippet: StoredSnippet) {
+  const data = snippet.data;
+  if (!data) return undefined;
+
+  const varsInTemplate = extractTemplateVariables(data);
+  if (!varsInTemplate.length) return data;
+
+  const state = proc.state.value;
+  if (!state) return error();
+
+  const passed = varsInTemplate.every((variable) => {
+    return variable in state && !!state[variable];
+  });
+
+  if (!passed) return error();
+
+  function error() {
+    console.error(`Error evaluating snippet data for ${snippet.name}`);
+    snippetMenu[snippet.name] = true;
+    return undefined;
+  }
+
+  const evaluated = varsInTemplate.reduce((acc, variable) => {
+    if (variable in state) {
+      return acc.replace(new RegExp(`{{${variable}}}`, 'g'), `"${String(state[variable])}"`);
+    }
+    return acc;
+  }, data);
+
+  return evaluated;
+}
+
+
+async function runSnippet(snippet: StoredSnippet) {
 
   if (snippet.pid && snippet.tags) {
     snippetLoading[snippet.name] = true;
-    // console.log('running dry run: ', snippet);
-    const res = await proc.rundry(snippet.pid, snippet.tags, snippet.data);
+    const data = evaluateSnippetTemplate(snippet);
+    const res = await proc.rundry(snippet.pid, snippet.tags, data);
     snippetLoading[snippet.name] = false;
-    // console.log('dry run res:', res);
     return res;
   }
 
   if (!snippet.data) return undefined;
 
+  const data = evaluateSnippetTemplate(snippet);
+  if (!data) return undefined;
+
   snippetLoading[snippet.name] = true;
-  // console.log('running data: ', snippet);
-  const res = await proc.command(snippet.data);
+  const res = await proc.command(data);
   snippetLoading[snippet.name] = false;
-  // console.log('command res:', res);
   return res;
 
 }
 
-function sendSnippet(snippet: Snippet, client: string) {
-  proc.broadcast([{ data: snippet.data || '', tags: [], type: 'internal' }], client);
+function sendSnippet(snippet: StoredSnippet, client: string, from: string) {
+  proc.broadcast([{
+    data: snippet.data || '',
+    tags: [],
+    type: 'internal',
+    fromClient: from,
+  }], client);
 }
 
 

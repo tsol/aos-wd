@@ -23,11 +23,8 @@ npm run dev
 ## TODO
 
 4. IDE widget
- - evaluate selected text / all text
- - store code in widget
  - widget fields here?
  - load /store to github
-
 
 5. fetch/request montitor and stats
 
@@ -49,4 +46,6 @@ x. Get rid of constants - forms needed
 9. Widget History feature
 
 10. Time for each line of console
+
+11. change cols width and widget height
 

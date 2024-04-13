@@ -16,6 +16,7 @@ export type BrodcastMsg = {
   data: string,
   type: 'dryrun' | 'live' | 'evaluate' | 'internal'
   forClient?: string;
+  fromClient?: string;
 };
 
 export type BrodcastClient = {
@@ -55,8 +56,14 @@ export const useProcesses = () => {
   function broadcast(pid: string, lines: BrodcastMsg[], target?: BrodcastClient['client']) {
     const runningProcess = getRunning(pid);
     if (!runningProcess) return;
-    const targets = target ? runningProcess.listeners.filter(l => l.client === target) : runningProcess.listeners;
-    targets.forEach(l => l.handler(lines));
+
+    if (target) {
+      const targets = runningProcess.listeners.filter(l => l.client === target);
+      targets.forEach(t => t.handler(lines));
+      return
+    }
+
+    runningProcess.listeners.forEach(l => l.handler(lines));
   }
 
   function getListenerNames(pid: string) {

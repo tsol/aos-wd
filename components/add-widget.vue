@@ -30,7 +30,7 @@ const proc = useProcess<any>(props.pid);
 const dialog = ref(false);
 
 function addWidget(widget: WidgetDefinition<any>) {
-  proc.addWidget({ name: widget.name });
+  proc.addWidget(widget.name);
   dialog.value = false;
 }
 

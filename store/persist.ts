@@ -1,10 +1,20 @@
 import { defineStore } from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate';
+import { createWidget } from '~/widgets';
+
+export type StoredSnippet = {
+  name: string;
+  data: string;
+  
+  pid?: string;
+  tags?: Tag[];
+}
 
 export type StoredWidget = {
   name: string;
   column?: number;
   colWidth?: number;
+  snippets?: StoredSnippet[];
 }
 
 export type Process = {
@@ -36,10 +46,12 @@ export const usePersistStore = defineStore('persist', {
   actions: {
     updateProcessDefaultWidgets(pid: string) {
       const process = this.processes.find(p => p.pid === pid);
-      if (! process ) throw new Error('process not found');
+      if (!process) throw new Error('process not found');
 
       if ((!process.widgets || process.widgets.length === 0)) {
-        process.widgets = [{ name: 'Console' }];
+        const console = createWidget('Console');
+        if (console) 
+          process.widgets = [console];
       }
 
       if (!process.state) {
@@ -47,18 +59,24 @@ export const usePersistStore = defineStore('persist', {
       }
 
     },
-    enableWidget(pid: string, w: StoredWidget) {
+    enableWidget(pid: string, name: string) {
       const process = this.processes.find(p => p.pid === pid);
-      if (process) {
-        process.widgets = process.widgets || [];
-        const exists = process.widgets.find(widget => widget.name === w.name);
-        if (exists) {
-          exists.column = w.column;
-          exists.colWidth = w.colWidth;
-        } else {
-          process.widgets.unshift(w);
+      if (!process) return;
+
+      process.widgets = process.widgets || [];
+      const exists = process.widgets.find(widget => widget.name === name);
+      if (exists) {
+        // make enabled = true later
+        return;
+      } else {
+        const w = createWidget(name);
+        if (!w) {
+          console.error('widget not found:', name);
+          return;
         }
+        process.widgets.unshift(w);
       }
+
     },
     disableWidget(pid: string, name: string) {
       const process = this.processes.find(p => p.pid === pid);

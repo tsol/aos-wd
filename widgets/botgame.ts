@@ -1,26 +1,4 @@
 
-
-/*
-{
-  "TimeRemaining": 1142870,
-  "GameMode": "Playing",
-  "Players": {
-    "g-CkHRNljAd5FXRebFBhib2LLXtxwfN1C-G4V5Xibjg": {
-      "x": 20,
-      "y": 29,
-      "energy": 20,
-      "health": 100
-   },
-    "3UZd2tPUDPyCMPdjEECkRDA2gyWMggfCptzzi__a6l0": {
-      "x": 15,
-      "y": 2,
-      "energy": 20,
-      "health": 100
-   }
- }
-}
-*/
-
 import { z } from 'zod';
 import type { WidgetDefinition } from '~/models/widgets';
 
@@ -37,6 +15,7 @@ const GameState = z.object({
 
 type State = {
   gameState?: z.infer<typeof GameState>;
+  gamePid?: string;
 }
 
 import ViewComponent from './botgame.vue';
@@ -44,13 +23,13 @@ import ViewComponent from './botgame.vue';
 // const gamePid = 'tm1jYBC0F2gTZ0EuUQKq5q_esxITDFkAG6QEpLbpI9I'; // demo
 //const gamePid = 'cBlymki3m_hxAMAnAo9S-r-MUZx83ieNqrwLPHov16o'; // my arena 1
 const gamePid = 'tNFHyWKeAq9Y5zzlhx3qHc3ix-h2OnF_Qd04VvyNxwA'; // my arena 2
-const tokenPid = 'qpmnya2SBHNx3QS6IBF98WcooFxLKHOhzjIXzEUfSXg'; // my
 
 const widget: WidgetDefinition<State> = {
   name: 'BotGame',
   component: ViewComponent,
   types: {
-    gameState: GameState
+    gameState: GameState,
+    gamePid: z.string(),
   },
   parsers: [
     {
@@ -127,7 +106,7 @@ const widget: WidgetDefinition<State> = {
       name: 'Init BOT',
       data: 
 `
-Game = "${gamePid}"
+Game = "{{gamePid}}"
 
 LatestGameState = LatestGameState or nil
 InAction = InAction or false -- Prevents the agent from taking multiple actions at once.
