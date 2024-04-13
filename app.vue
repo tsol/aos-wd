@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-tabs v-model="usePersistStore().currentPid">
+      <v-tabs v-model="currentPid">
           <v-tab v-for="proc in running" :key="proc.pid" :value="proc.pid">
             {{ shortenCutMiddle(proc.name, 10) }}
           </v-tab>
@@ -17,18 +17,17 @@
       </v-list>
     </v-navigation-drawer>
     <v-main>
-      <v-container>
-
-        <v-window v-model="usePersistStore().currentPid">
+      <!-- <v-container> -->
+      <div class="ma-md-4">
+        <v-window v-model="currentPid">
           <v-window-item v-for="proc in running" :key="proc.pid" :value="proc.pid">
 
-            <PacksProcessor :pid="proc.pid" />
-            <Console :pid="proc.pid" />
+            <WidgetDesk :pid="proc.pid" />
 
           </v-window-item>
         </v-window>
-
-      </v-container>
+      </div>
+      <!-- </v-container> -->
     </v-main>
   </v-app>
 </template>
@@ -38,14 +37,19 @@ import { usePersistStore } from './store/persist';
 import { shortenCutMiddle } from './lib/utils';
 
 const drawer = ref(false);
+const currentPid = toRef(usePersistStore().currentPid);
+const persistStore = usePersistStore();
 
 const running = computed(() => {
 
-  const pids = useProcesses().running.value?.map((p) => p.pid);
-  return usePersistStore().getProcesses.filter((p) => pids?.includes(p.pid));
+  const runningPids = useProcesses().running.value?.map((p) => p.pid);
+  return persistStore.processes.filter((p) => runningPids?.includes(p.pid));
 
 });
 
-
+watch(currentPid, (pid) => {
+  if (!pid) return;
+  usePersistStore().updateProcessDefaultWidgets(pid);
+}, { immediate: true });
 
 </script>

@@ -1,9 +1,29 @@
 
-export const useProcess = (pid: string) => {
+import { usePersistStore, type StoredWidget } from "~/store/persist";
+
+export function useProcess<STATE>(pid: string) {
 
   const processes = useProcesses();
-  const found = processes.running.value.find(p => p.pid === pid);
-  if (!found) throw new Error('Process not found');
+  const persistStore = usePersistStore();
+  
+  const process = persistStore.processes.find(
+    (process) => process.pid === pid
+  );
+
+  const state = computed<STATE>({
+    get: () => process?.state,
+    set: (value) => {
+      if (process) {
+        process.state = value;
+      }
+    }
+  });
+  
+  const name = computed(() => process?.name || '');
+
+  const widgets = computed(() => {
+    return process?.widgets || [];
+  });
 
   function command(text: string, silent?: boolean) {
     if (!silent)
@@ -16,7 +36,42 @@ export const useProcess = (pid: string) => {
     return processes.rundry(pid, toPid, tags, data);
   }
 
+  function addWidget(widget: StoredWidget) {
+    persistStore.enableWidget(pid, widget);
+  }
+
+  function removeWidget(name: string) {
+    persistStore.disableWidget(pid, name);
+  }
+
+  function replaceWidgets(widgets: StoredWidget[]) {
+    persistStore.replaceWidgets(pid, widgets);
+  }
+ 
+  function setStateVariable(widget: string, key: string, value: any) {
+    console.log('setting state variable', key, value);
+
+    const newState = { ...state.value, [widget]: { [key]: value } };
+
+    // if ( ! (state.value as any)[widget] ){
+    //   (state.value as any)[widget] = {};
+    // }
+
+    // (state.value as any)[widget][key] = value;
+
+    // const newState = { ...state.value, [key]: value };
+    state.value = newState;
+  }
+
   return {
+    name,
+    process,
+    widgets,
+    state,
+    setStateVariable,
+    replaceWidgets,
+    addWidget,
+    removeWidget,
     command,
     rundry,
     addListener: (client: BrodcastClient) => processes.addListener(pid, client),

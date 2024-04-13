@@ -14,7 +14,7 @@
 import { ref, onMounted, watch } from 'vue';
 import p5 from 'p5';
 import { type State } from './botgame';
-import { shortenCutMiddle } from '~/lib/utils';
+import { shortenCutMiddle } from '@/lib/utils';
 
 const props = defineProps<{
   pid: string,
@@ -39,14 +39,20 @@ const sketch = (p: p5) => {
   };
 
   p.draw = () => {
-    const state = props.state?.gameState;
-    if (!state) return;
 
     p.background(220);
 
     p.strokeWeight(0);
     p.stroke('black');
     p.fill('black');
+
+
+    const state = props.state?.gameState;
+    if (!state) {
+      p.text(`No game state yet`, 10, 20);
+      return;
+    }
+
 
     p.text(`${redrawCount.value}, ${timeRemainingInSeconds.value}`, 10, 20);
 
@@ -85,14 +91,12 @@ const sketch = (p: p5) => {
 
 let p5Instance: p5 | null = null;
 
-watch(() => props.state, () => {
+watch([() => props.state, () => canvas.value], () => {
   console.log('botgame state changed');
   if (canvas.value) {
     if (!p5Instance) {
       p5Instance = new p5(sketch, canvas.value);
     } else {
-      // p5Instance.remove();
-      // p5Instance = new p5(sketch, canvas.value);
       redrawCount.value++;
       p5Instance.redraw();
     }

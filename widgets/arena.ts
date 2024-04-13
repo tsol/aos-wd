@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PackDefinition } from '~/models/pack';
+import type { WidgetDefinition } from '~/models/widgets';
 
 type State = {
   balance: string;
@@ -7,7 +7,7 @@ type State = {
 
 import ViewComponent from './arena.vue';
 
-const pack: PackDefinition<State> = {
+const widget: WidgetDefinition<State> = {
   name: 'Arena',
   component: ViewComponent,
   types: {
@@ -446,6 +446,7 @@ Handlers.add(
     "GetGameState",
     Handlers.utils.hasMatchingTag("Action", "GetGameState"),
     function (Msg)
+        print("Sending game state to: " .. Msg.From)
         local json = require("json")
         local TimeRemaining = StateChangeTime - Now
         local GameState = json.encode({
@@ -492,6 +493,6 @@ Handlers.add(
   ],
 };
 
-export { pack, type State };
+export { widget, type State };
 
 

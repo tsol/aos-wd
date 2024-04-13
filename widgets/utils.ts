@@ -2,7 +2,7 @@
 
 
 import { z } from 'zod';
-import type { PackDefinition } from '~/models/pack';
+import type { WidgetDefinition } from '~/models/widgets';
 
 type State = {
   balance: string;
@@ -39,7 +39,7 @@ Send({Target = ao.id, Action = "Tick"})
 
 */
 
-const pack: PackDefinition<State> = {
+const widget: WidgetDefinition<State> = {
   name: 'Utils',
   component: ViewComponent,
   types: {
@@ -73,6 +73,6 @@ const pack: PackDefinition<State> = {
   ],
 };
 
-export { pack, type State };
+export { widget, type State };
 
 

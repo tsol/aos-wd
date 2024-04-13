@@ -304,7 +304,7 @@ Handlers.add(
     function (Msg)
         local json = require("json")
         local TimeRemaining = StateChangeTime - Now
-        local GameState = json.encode({GetG
+        local GameState = json.encode(
             GameMode = GameMode,
             TimeRemaining = TimeRemaining,
             Players = Players,

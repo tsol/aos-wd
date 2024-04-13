@@ -22,7 +22,7 @@
 */
 
 import { z } from 'zod';
-import type { PackDefinition } from '~/models/pack';
+import type { WidgetDefinition } from '~/models/widgets';
 
 const GameState = z.object({
   TimeRemaining: z.number(),
@@ -46,7 +46,7 @@ import ViewComponent from './botgame.vue';
 const gamePid = 'tNFHyWKeAq9Y5zzlhx3qHc3ix-h2OnF_Qd04VvyNxwA'; // my arena 2
 const tokenPid = 'qpmnya2SBHNx3QS6IBF98WcooFxLKHOhzjIXzEUfSXg'; // my
 
-const pack: PackDefinition<State> = {
+const widget: WidgetDefinition<State> = {
   name: 'BotGame',
   component: ViewComponent,
   types: {
@@ -284,6 +284,6 @@ Handlers.add(
   ]
 };
 
-export { pack, type State };
+export { widget, type State };
 
 

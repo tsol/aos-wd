@@ -32,7 +32,7 @@ type ZodTypes<T> = {
   [P in keyof T]: z.ZodType<T[P]>;
 };
 
-export type PackDefinition<STATE> = {
+export type WidgetDefinition<STATE> = {
 
   component: any;
 
@@ -43,8 +43,8 @@ export type PackDefinition<STATE> = {
   snippets: Snippet[];
 }
 
-export type Pack<STATE> = {
-  definition: PackDefinition<STATE>;
+export type Widget<STATE> = {
+  definition: WidgetDefinition<STATE>;
   state: STATE;
   history: STATE[];
 }

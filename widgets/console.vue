@@ -1,6 +1,6 @@
 <template>
   <div>
-      <div ref="divRef" style="height: 50vh; border: 1px solid black; padding-left: 1em;">
+      <div ref="divRef" style="height: 50vh;">
       </div>
       <v-alert
         v-if="errors.length > 0"
@@ -40,7 +40,6 @@ const proc = useProcess(props.pid);
 const errors = computed(() => useProcesses().errors.value);
 
 proc.addListener({ type: 'console', handler: listen });
-
 
 const divRef = ref<HTMLDivElement | null>(null);
 
