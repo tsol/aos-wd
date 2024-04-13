@@ -20,7 +20,9 @@
     "nuxt": "^3.11.2",
     "p5": "^1.9.2",
     "pinia": "^2.1.7",
+    "prismjs": "^1.29.0",
     "vue": "^3.4.21",
+    "vue-prism-editor": "^2.0.0-alpha.2",
     "vue-router": "^4.3.0",
     "xterm-readline": "^1.1.1",
     "zod": "^3.22.4"
@@ -29,6 +31,7 @@
     "@pinia-plugin-persistedstate/nuxt": "^1.2.0",
     "@types/luaparse": "^0.2.12",
     "@types/p5": "^1.7.6",
+    "@types/prismjs": "^1.26.3",
     "@xterm/addon-fit": "^0.10.0",
     "vite-plugin-vuetify": "^2.0.3",
     "vuetify": "^3.5.14"

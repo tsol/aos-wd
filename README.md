@@ -28,13 +28,16 @@ npm run dev
  - widget fields here?
  - load /store to github
 
-2. Substitute process ids with known names (even if with dots)
- - make active links to connect to process by Ctrl+click
- 
+
 5. fetch/request montitor and stats
 
 7. Layout for snippet buttons ( programable or template or draggable ?)
 
+x. Get rid of constants - forms needed
+
+2. Substitute process ids with known names (even if with dots)
+ - make active links to connect to process by Ctrl+click
+ 
 6. Manual BOT
  - faster state display
  - by buttons
