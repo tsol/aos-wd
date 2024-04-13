@@ -3,21 +3,23 @@ import { evaluate } from "~/lib/ao/evaluate";
 import { live } from "~/lib/ao/live";
 import { findPid } from "~/lib/ao/query";
 import { register } from "~/lib/ao/register";
-import { usePersistStore, type Process } from "~/store/persist";
+import { usePersistStore } from "~/store/persist";
 import { ref } from 'vue';
 import { dryrun } from "@permaweb/aoconnect";
 
 console.log('useProcesses: init');
 
 export type Tag = { name: string, value: string };
+
 export type BrodcastMsg = {
   tags: Tag[],
   data: string,
   type: 'dryrun' | 'live' | 'evaluate' | 'internal'
+  forClient?: string;
 };
 
 export type BrodcastClient = {
-  type: 'console' | 'parser';
+  client: string;
   handler: (lines: BrodcastMsg[]) => void;
 }
 
@@ -50,11 +52,15 @@ export const useProcesses = () => {
     runningProcess.listeners = runningProcess.listeners.filter(l => l.handler !== listener);
   }
 
-  function broadcast(pid: string, lines: BrodcastMsg[], target?: BrodcastClient['type']) {
+  function broadcast(pid: string, lines: BrodcastMsg[], target?: BrodcastClient['client']) {
     const runningProcess = getRunning(pid);
     if (!runningProcess) return;
-    const targets = target ? runningProcess.listeners.filter(l => l.type === target) : runningProcess.listeners;
+    const targets = target ? runningProcess.listeners.filter(l => l.client === target) : runningProcess.listeners;
     targets.forEach(l => l.handler(lines));
+  }
+
+  function getListenerNames(pid: string) {
+    return getRunning(pid)?.listeners.map(l => l.client);
   }
 
   async function command(pid: string, text: string) {
@@ -217,6 +223,7 @@ export const useProcesses = () => {
     broadcast,
     addListener,
     removeListener,
+    getListenerNames,
 
     command,
     rundry,

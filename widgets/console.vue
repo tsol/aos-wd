@@ -39,7 +39,7 @@ const props = defineProps<{
 const proc = useProcess(props.pid);
 const errors = computed(() => useProcesses().errors.value);
 
-proc.addListener({ type: 'console', handler: listen });
+proc.addListener({ client: 'Console', handler: listen });
 
 const divRef = ref<HTMLDivElement | null>(null);
 

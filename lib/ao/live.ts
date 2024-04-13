@@ -25,7 +25,7 @@ export async function live(pid: string) {
   if (lastNode) {
     if (cursor !== lastNode.cursor) {
       cursor = lastNode.cursor
-      console.log('new cursor:', cursor)
+      // console.log('new cursor:', cursor)
       store.updateCursor(pid, cursor);  
     }
   }

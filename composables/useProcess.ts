@@ -27,12 +27,12 @@ export function useProcess<STATE>(pid: string) {
 
   function command(text: string, silent?: boolean) {
     if (!silent)
-      processes.broadcast(pid, [{ type: 'internal', data: text, tags: [] }], 'console');
+      processes.broadcast(pid, [{ type: 'internal', data: text, tags: [] }], 'Console');
     return processes.command(pid, text);
   }
 
   function rundry(toPid: string, tags: Tag[], data = "") {
-    processes.broadcast(pid, [{ type: 'internal', data, tags }], 'console');
+    processes.broadcast(pid, [{ type: 'dryrun', data, tags }], 'Console');
     return processes.rundry(pid, toPid, tags, data);
   }
 
@@ -49,17 +49,9 @@ export function useProcess<STATE>(pid: string) {
   }
  
   function setStateVariable(widget: string, key: string, value: any) {
-    console.log('setting state variable', key, value);
+    // console.log('setting state variable', key, value);
 
     const newState = { ...state.value, [widget]: { [key]: value } };
-
-    // if ( ! (state.value as any)[widget] ){
-    //   (state.value as any)[widget] = {};
-    // }
-
-    // (state.value as any)[widget][key] = value;
-
-    // const newState = { ...state.value, [key]: value };
     state.value = newState;
   }
 
@@ -76,7 +68,8 @@ export function useProcess<STATE>(pid: string) {
     rundry,
     addListener: (client: BrodcastClient) => processes.addListener(pid, client),
     removeListener: (listener: BrodcastClient['handler']) => processes.removeListener(pid, listener),
-    broadcast: (lines: BrodcastMsg[], target?: BrodcastClient['type']) => processes.broadcast(pid, lines, target),
+    broadcast: (lines: BrodcastMsg[], target?: BrodcastClient['client']) => processes.broadcast(pid, lines, target),
+    getListenerNames: () => processes.getListenerNames(pid),
   }
 
 }

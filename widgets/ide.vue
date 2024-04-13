@@ -64,6 +64,8 @@ let textareaEl = ref<HTMLTextAreaElement | null>(null);
 const code = ref(`console.log('Hello, World!');`);
 const selection = ref('');
 
+process.addListener({ client: 'IDE', handler: listen });
+
 function highlighter(code: string) {
   return highlight(code, languages.js, 'lua'); //returns html
 };
@@ -82,6 +84,13 @@ function selectHandler($event: any) {
   if (!t) return;
   const selectedText = t.value.substring(t.selectionStart, t.selectionEnd);
   selection.value = selectedText;
+}
+
+function listen(text: BrodcastMsg[]) {
+  const internal =  text.filter((msg) => msg.type === 'internal');
+  if (!internal.length) return;
+  const lastMsg = internal[internal.length - 1];
+  code.value = lastMsg?.data;
 }
 
 onMounted(() => {

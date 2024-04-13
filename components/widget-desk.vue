@@ -32,12 +32,49 @@
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
             :state="(proc.state.value as any)?.[widget.name]" />
 
-          <v-btn v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name"
+          <!-- <v-btn v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name"
             @click="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
             {{ snippet.name }}
+          </v-btn> -->
+
+          <v-btn v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name"
+            @click.stop="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
+            {{ snippet.name }}
+            <v-menu offset-y>
+              <template v-slot:activator="{ props }">
+                <v-icon large class="ml-2" v-bind="props">mdi-menu-down</v-icon>
+              </template>
+              <v-list>
+                <v-list-item v-for="client in listnerNames" :key="client"
+                  @click="sendSnippet(snippet, client)"
+                >
+                {{ client }}
+                </v-list-item>
+              </v-list>
+            </v-menu>
           </v-btn>
+          <!--
+          <div v-for="snippet in getWidgetDefinition(widget.name)?.snippets || []" :key="snippet.name" class="d-inline mr-2">
+
+            <v-btn @click.stop="runSnippet(snippet)" :loading="snippetLoading[snippet.name]">
+              {{ snippet.name }}
+            </v-btn>
+            <v-menu offset-y>
+              <template v-slot:activator="{ props }">
+                <div v-bind="props" class="d-inline">
+                    <v-icon >mdi-menu-down</v-icon>
+                </div>
+              </template>
+              <v-list>
+                <v-list-item>TEST</v-list-item>
+              </v-list>
+            </v-menu>
+
+          </div>
+        -->
 
         </div>
+
 
       </v-col>
     </v-row>
@@ -58,10 +95,13 @@
   border: 1px solid gray;
 }
 
+.bubble-narrow {
+  padding: 0px;
+}
+
 .border-right {
   border-right: 1px solid lightgray;
 }
-
 </style>
 
 <script lang="ts" setup>
@@ -77,7 +117,11 @@ const props = defineProps<{
 }>();
 
 const proc = useProcess<any>(props.pid);
-proc.addListener({ type: 'parser', handler: listen });
+proc.addListener({ client: 'Parser', handler: listen });
+
+const listnerNames = computed(() => {
+  return proc.getListenerNames();
+});
 
 const processName = computed(() => {
   if (props.pid === proc.name.value || !proc.name.value) return props.pid;
@@ -124,6 +168,11 @@ async function runSnippet(snippet: Snippet) {
   return res;
 
 }
+
+function sendSnippet(snippet: Snippet, client: string) {
+  proc.broadcast([{ data: snippet.data || '', tags: [], type: 'internal' }], client);
+}
+
 
 function process(output: string) {
 
