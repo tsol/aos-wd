@@ -1,8 +1,6 @@
-# Nuxt 3 Minimal Starter
+# AOS Widget Desktop
 
-Oeu7OngU4PBt5qczQc6Alh9bHjS1RIgirE3kYwhuQhQ
-
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+### AOS-WD v39.0.0 - almost the best lubricant for your AOS dev
 
 ## Setup
 
@@ -11,15 +9,6 @@ Make sure to install the dependencies:
 ```bash
 # npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
 ## Development Server
@@ -29,49 +18,32 @@ Start the development server on `http://localhost:3000`:
 ```bash
 # npm
 npm run dev
-
-# pnpm
-pnpm run dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## TODO
 
-Build the application for production:
+4. IDE widget
+ - evaluate selected text / all text
+ - store code in widget
+ - widget fields here?
+ - load /store to github
 
-```bash
-# npm
-npm run build
+2. Substitute process ids with known names (even if with dots)
+ - make active links to connect to process by Ctrl+click
+ 
+5. fetch/request montitor and stats
 
-# pnpm
-pnpm run build
+7. Layout for snippet buttons ( programable or template or draggable ?)
 
-# yarn
-yarn build
+6. Manual BOT
+ - faster state display
+ - by buttons
+ - by directions
+ 
+8. Forms 
+ - as automatically parsed from template?
 
-# bun
-bun run build
-```
+9. Widget History feature
 
-Locally preview production build:
+10. Time for each line of console
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
