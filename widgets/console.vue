@@ -84,6 +84,8 @@ function outputArray(strings: string[]) {
   terminal.value.writeln('');
   terminal.value.writeln(splitted.join('\r\n'));
   terminal.value.write(aosPrompt.value);
+
+  fitAddon.fit();
 }
 
 function createTerminal() {

@@ -24,8 +24,10 @@
 
     </v-navigation-drawer>
     <v-main>
-      <!-- <v-container> -->
-      <div class="ma-md-4">
+
+      <About v-if="!currentPid" />
+
+      <div class="ma-md-4" v-else>
         <v-window v-model="currentPid">
           <v-window-item v-for="proc in running" :key="proc.pid" :value="proc.pid">
 
@@ -34,7 +36,7 @@
           </v-window-item>
         </v-window>
       </div>
-      <!-- </v-container> -->
+ 
     </v-main>
   </v-app>
 </template>
@@ -43,8 +45,15 @@
 import { usePersistStore } from './store/persist';
 import { shortenCutMiddle } from './lib/utils';
 
+const persist = usePersistStore();
+
 const drawer = ref(false);
-const currentPid = toRef(usePersistStore().currentPid);
+
+const currentPid = computed({
+  get: () => persist.currentPid,
+  set: (pid) => persist.setCurrentPid(pid),
+});
+
 const persistStore = usePersistStore();
 
 const running = computed(() => {

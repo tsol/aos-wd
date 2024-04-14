@@ -1,6 +1,31 @@
 # AOS Widget Desktop
 
-### AOS-WD v39.0.0 - almost the best lubricant for your AOS dev
+### AOS-WD v39.0.0 - almost the best lubricant for your AOS dev:
+
+With this tool for example you can setup your own Arena and several bots in a few clicks,
+and then start advancing your bots or your game with a help of a built-in IDE.
+
+Create fast to execute snippets, load blueprints, update Handlers by selecting only
+the portion of code you want to update, and much more.
+
+Also you can develop your own widgets to make User Interface for any game or service you come up with.
+
+## Features
+
+- work with several AOS processes simultaneously
+- create and run processes with a single click
+- built-in IDE with syntax highlighting and execution / partial execution
+- built-in console with syntax highlighting
+- expandable with custom widgets
+- load blueprints right from aos or this project github in IDE
+
+## Available Widgets
+
+- BotGame (in progress) - graphical GRID Arena BOT client. A good starting point for your bot development.
+- Arena (in progress) - contains snippet for demo arena
+- Console - console for the current process
+- IDE - code editor with syntax highlighting
+
 
 ## Setup
 
@@ -26,6 +51,9 @@ npm run dev
 
 
 ## TODO
+
+Welcome text
+Select current tab after first process creation
 
 x. title for snippets? with templates?
 

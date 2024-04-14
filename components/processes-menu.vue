@@ -1,5 +1,10 @@
 <template>
   <v-list>
+    <v-list-item :active="props.modelValue === undefined" @click="() => $emit('update:modelValue', undefined)">
+      <v-list-item-title>
+        About
+      </v-list-item-title>
+    </v-list-item>
     <v-list-item v-for="process in props.processes" :key="process.pid" :active="process.pid === props.modelValue"
       class="pointer" @click="() => $emit('update:modelValue', process.pid)">
       <v-list-item-title>

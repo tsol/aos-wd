@@ -218,6 +218,11 @@ export const useProcesses = () => {
 
     running.value = running.value.filter(r => r.pid !== pid);
     usePersistStore().setRunning(pid, false);
+
+    if (pid === usePersistStore().currentPid) {
+      usePersistStore().setCurrentPid(undefined);
+    }
+
   }
 
   function flushErrors() {

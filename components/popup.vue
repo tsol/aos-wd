@@ -85,7 +85,6 @@ async function doConnect() {
   ao.connect(pid, selectedProcessName.value);
   persist.setCurrentPid(pid);
   selectedProcess.value = persist.processes.find((p) => p.pid === pid);
-
   loading.value = false;
 }
 

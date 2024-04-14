@@ -108,14 +108,14 @@ export const usePersistStore = defineStore('persist', {
     },
     setCurrentPid(pid: string | undefined) {
       this.currentPid = pid;
-      // console.log('set current pid:', pid);
+
       if (pid === undefined) {
-        // last running
         const last = this.processes.find(p => p.isRunning);
         if (last) {
           this.currentPid = last.pid;
         }
       }
+
     },
     addProcess(process: Process) {
       const exists = this.processes.find(p => p.pid === process.pid);
