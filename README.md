@@ -27,6 +27,59 @@ Also you can develop your own widgets to make User Interface for any game or ser
 - IDE - code editor with syntax highlighting
 
 
+## Two bots and Arena in a few clicks
+
+### New own Arena
+
+1. Create a new arena process. Type in 'arena' and press Create.
+2. Press Add widget and add Arena widget to desktop.
+3. Press 'Load game' snippet (this will load arena.lua into process)
+4. Add standart token to the arena process:
+ - Add widget IDE to desktop
+ - In IDE widget press Github icon
+ - Select 'AOS permaweb' tab and click 'token.lua'
+ - In IDE press Play button
+
+Ok, done now you have process with arena and token.
+
+### Adding a bot
+
+1. Create new process. Type in 'bot1' and press Create.
+2. Press Add widget and add BotGame widget to desktop.
+3. Press 'Init BOT' snippet
+ - right after that snipped menu will pop up, because gamePid template variable
+ (which is referenced in botgame.lua) is not defined yet.
+4. Press on arrow down icon popup where you have been creating new processes.
+ - Select Arena from the list, and copy its PID by pressing on it.
+5. Paste the PID into the gamePid field in the snippet 'Init BOT' and press Apply.
+6. Run the snipped
+
+This time all must go smoothly, evaluated botgame.lua template will run and create the bot.
+
+7. Press 'Register' snippet - this should register your bot in the arena.
+8. Press 'Request Tokens' snippet - this should request tokens from the arena.
+9. Press 'BET' snippet - this should make a bet and register for the next round.
+10. Press 'GET STATE' widget to get current game state from arena.
+
+The game won't start with just one player, so you need to repeat the steps for the second bot.
+Then when all the bots are registered, the game will start after next timeout.
+
+## Widget architecture and workflow
+
+Each widget is defined by a typescript file and a vue file. Typescript file contains the
+schema of your widget state (if any required), custom parsers (if needed), default widgets code. Vue file contains the view for the widget. If the view file is not needed, then only snippets will
+appear when you enable your widget.
+
+The main parser process analyzes all the incomming messages from AOS network,
+and parses the input using custom widget parsers or the state schema, which is conviniently
+required to be defined in ZOD format. Once successfull parse is done, the widget state is updated.
+
+NOTE: There is a useProcess() composable available for your widget view, but when it comes to
+state, please use state from properties, not from the composable. The reason for this is
+that state in the composable is the recent current state, while the state in the properties
+can be from the 'state history browse' feature (not implemented yet).
+
+
 ## Setup
 
 Make sure to install the dependencies:
@@ -53,8 +106,9 @@ npm run dev
 
 ## TODO
 
-Welcome text
-Select current tab after first process creation
+bug: About menu item is not working
+bug: Resize console when drawer is opened/closed (or make it laways overlay?)
+when user fills in field in snippet - he presses PLAY without Apply hence nothing happens
 
 x. title for snippets? with templates?
 
