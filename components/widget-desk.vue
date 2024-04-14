@@ -27,18 +27,26 @@
             <v-icon size="small" class="bubble mr-1" @click="moveDown(widget)">mdi-arrow-down</v-icon>
             <v-icon size="small" class="bubble mr-1" @click="moveUp(widget)">mdi-arrow-up</v-icon>
             <v-icon size="small" class="bubble mr-1" @click="moveRight(widget)">mdi-arrow-right</v-icon>
-            <v-icon size="small" color="red" class="bubble" @click="process.removeWidget(widget.name)">mdi-close</v-icon>
+            <v-icon size="small" color="red" class="bubble"
+              @click="process.removeWidget(widget.name)">mdi-close</v-icon>
           </div>
 
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
             :state="(process.state.value as any)?.[widget.name]" />
 
-          <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
-            :loading="snippetLoading[snippet.name]">
-            {{ snippet.name }}
-            <SnippetFormDialog :pid="pid" :snippet="snippet" :widgetName="widget.name" v-model="snippetMenu[snippet.name]" />
-          </v-btn>
+          <div class="mt-2">
+            <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
+              :loading="snippetLoading[snippet.name]">
+              {{ shortenCutMiddle(snippet.name, 30) }}
+              <SnippetFormDialog :pid="pid" :snippet="snippet" :widgetName="widget.name"
+                v-model="snippetMenu[snippet.name]" />
+            </v-btn>
 
+
+            <v-btn @click="createSnippet(widget.name)" color="success">
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </div>
 
         </div>
 
@@ -75,8 +83,12 @@
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
 import { parseLuaObject } from '~/lib/parser';
-import type { StoredWidget } from '~/store/persist';
+import type { StoredSnippet, StoredWidget } from '~/store/persist';
 import { getWidgetDefinition } from '~/widgets/';
+import { shortenCutMiddle } from '~/lib/utils';
+import { useDisplay } from 'vuetify';
+
+const { mdAndUp } = useDisplay();
 
 const props = defineProps<{
   pid: string;
@@ -89,8 +101,10 @@ const { snippetLoading, snippetMenu, runSnippet } = useSnippets(process);
 
 
 const processName = computed(() => {
-  if (props.pid === process.name.value || !process.name.value) return props.pid;
-  return `${props.pid} - ${process.name.value}`;
+  let res = '';
+  if (props.pid === process.name.value || !process.name.value) res = props.pid;
+  else res = `${props.pid} - ${process.name.value}`;
+  return shortenCutMiddle(res, mdAndUp.value ? 40 : 15);
 });
 
 
@@ -112,6 +126,30 @@ onUnmounted(() => {
 });
 
 
+function createSnippet(widgetName: string) {
+  console.log('createSnippet', widgetName);
+
+  const widget = process.widgets.value.find((w) => w.name === widgetName);
+  if (!widget) throw new Error(`No widget found for ${widgetName}`);
+
+  const name = (index: number) => `New Snippet ${index}`;
+  const exists = (index: number) => widget.snippets?.find((s) => s.name === name(index));
+
+  const newName: (index?: number) => string = (index = 1) => {
+    if (!exists(index)) return name(index);
+    return newName(index + 1);
+  };
+
+  const snippet: StoredSnippet = {
+    name: newName(),
+    data: '-- New Snippet\r\nHandlers.list',
+  };
+
+  console.log('createSnippet', snippet);
+
+  process.addSnippet(widgetName, snippet);
+
+}
 
 function parseProcess(output: string) {
 

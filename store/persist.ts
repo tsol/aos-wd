@@ -118,7 +118,6 @@ export const usePersistStore = defineStore('persist', {
       }
     },
     addProcess(process: Process) {
-      // find if process already exists
       const exists = this.processes.find(p => p.pid === process.pid);
       if (exists) {
         exists.name = process.name;

@@ -9,25 +9,17 @@ const ao = useProcesses();
 const { xs } = useDisplay();
 const width = computed(() => (xs.value ? undefined : 600));
 
-const editNameDialog = ref(false);
-const editedName = ref('');
-
 const loading = ref(false);
 const open = ref(false);
 const shake = ref(false);
 
 const selectedProcess = ref<string | Process | undefined>(usePersistStore().getCurrentProcess);
 
-const processName = computed({
-  get: () => selectedProcessName.value || '',
-  set: (val: string) => {
-    editedName.value = val;
-  }
-});
-
 const label = computed(() => {
   if (usePersistStore().currentPid && usePersistStore().currentPid !== undefined) {
-    return shortenCutMiddle(usePersistStore()?.currentPid || '', 15);
+    return shortenCutMiddle(usePersistStore()?.currentPid || '',
+    xs.value ? 9 : 15
+  );
   }
   return 'Not connected';
 });
@@ -87,13 +79,11 @@ async function doLogout() {
   loading.value = false;
 }
 
-function saveProcessName() {
-  console.log('saveProcessName', editedName.value);
-  editNameDialog.value = false;
-  if (! selectedProcessPid.value) return;
-  if (editedName.value) {
-    usePersistStore().updateName(selectedProcessPid.value, editedName.value);
-  }
+function saveProcessName($event: string) {
+  console.log('saveProcessName', $event);
+  if (!$event) return;
+  if (!selectedProcessPid.value) return;
+  usePersistStore().updateName(selectedProcessPid.value, $event);
 }
 
 function copyCurrentPidToClipboard() {
@@ -130,20 +120,8 @@ function onDialogStateChange(val: boolean) {
           <template #prepend>
             <v-icon size="x-large" class="bg-blue rounded">mdi-account</v-icon>
           </template>
-          <template #title v-if="processName">
-
-            <span v-if="!editNameDialog" @click="editNameDialog = true">
-              {{ processName }}
-              <v-icon size="x-small" color="grey" class="ml-2">mdi-pencil-box-outline</v-icon>
-            </span>
-
-            <v-text-field v-else v-model="processName" density="compact" variant="underlined" :hide-details="true">
-              <template #append-inner>
-                  <v-icon color="error" size="small" @click="editNameDialog = false">mdi-close</v-icon>
-                  <v-icon color="success" size="small" @click="saveProcessName">mdi-check</v-icon>
-              </template>
-            </v-text-field>
-
+          <template #title v-if="selectedProcessName">
+            <editable-field :value="selectedProcessName" @changed="saveProcessName" />
           </template>
           <template #subtitle v-if="selectedProcessPid">
             <!-- Here copy to clipboard icon and onclick event to copy fullPid to clipboard -->

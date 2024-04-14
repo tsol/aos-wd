@@ -10,7 +10,7 @@
         <template #prepend>
           <v-icon>mdi-play</v-icon>
         </template>
-        Selected
+        {{ mdAndUp ? 'Selected' : 'Sel' }}
       </v-btn>
 
       <v-spacer></v-spacer>
@@ -19,7 +19,12 @@
         <template #prepend>
           <v-icon>mdi-content-save-move</v-icon>
         </template>
-        {{ lastSender }}
+        {{ 
+        //shortenCutMiddle(lastSender, mdAndUp ? 30 : 15) 
+          mdAndUp ?
+            shortenCutMiddle(lastSender, 30) :
+            shortenCutMiddle(lastSender.split(':').findLast(() => true) || '', 15)
+        }}
       </v-btn>
 
     </div>
@@ -28,10 +33,14 @@
 </template>
 
 <script lang="ts" setup>
+import { useDisplay } from 'vuetify';
+import { shortenCutMiddle } from '~/lib/utils';
 
 const props = defineProps<{
   pid: string;
 }>();
+
+const { mdAndUp } = useDisplay();
 
 const process = useProcess(props.pid);
 

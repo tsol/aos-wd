@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="props.variables.length === 0">No variables</div>
+    <div v-if="props.variables.length === 0">No &#123;&#123;variables&#125;&#125; in template</div>
     <div v-else>
     <v-text-field
       v-for="variable in props.variables"

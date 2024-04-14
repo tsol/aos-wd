@@ -1,5 +1,5 @@
 
-import { usePersistStore, type StoredWidget } from "~/store/persist";
+import { usePersistStore, type StoredSnippet, type StoredWidget } from "~/store/persist";
 
 export function useProcess<STATE>(pid: string) {
 
@@ -56,6 +56,24 @@ export function useProcess<STATE>(pid: string) {
     state.value = newState;
   }
 
+  function addSnippet(widgetName: string, snippet: StoredSnippet) {
+    const w = widgets.value.find(w => w.name === widgetName);
+    if (!w) return;
+    w.snippets = w.snippets || [];
+
+    const exists = w.snippets.find(s => s.name === snippet.name);
+    if (exists) return;
+
+    w.snippets = [...w.snippets, snippet];
+  }
+
+  function removeSnippet(widgetName: string, snippetName: string) {
+    const w = widgets.value.find(w => w.name === widgetName);
+    if (!w) return;
+    if (!w.snippets) return;
+    w.snippets = w.snippets.filter(s => s.name !== snippetName);
+  }
+
   return {
     name,
     process,
@@ -71,6 +89,8 @@ export function useProcess<STATE>(pid: string) {
     removeListener: (listener: BrodcastClient['handler']) => processes.removeListener(pid, listener),
     broadcast: (lines: BrodcastMsg[], target?: BrodcastClient['client']) => processes.broadcast(pid, lines, target),
     getListenerNames: () => processes.getListenerNames(pid),
+    addSnippet,
+    removeSnippet,
   }
 
 }

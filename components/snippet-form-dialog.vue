@@ -1,6 +1,6 @@
 <template>
 
-  <v-dialog v-model="snippetMenu" :style="mdAndUp ? 'max-width: 80%' : undefined">
+  <v-dialog v-model="dialogOpen" :style="mdAndUp ? 'max-width: 80%' : undefined">
     <template v-slot:activator="{ props }">
       <slot v-bind="props">
         <v-icon large class="ml-2" v-bind="props">mdi-menu-down</v-icon>
@@ -9,12 +9,21 @@
     <v-card>
 
       <v-card-text>
-        <div class="d-flex text-caption">
-        <div>Snippet: <b>{{ snippet.name }}</b></div>
-        <v-spacer></v-spacer>
-        <span @click="snippetMenu = false">
-          <v-icon size="x-small" color="red">mdi-close</v-icon>
-        </span>
+        <div class="d-flex justify-space-between mb-2">
+        <EditableField :value="snippet.name" @changed="doRenameSnippet"/>
+        <v-menu offset-y>
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props">mdi-dots-horizontal</v-icon>
+          </template>
+          <v-list>
+            <v-list-item @click="dialogOpen = false">
+              <v-list-item-title>Close</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="process.removeSnippet(widgetName, snippet.name)">
+              <v-list-item-title>Delete</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
         <code-editor v-model="snippet.data" style="height: 200px; width: 100%;" class="mb-6">
         </code-editor>
@@ -90,11 +99,17 @@ const emit = defineEmits<{
 
 const { mdAndUp } = useDisplay();
 
+const dialogOpen = computed({
+  get: () => props.modelValue || false,
+  set: (val: boolean) => {
+    emit('update:modelValue', val);
+  }
+});
+
 const process = useProcess(props.pid);
 
-const { runSnippet, snippetLoading } = useSnippets(process);
+const { runSnippet, snippetLoading, snippetMenu } = useSnippets(process);
 
-const snippetMenu = ref(props.modelValue);
 const variablesList = ref<string[]>([]);
 const sendTo = ref('');
 
@@ -104,7 +119,6 @@ const listners = computed(() => {
 
 watch( listners, () => {
   if (! listners.value || !listners.value.length ) return;
-  if ( sendTo.value ) return;
 
   if (listners.value.find( (v) => v.value === 'IDE')){
     sendTo.value = 'IDE';
@@ -125,12 +139,19 @@ watch(() => props.snippet.data, () => {
 }, { immediate: true });
 
 watch(() => props.modelValue, (value) => {
-  snippetMenu.value = value;
+  dialogOpen.value = value;
 });
 
-watch(() => snippetMenu.value, (value) => {
-  emit('update:modelValue', value);
-});
+// watch(() => snippetMenu.value, (value) => {
+//   emit('update:modelValue', value);
+// });
+
+function doRenameSnippet(name: string) {
+  const oldName = props.snippet.name;
+  snippetMenu[name] = snippetMenu[oldName];
+  props.snippet.name = name;
+  emit('update:modelValue', true);
+}
 
 function sendSnippet() {
   const snippet = props.snippet
