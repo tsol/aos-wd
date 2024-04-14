@@ -47,8 +47,8 @@ npm run dev
 
 ## Screenshot
 
+![image](https://github.com/tsol/aos-wd/assets/1220139/fe73990a-0969-46d6-b596-f9947863704a)
 ![image](https://github.com/tsol/aos-wd/assets/1220139/84c9ae8f-5f42-4b4e-801e-28d63d8eec62)
-![image](https://github.com/tsol/aos-wd/assets/1220139/53f025c0-996a-4bbc-b4f0-58383153335c)
 
 
 ## TODO
