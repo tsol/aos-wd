@@ -34,7 +34,7 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
   
     const evaluated = varsInTemplate.reduce((acc, variable) => {
       if (variable in state) {
-        return acc.replace(new RegExp(`{{${variable}}}`, 'g'), `"${String(state[variable])}"`);
+        return acc.replace(new RegExp(`{{${variable}}}`, 'g'), `${String(state[variable])}`);
       }
       return acc;
     }, data);

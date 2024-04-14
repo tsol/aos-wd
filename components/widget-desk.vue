@@ -8,7 +8,11 @@
       <v-divider class="ml-2 mr-2"></v-divider>
       <div class="text-caption bubble bubble-gray text-no-wrap">{{ processName }}</div>
       <v-divider class="ml-2 mr-2"></v-divider>
-      <v-icon size="small" color="green" class="bubble my-float-left">mdi-plus</v-icon>
+
+      <ProcessContextMenu :pid="pid" v-slot="pProps">
+        <v-icon v-bind="pProps" size="small" color="green" class="bubble my-float-left">mdi-dots-horizontal</v-icon>
+      </ProcessContextMenu>
+
     </div>
 
     <v-row>
@@ -127,8 +131,7 @@ onUnmounted(() => {
 
 
 function createSnippet(widgetName: string) {
-  console.log('createSnippet', widgetName);
-
+  
   const widget = process.widgets.value.find((w) => w.name === widgetName);
   if (!widget) throw new Error(`No widget found for ${widgetName}`);
 
@@ -145,7 +148,7 @@ function createSnippet(widgetName: string) {
     data: '-- New Snippet\r\nHandlers.list',
   };
 
-  console.log('createSnippet', snippet);
+  // console.log('createSnippet', snippet);
 
   process.addSnippet(widgetName, snippet);
 

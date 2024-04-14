@@ -25,7 +25,8 @@
           </v-list>
         </v-menu>
       </div>
-        <code-editor v-model="snippet.data" style="height: 200px; width: 100%;" class="mb-6">
+        <code-editor v-if="snippet.data !== undefined && snippet.data !== null"
+          v-model="snippet.data" style="height: 200px; width: 100%;" class="mb-6">
         </code-editor>
         <div class="d-flex flex-column flex-md-row justify-space-between">
           <!-- class="w-md-50 mr-md-4 mb-4 flex-grow" -->

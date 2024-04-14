@@ -35,6 +35,7 @@
     "@types/p5": "^1.7.6",
     "@types/prismjs": "^1.26.3",
     "@xterm/addon-fit": "^0.10.0",
+    "vite-plugin-string": "^1.2.3",
     "vite-plugin-vuetify": "^2.0.3",
     "vuetify": "^3.5.14"
   }

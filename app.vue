@@ -3,18 +3,25 @@
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-tabs v-model="currentPid">
-          <v-tab v-for="proc in running" :key="proc.pid" :value="proc.pid">
-            {{ shortenCutMiddle(proc.name, 10) }}
-          </v-tab>
-        </v-tabs>
+        <v-tab v-for="proc in running" :key="proc.pid" :value="proc.pid">
+          {{ shortenCutMiddle(proc.name, 10) }}
+        </v-tab>
+      </v-tabs>
       <v-spacer />
       <Popup />
     </v-app-bar>
 
     <v-navigation-drawer v-model="drawer" :temporary="false">
+
+      <ProcessesMenu v-model="currentPid" :processes="running" />
+
       <v-list>
-        <v-list-item title="Menu item" />
+        <v-list-item>
+          <v-icon start>mdi-github</v-icon>
+          <NuxtLink to="https://github.com/tsol/aos-wd">GitHub</NuxtLink>
+        </v-list-item>
       </v-list>
+
     </v-navigation-drawer>
     <v-main>
       <!-- <v-container> -->

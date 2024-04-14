@@ -35,13 +35,12 @@ const props = defineProps<{
   pid: string;
 }>();
 
-
-const proc = useProcess(props.pid);
-const errors = computed(() => useProcesses().errors.value);
-
-proc.addListener({ client: 'Console', handler: listen });
+const process = useProcess(props.pid);
+process.addListener({ client: 'Console', handler: listen });
 
 const divRef = ref<HTMLDivElement | null>(null);
+
+const errors = computed(() => useProcesses().errors.value);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);
@@ -49,15 +48,11 @@ const rl = ref<Readline | null>(null);
 
 const fitAddon = new FitAddon();
 
-
-// on resize run fitAddon.fit()
-
 onMounted(() => {
   window.addEventListener('resize', () => {
     fitAddon.fit();
   });
 });
-
 
 function listen(text: BrodcastMsg[]) {
   if (terminal.value) {
@@ -73,7 +68,7 @@ watch( [() => props.pid, divRef], () => {
   }
 
   if (props.pid && divRef.value) {
-    console.log('creating Terminal instance PID:', props.pid);
+    // console.log('creating Terminal instance PID:', props.pid);
     createTerminal();
   }
 }, { immediate: true, deep: true});
@@ -94,8 +89,7 @@ function outputArray(strings: string[]) {
 function createTerminal() {
   
   if (terminal.value) {
-    // fitAddon.fit();
-    // readLine();
+
     outputArray(['Connected.']);
     return;
   }
@@ -148,14 +142,14 @@ function createTerminal() {
 function readLine() {
   rl.value?.read(aosPrompt.value).then(
     (res) => {
-      proc.command(res, true);
+      process.command(res, true);
       setTimeout(readLine);
     }
   );
 }
 
 onUnmounted(() => {
-  proc.removeListener(listen);
+  process.removeListener(listen);
 });
 
 

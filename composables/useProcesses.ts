@@ -135,16 +135,18 @@ export const useProcesses = () => {
 
   async function newProcess(name: string) {
     if (name.length === 0) {
-      errors.value.push('Name is required');
+      console.error('Name is required!');
       return;
     }
 
     try {
       const pid = await register(name);
       await startProcess(pid, name);
+      return pid;
     } catch (e: any) {
       errors.value.push(e.message);
     }
+    return undefined
   }
 
   async function rundry(ownerPid: string, toPid: string, tags: Tag[], data = "") {

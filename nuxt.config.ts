@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+//import string from 'vite-plugin-string'
+
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
+
 export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: true },
@@ -19,6 +25,24 @@ export default defineNuxtConfig({
     //...
   ],
   vite: {
+    plugins: [
+      // string({
+      //   include: '**/*.lua',
+      // }),
+
+      {
+        name: 'load-lua',
+        load(id) {
+          if (id.endsWith('.lua')) {
+            const filePath = resolve(__dirname, id)
+            const fileContents = readFileSync(filePath, 'utf-8')
+            return `export default ${JSON.stringify(fileContents)}`
+          }
+        },
+      },
+      
+    ],
+
     vue: {
       template: {
         transformAssetUrls,

@@ -30,7 +30,7 @@ npm run dev
 x. title for snippets? with templates?
 
 4. IDE widget
- - load /store to github (aos repo (blueprints) and my repo (any repo))
+ - store to github
 
 7. Layout for snippet buttons ( programable or template or draggable ?)
 

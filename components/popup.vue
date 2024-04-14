@@ -4,6 +4,7 @@ import { usePersistStore, type Process } from '~/store/persist';
 import { useProcesses } from "~/composables/useProcesses";
 import { useDisplay } from 'vuetify';
 
+const persist = usePersistStore();
 const ao = useProcesses();
 
 const { xs } = useDisplay();
@@ -13,11 +14,11 @@ const loading = ref(false);
 const open = ref(false);
 const shake = ref(false);
 
-const selectedProcess = ref<string | Process | undefined>(usePersistStore().getCurrentProcess);
+const selectedProcess = ref<string | Process | undefined>(persist.getCurrentProcess);
 
 const label = computed(() => {
-  if (usePersistStore().currentPid && usePersistStore().currentPid !== undefined) {
-    return shortenCutMiddle(usePersistStore()?.currentPid || '',
+  if (persist.currentPid && persist.currentPid !== undefined) {
+    return shortenCutMiddle(persist?.currentPid || '',
     xs.value ? 9 : 15
   );
   }
@@ -41,23 +42,39 @@ const selectedProcessPid = computed(() => {
 
 
 const isSelectedCurrent = computed(() => {
-  return usePersistStore().currentPid && selectedProcessPid.value === usePersistStore().currentPid;
+  return persist.currentPid && selectedProcessPid.value === persist.currentPid;
 });
 
 const isSelectedAProcess = computed(() => !!selectedProcessPid.value);
 
 const isSelectedRunning = computed(() => {
-  const selectedProcess = usePersistStore().getProcesses.find((p) => p.pid === selectedProcessPid.value);
+  const selectedProcess = persist.processes.find((p) => p.pid === selectedProcessPid.value);
   return selectedProcess?.isRunning;
 });
 
-const processes = computed( () => usePersistStore().processes);
 
 async function doRegister() {
-  if (!selectedProcess.value) return;
-  if (typeof selectedProcess.value !== 'string') return;
+  if (!selectedProcess.value) {
+    console.error('No process selected');
+    return;
+  }
+  if (typeof selectedProcess.value !== 'string') {
+    console.error('Input field is not a new process name, but an existing process object.');
+    return;
+  }
+
   loading.value = true;
-  await ao.newProcess(selectedProcess.value);
+  const pid = await ao.newProcess(selectedProcess.value);
+
+  if (!pid) {
+    console.error('Failed to create new process');
+    loading.value = false;
+    return;
+  }
+
+  persist.setCurrentPid(pid);
+  selectedProcess.value = persist.processes.find((p) => p.pid === pid);
+
   loading.value = false;
 }
 
@@ -66,7 +83,9 @@ async function doConnect() {
   if (!pid) return;
   loading.value = true;
   ao.connect(pid, selectedProcessName.value);
-  usePersistStore().setCurrentPid(pid);
+  persist.setCurrentPid(pid);
+  selectedProcess.value = persist.processes.find((p) => p.pid === pid);
+
   loading.value = false;
 }
 
@@ -74,7 +93,7 @@ async function doLogout() {
   loading.value = true;
   if (selectedProcessPid.value) {
     await ao.disconnect(selectedProcessPid.value);
-    usePersistStore().setCurrentPid(undefined);
+    persist.setCurrentPid(undefined);
   }
   loading.value = false;
 }
@@ -83,18 +102,21 @@ function saveProcessName($event: string) {
   console.log('saveProcessName', $event);
   if (!$event) return;
   if (!selectedProcessPid.value) return;
-  usePersistStore().updateName(selectedProcessPid.value, $event);
+
+  persist.updateName(selectedProcessPid.value, $event);
+
+  selectedProcess.value = persist.processes.find((p) => p.pid === selectedProcessPid.value);
 }
 
 function copyCurrentPidToClipboard() {
-  navigator.clipboard.writeText(usePersistStore().currentPid || '');
+  navigator.clipboard.writeText(persist.currentPid || '');
   shake.value = true;
   setTimeout(() => shake.value = false, 500);
 }
 
 function onDialogStateChange(val: boolean) {
   if (val) {
-    selectedProcess.value = usePersistStore().getCurrentProcess;
+    selectedProcess.value = persist.getCurrentProcess;
   }
 }
 
@@ -140,7 +162,7 @@ function onDialogStateChange(val: boolean) {
 
       <v-combobox label="A process ID or process name"
         hint="Select a process to connect to or enter name to create a new one." v-model="selectedProcess"
-        :items="processes" :return-object="true" item-title="name" item-value="pid" clearable
+        :items="persist.processes" :return-object="true" item-title="name" item-value="pid" clearable
         @click:clear="console.log('clear')">
         <template #item="{ item, props }">
           <v-list-item v-bind="props" title="">

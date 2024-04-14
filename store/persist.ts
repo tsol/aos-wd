@@ -108,7 +108,7 @@ export const usePersistStore = defineStore('persist', {
     },
     setCurrentPid(pid: string | undefined) {
       this.currentPid = pid;
-      console.log('set current pid:', pid);
+      // console.log('set current pid:', pid);
       if (pid === undefined) {
         // last running
         const last = this.processes.find(p => p.isRunning);
@@ -123,24 +123,24 @@ export const usePersistStore = defineStore('persist', {
         exists.name = process.name;
         return;
       }
+      this.processes.push(process);
     }
   },
   persist: {
     storage: window.localStorage,
     key: 'persist',
     afterRestore: (ctx) => {
-      console.log(`PERSIST: restored '${ctx.store.$id}'`)
+      // console.log(`PERSIST: restored '${ctx.store.$id}'`)
 
       const processes = ctx.store.processes as Process[];
       const running = processes.filter(p => p.isRunning);
 
-      // if restored current is not in running, set current as first one
       if (!running.find(p => p.pid === ctx.store.current?.pid)) {
         ctx.store.setCurrentPid(running[0]?.pid);
       }
 
       running.forEach(p => {
-        console.log('PERSIST: connecting to process', p.pid);
+        // console.log('PERSIST: connecting to process', p.pid);
         useProcesses().connect(p.pid, p.name);
       });
 
