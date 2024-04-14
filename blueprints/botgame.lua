@@ -6,11 +6,11 @@ InAction = InAction or false -- Prevents the agent from taking multiple actions 
 Logs = Logs or {}
 
 colors = {
-  red = "\\27[31m",
-  green = "\\27[32m",
-  blue = "\\27[34m",
-  reset = "\\27[0m",
-  gray = "\\27[90m"
+  red = "\27[31m",
+  green = "\27[32m",
+  blue = "\27[34m",
+  reset = "\27[0m",
+  gray = "\27[90m"
 }
 
 function addLog(msg, text) -- Function definition commented for performance, can be used for debugging
