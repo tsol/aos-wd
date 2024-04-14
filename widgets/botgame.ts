@@ -16,6 +16,7 @@ const GameState = z.object({
 type State = {
   gameState?: z.infer<typeof GameState>;
   gamePid?: string;
+  attack: number;
 }
 
 import ViewComponent from './botgame.vue';
@@ -30,6 +31,7 @@ const widget: WidgetDefinition<State> = {
   types: {
     gameState: GameState,
     gamePid: z.string(),
+    attack: z.number(),
   },
   parsers: [
     {

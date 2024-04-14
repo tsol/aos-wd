@@ -17,7 +17,7 @@
       <v-col v-for="(column, index) in maxColumns" :key="column"
         :class="`v-col-md-${12 / maxColumns} ${index < maxColumns - 1 ? 'border-right' : ''}`">
 
-        <div v-for="widget in proc.widgets.value.filter((w) => (w.column || 1) === column)" :key="widget.name"
+        <div v-for="widget in process.widgets.value.filter((w) => (w.column || 1) === column)" :key="widget.name"
           class="mb-6">
 
           <div class="d-flex align-center mb-4 text-grey">
@@ -27,29 +27,16 @@
             <v-icon size="small" class="bubble mr-1" @click="moveDown(widget)">mdi-arrow-down</v-icon>
             <v-icon size="small" class="bubble mr-1" @click="moveUp(widget)">mdi-arrow-up</v-icon>
             <v-icon size="small" class="bubble mr-1" @click="moveRight(widget)">mdi-arrow-right</v-icon>
-            <v-icon size="small" color="red" class="bubble" @click="proc.removeWidget(widget.name)">mdi-close</v-icon>
+            <v-icon size="small" color="red" class="bubble" @click="process.removeWidget(widget.name)">mdi-close</v-icon>
           </div>
 
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
-            :state="(proc.state.value as any)?.[widget.name]" />
+            :state="(process.state.value as any)?.[widget.name]" />
 
           <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
             :loading="snippetLoading[snippet.name]">
             {{ snippet.name }}
-            <v-dialog v-model="snippetMenu[snippet.name]" offset-y width="600">
-              <template v-slot:activator="{ props }">
-                <v-icon large class="ml-2" v-bind="props">mdi-menu-down</v-icon>
-              </template>
-              <v-card>
-                <v-list>
-                  <v-list-item v-for="client in listnerNames" :key="client"
-                    @click="sendSnippet(snippet, client, `${widget.name}:${snippet.name}`)">
-                    {{ client }}
-                  </v-list-item>
-                </v-list>
-                <VarsForm :pid="pid" :variables="extractTemplateVariables(snippet.data)" />
-              </v-card>
-            </v-dialog>
+            <SnippetFormDialog :pid="pid" :snippet="snippet" :widgetName="widget.name" v-model="snippetMenu[snippet.name]" />
           </v-btn>
 
 
@@ -88,31 +75,27 @@
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
 import { parseLuaObject } from '~/lib/parser';
+import type { StoredWidget } from '~/store/persist';
 import { getWidgetDefinition } from '~/widgets/';
-import type { StoredSnippet, StoredWidget } from '~/store/persist';
-import { extractTemplateVariables } from '~/lib/utils';
 
 const props = defineProps<{
   pid: string;
 }>();
 
-const proc = useProcess<any>(props.pid);
-proc.addListener({ client: 'Parser', handler: listen });
+const process = useProcess<any>(props.pid);
+process.addListener({ client: 'Parser', handler: listen });
 
-const listnerNames = computed(() => {
-  return proc.getListenerNames();
-});
+const { snippetLoading, snippetMenu, runSnippet } = useSnippets(process);
+
 
 const processName = computed(() => {
-  if (props.pid === proc.name.value || !proc.name.value) return props.pid;
-  return `${props.pid} - ${proc.name.value}`;
+  if (props.pid === process.name.value || !process.name.value) return props.pid;
+  return `${props.pid} - ${process.name.value}`;
 });
 
-const snippetLoading = reactive<Record<string, boolean>>({});
-const snippetMenu = reactive<Record<string, boolean>>({});
 
 const maxColumns = computed(() => {
-  return Math.max(...proc.widgets.value.map((widget) => {
+  return Math.max(...process.widgets.value.map((widget) => {
     return widget.column || 1;
   }));
 });
@@ -120,86 +103,23 @@ const maxColumns = computed(() => {
 function listen(text: BrodcastMsg[]) {
   if (!text.length) return;
   text.forEach((msg) => {
-    process(msg.data);
+    parseProcess(msg.data);
   });
 }
 
 onUnmounted(() => {
-  proc.removeListener(listen);
+  process.removeListener(listen);
 });
 
-function evaluateSnippetTemplate(snippet: StoredSnippet) {
-  const data = snippet.data;
-  if (!data) return undefined;
-
-  const varsInTemplate = extractTemplateVariables(data);
-  if (!varsInTemplate.length) return data;
-
-  const state = proc.state.value;
-  if (!state) return error();
-
-  const passed = varsInTemplate.every((variable) => {
-    return variable in state && !!state[variable];
-  });
-
-  if (!passed) return error();
-
-  function error() {
-    console.error(`Error evaluating snippet data for ${snippet.name}`);
-    snippetMenu[snippet.name] = true;
-    return undefined;
-  }
-
-  const evaluated = varsInTemplate.reduce((acc, variable) => {
-    if (variable in state) {
-      return acc.replace(new RegExp(`{{${variable}}}`, 'g'), `"${String(state[variable])}"`);
-    }
-    return acc;
-  }, data);
-
-  return evaluated;
-}
 
 
-async function runSnippet(snippet: StoredSnippet) {
+function parseProcess(output: string) {
 
-  if (snippet.pid && snippet.tags) {
-    snippetLoading[snippet.name] = true;
-    const data = evaluateSnippetTemplate(snippet);
-    const res = await proc.rundry(snippet.pid, snippet.tags, data);
-    snippetLoading[snippet.name] = false;
-    return res;
-  }
-
-  if (!snippet.data) return undefined;
-
-  const data = evaluateSnippetTemplate(snippet);
-  if (!data) return undefined;
-
-  snippetLoading[snippet.name] = true;
-  const res = await proc.command(data);
-  snippetLoading[snippet.name] = false;
-  return res;
-
-}
-
-function sendSnippet(snippet: StoredSnippet, client: string, from: string) {
-  proc.broadcast([{
-    data: snippet.data || '',
-    tags: [],
-    type: 'internal',
-    fromClient: from,
-  }], client);
-}
-
-
-function process(output: string) {
-
-  proc.widgets.value.forEach((widget) => {
+  process.widgets.value.forEach((widget) => {
     const wd = getWidgetDefinition(widget.name);
     if (!wd) {
       console.error(`No widget definition found for ${widget.name}`);
-      proc.removeWidget(widget.name);
+      process.removeWidget(widget.name);
       return;
     }
 
@@ -212,7 +132,7 @@ function process(output: string) {
         if (!zodType) throw new Error(`No type found for ${variable}`);
         const parsed = zodType.safeParse(object);
         if (parsed.success) {
-          proc.setStateVariable(wd.name, variable, parsed.data);
+          process.setStateVariable(wd.name, variable, parsed.data);
         }
       }
 
@@ -231,7 +151,7 @@ function moveRight(widget: StoredWidget) {
 }
 
 function moveUp(widget: StoredWidget) {
-  const widgets = proc.widgets.value;
+  const widgets = process.widgets.value;
   const ourColumn = widgets.filter((w) => (w.column || 1) === (widget.column || 1));
   if (ourColumn.length < 2) return;
 
@@ -244,11 +164,11 @@ function moveUp(widget: StoredWidget) {
 
   widgets.splice(upperNeighbourGlobalIndex, 0, widgets.splice(ourGlobalIndex, 1)[0]);
 
-  proc.replaceWidgets(widgets);
+  process.replaceWidgets(widgets);
 }
 
 function moveDown(widget: StoredWidget) {
-  const widgets = proc.widgets.value;
+  const widgets = process.widgets.value;
   const ourColumn = widgets.filter((w) => (w.column || 1) === (widget.column || 1));
   if (ourColumn.length < 2) return;
 
@@ -261,7 +181,7 @@ function moveDown(widget: StoredWidget) {
 
   widgets.splice(ourGlobalIndex, 0, widgets.splice(lowerNeighbourGlobalIndex, 1)[0]);
 
-  proc.replaceWidgets(widgets);
+  process.replaceWidgets(widgets);
 }
 
 </script>

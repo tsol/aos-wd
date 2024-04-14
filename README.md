@@ -26,6 +26,8 @@ npm run dev
  - widget fields here?
  - load /store to github
 
+2. Cron poll
+
 5. fetch/request montitor and stats
 
 7. Layout for snippet buttons ( programable or template or draggable ?)
