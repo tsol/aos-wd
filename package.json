@@ -2,7 +2,7 @@
   "name": "aos-wd",
   "private": true,
   "type": "module",
-  "version": "39.0.1",
+  "version": "39.0.2",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",

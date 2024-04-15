@@ -5,13 +5,13 @@ import { usePersistStore } from '~/store/persist';
 export async function live(pid: string) {
   const store = usePersistStore();
 
-  let cursor = store.getAllCursors[pid] || '';
+  let cursor = store.getAllCursors[pid] || undefined;
 
   let results = await connect().results({
     process: pid,
-    sort: "DESC",
+    sort: cursor ? "ASC" : "DESC",
     from: cursor,
-    limit: 10
+    limit: 1000
   });
 
   // console.log('results', results);

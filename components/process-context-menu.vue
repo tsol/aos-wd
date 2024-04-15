@@ -7,7 +7,10 @@
     </template>
     <v-list>
       <v-list-item @click="doDisconnect">
-        <v-list-item-title>Disconnect</v-list-item-title>
+        <v-list-item-title>Disconnect</v-list-item-title>     
+      </v-list-item>
+      <v-list-item @click="doForget">
+        <v-list-item-title>Forget</v-list-item-title>     
       </v-list-item>
     </v-list>
   </v-menu>
@@ -15,6 +18,10 @@
 
 <script lang="ts" setup>
 import { useProcesses } from '#imports';
+import { usePersistStore } from '~/store/persist';
+
+const persist = usePersistStore();
+
 const props = defineProps<{
   pid: string;
 }>();
@@ -25,6 +32,14 @@ const dialogOpen = ref(false);
 
 function doDisconnect() {
   ao.disconnect(props.pid)
+  persist.setCurrentPid(undefined);
+  dialogOpen.value = false;
+}
+
+async function doForget() {
+  await ao.disconnect(props.pid)
+  persist.removeProcess(props.pid);
+  persist.setCurrentPid(undefined);
   dialogOpen.value = false;
 }
 

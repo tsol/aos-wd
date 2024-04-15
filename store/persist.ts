@@ -29,7 +29,7 @@ export const usePersistStore = defineStore('persist', {
   state: () => ({
     currentPid: undefined as string | undefined,
     processes: [] as Process[],
-    cursor: {} as Record<string, string>
+    cursor: {} as Record<string, string | undefined>
   }),
   getters: {
     getProcesses(state) {
@@ -103,7 +103,7 @@ export const usePersistStore = defineStore('persist', {
         console.log('name was updated for pid:', pid, 'name:', name);
       }
     },
-    updateCursor(pid: string, cursor: string) {
+    updateCursor(pid: string, cursor: string | undefined) {
       this.cursor[pid] = cursor;
     },
     setCurrentPid(pid: string | undefined) {
@@ -124,7 +124,11 @@ export const usePersistStore = defineStore('persist', {
         return;
       }
       this.processes.push(process);
-    }
+    },
+    removeProcess(pid: string) {
+      this.processes = this.processes.filter(p => p.pid !== pid);
+      this.cursor[pid] = undefined;
+    },
   },
   persist: {
     storage: window.localStorage,
