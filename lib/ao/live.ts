@@ -18,8 +18,9 @@ export async function live(pid: string) {
   
   let result: string[] = [];
 
-  const edges = (results.edges as Array<any>).reverse();
+  if (! results?.edges?.length) return null;
 
+  const edges = cursor ? results.edges : results.edges.reverse();
   const lastNode = edges[ edges.length - 1 ];
   
   if (lastNode) {
