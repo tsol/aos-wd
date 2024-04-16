@@ -106,38 +106,41 @@ npm run dev
 
 ## TODO
 
-bug: About menu item is not working
-bug: Resize console when drawer is opened/closed (or make it laways overlay?)
-when user fills in field in snippet - he presses PLAY without Apply hence nothing happens
+- bug: About menu item is not working
+- bug: Resize console when drawer is opened/closed (or make it laways overlay?)
+- when user fills in field in snippet - he presses PLAY without Apply hence nothing happens
+
+x. Input process v-combobox when variable ends with PID
+
+x. Snippet editor context menu: 'Send (and execute) to other processes'. 
+
+x. Copy PID by click from process name (also context menu)
 
 x. title for snippets? with templates?
 
-4. IDE widget
- - store to github
+x. Widget context menu: 'Send layout to other processes'
 
-7. Layout for snippet buttons ( programable or template or draggable ?)
+x. Cron poll (snippet option to schedule interval)
 
-2. Cron poll
-
-3. Input process v-combobox when variable ends with PID
-
-5. aos fetch/request montitor and stats in header
-
-
-2. Substitute process ids with known names (even if with dots)
+x. Substitute process ids with known names (even if with dots)
  - make active links to connect to process by Ctrl+click
- 
-6. Manual BOT
- - faster state display
- - by buttons
- - by directions
- 
-8. Forms 
- - as automatically parsed from template?
 
-9. Widget History feature
+x. Widget Layout change column width, alter widget height.
+ - also remove empty cols
+ - 
 
-10. Time for each line of console
+x. Time for each line of console
 
-11. change cols width and widget height
+
+---
+
+x. IDE widget - store to github
+
+x. Layout for snippet buttons ( programable or template or draggable ?)
+
+x. aos fetch/request montitor and stats in header (cuXX statistics on hover)
+
+x. Widget History feature
+
+
 
