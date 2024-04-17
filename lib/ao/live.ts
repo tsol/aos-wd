@@ -20,7 +20,7 @@ export async function live(pid: string) {
 
   if (! results?.edges?.length) return null;
 
-  const edges = cursor ? results.edges : results.edges.reverse();
+  const edges = cursor ? results.edges.reverse() : results.edges;
   const lastNode = edges[ edges.length - 1 ];
   
   if (lastNode) {

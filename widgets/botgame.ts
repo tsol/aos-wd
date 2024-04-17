@@ -11,7 +11,18 @@ const GameState = z.object({
     y: z.number(),
     energy: z.number(),
     health: z.number()
-  }))
+  })),
+  BotState: z.object({
+    mode: z.string(),
+    targetXY: z.object({
+      x: z.number(),
+      y: z.number(),
+    }),
+    victim: z.string().optional().nullable(),
+    friends: z.record(z.object({
+      index: z.number(),
+    })).optional(),
+  }).optional(),
 });
 
 type State = {
@@ -22,7 +33,7 @@ type State = {
   attackEnergy: number;
 }
 
-import ViewComponent from './botgame.vue';
+import ViewComponent from './botgame/view.vue';
 
 const widget: WidgetDefinition<State> = {
   name: 'BotGame',

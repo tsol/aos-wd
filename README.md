@@ -110,13 +110,13 @@ npm run dev
 - bug: Resize console when drawer is opened/closed (or make it laways overlay?)
 - when user fills in field in snippet - he presses PLAY without Apply hence nothing happens
 
+x. Load own processes from graphql to the list automatically
+
 x. Input process v-combobox when variable ends with PID
 
 x. Snippet editor context menu: 'Send (and execute) to other processes'. 
 
 x. Copy PID by click from process name (also context menu)
-
-x. title for snippets? with templates?
 
 x. Widget context menu: 'Send layout to other processes'
 
@@ -141,6 +141,8 @@ x. Layout for snippet buttons ( programable or template or draggable ?)
 x. aos fetch/request montitor and stats in header (cuXX statistics on hover)
 
 x. Widget History feature
+
+x. title for snippets? with templates?
 
 
 

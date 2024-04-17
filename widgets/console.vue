@@ -1,21 +1,16 @@
 <template>
   <div>
-      <div ref="divRef" style="height: 50vh;">
-      </div>
-      <v-alert
-        v-if="errors.length > 0"
-        type="error"
-        elevation="2"
-        class="mt-2"
-        clearable
-        colored-border
-        dense
-        outlined
-        v-for="error in errors"
-        :key="error"
-      >
-        {{ error }}
-      </v-alert>
+    <div class="d-flex justify-space-between mb-2">
+      <v-text-field v-model="currentFilter" label="Filter" density="compact"></v-text-field>
+      <v-checkbox v-model="substitudePids" label="Substitute PIDs"></v-checkbox>
+      <v-checkbox v-model="disableLive" label="Disable Live"></v-checkbox>
+    </div>
+    <div ref="divRef" style="height: 50vh;">
+    </div>
+    <v-alert v-if="errors.length > 0" type="error" elevation="2" class="mt-2" clearable colored-border dense outlined
+      v-for="error in errors" :key="error">
+      {{ error }}
+    </v-alert>
   </div>
 </template>
 
@@ -28,25 +23,38 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Readline } from 'xterm-readline';
 import { splash } from '@/lib/ao/splash.js';
 
-import {type BrodcastMsg, useProcesses } from '~/composables/useProcesses';
+import { type BrodcastMsg, useProcesses } from '~/composables/useProcesses';
 import { useProcess } from '~/composables/useProcess';
+import { usePersistStore } from '~/store/persist';
+import { shortenCutMiddle } from '~/lib/utils';
 
 const props = defineProps<{
   pid: string;
 }>();
 
+const persist = usePersistStore();
+
 const process = useProcess(props.pid);
 process.addListener({ client: 'Console', handler: listen });
 
+
 const divRef = ref<HTMLDivElement | null>(null);
+const currentFilter = ref<string>('');
+const disableLive = ref(false);
+const substitudePids = ref(false);
 
 const errors = computed(() => useProcesses().errors.value);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);
 const rl = ref<Readline | null>(null);
+const currentInput = ref<string>('');
 
 const fitAddon = new FitAddon();
+
+
+const computedProcesses = computed(() => persist.processes.map((p) =>
+  ({ pid: p.pid, name: p.name, short: shortenCutMiddle(p.pid, 9) })));
 
 onMounted(() => {
   window.addEventListener('resize', () => {
@@ -56,11 +64,41 @@ onMounted(() => {
 
 function listen(text: BrodcastMsg[]) {
   if (terminal.value) {
-    outputArray(text.map((msg) => msg.data));
+
+    const res = [] as string[];
+
+    text.forEach((msg) => {
+      if (disableLive.value && msg.type === 'live') return;
+      const lines = msg.data.split(/\r?\n/);
+      res.push(...lines);
+    });
+
+    const filtered = res.filter((msg) => {
+      if (!currentFilter.value) return true;
+      return msg.match(new RegExp(currentFilter.value, 'i'));
+    });
+
+    if (substitudePids.value) {
+
+      //  New Message From RF1...D4c: Action = Attack-Failed
+      // cover this short version also
+
+      filtered.forEach((msg, i) => {
+        computedProcesses.value.forEach((p) => {
+          if (msg.includes(p.pid)) {
+            filtered[i] = 
+              msg.replace(p.pid, p.name)
+                .replace(p.short, p.name);
+          }
+        });
+      });
+    }
+
+    outputArray(filtered);
   }
 }
 
-watch( [() => props.pid, divRef], () => {
+watch([() => props.pid, divRef], () => {
 
   if (!props.pid && divRef.value && terminal.value) {
     outputArray(['Connect to a process.']);
@@ -71,25 +109,28 @@ watch( [() => props.pid, divRef], () => {
     // console.log('creating Terminal instance PID:', props.pid);
     createTerminal();
   }
-}, { immediate: true, deep: true});
+}, { immediate: true, deep: true });
 
 
 function outputArray(strings: string[]) {
-  if (! terminal.value)
+  if (!terminal.value)
     throw new Error('Terminal not created');
+
   const splitted = strings.reduce((acc, str) => {
     return acc.concat(str.split('\n'));
   }, [] as string[]);
 
+  if (splitted.length === 0) return;
+
   terminal.value.writeln('');
   terminal.value.writeln(splitted.join('\r\n'));
-  terminal.value.write(aosPrompt.value);
+  terminal.value.write(aosPrompt.value + currentInput.value);
 
   fitAddon.fit();
 }
 
 function createTerminal() {
-  
+
   if (terminal.value) {
 
     outputArray(['Connected.']);
@@ -104,19 +145,19 @@ function createTerminal() {
       selectionBackground: '#191A19',
 
       cursor: 'black',
-      
+
     },
     cursorBlink: true,
     cursorStyle: 'block',
-    
+
   });
 
   rl.value = new Readline();
 
-  if (! terminal.value || ! rl.value)
+  if (!terminal.value || !rl.value)
     throw new Error('Terminal or Readline not created');
-  
-  if (! divRef.value)
+
+  if (!divRef.value)
     throw new Error('divRef not created');
 
   terminal.value.loadAddon(fitAddon);
@@ -138,10 +179,21 @@ function createTerminal() {
   });
 
   fitAddon.fit();
-  readLine();
+
+  terminal.value.onKey(({ key }) => {
+    if (key === '\u007F') {  // Backspace key
+      currentInput.value = currentInput.value.slice(0, -1);
+    } else {
+      currentInput.value += key;
+    }
+  });
+
+  setTimeout(readLine);
 };
 
 function readLine() {
+  currentInput.value = '';
+
   rl.value?.read(aosPrompt.value).then(
     (res) => {
       process.command(res, true);
@@ -156,4 +208,6 @@ onUnmounted(() => {
 
 
 </script>
+
+
 ~/composables/useProcesses
