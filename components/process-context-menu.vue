@@ -12,6 +12,9 @@
       <v-list-item @click="doForget">
         <v-list-item-title>Forget process</v-list-item-title>     
       </v-list-item>
+      <v-list-item @click="doResetCursor">
+        <v-list-item-title>Reset cursor (no fetch history)</v-list-item-title>     
+      </v-list-item>
     </v-list>
   </v-menu>
 </template>
@@ -40,6 +43,12 @@ async function doForget() {
   await ao.disconnect(props.pid)
   persist.removeProcess(props.pid);
   persist.setCurrentPid(undefined);
+  dialogOpen.value = false;
+}
+
+function doResetCursor() {
+  const cursors = persist.getAllCursors;
+  cursors[props.pid] = undefined;
   dialogOpen.value = false;
 }
 

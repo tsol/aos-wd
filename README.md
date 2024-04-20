@@ -111,6 +111,8 @@ npm run dev
 
 x. Lua interpreter in IDE
 
+x. Forget cursor. (Fetch recent)
+
 x. Widget Layout change column width, alter widget height.
  - also remove empty cols
 
