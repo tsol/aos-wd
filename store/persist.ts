@@ -8,6 +8,7 @@ export type StoredSnippet = {
   
   pid?: string;
   tags?: Tag[];
+  widgetName?: string;
 }
 
 export type StoredWidget = {
@@ -58,6 +59,12 @@ export const usePersistStore = defineStore('persist', {
         process.state = {};
       }
 
+      process.widgets?.forEach(widget => {
+        widget.snippets?.forEach(snippet => {
+          snippet.widgetName = widget.name;
+        });
+      });
+
     },
     enableWidget(pid: string, name: string) {
       const process = this.processes.find(p => p.pid === pid);
@@ -101,7 +108,9 @@ export const usePersistStore = defineStore('persist', {
       if (process) {
         process.name = name;
         console.log('name was updated for pid:', pid, 'name:', name);
+        return;
       }
+
     },
     updateCursor(pid: string, cursor: string | undefined) {
       this.cursor[pid] = cursor;
@@ -117,10 +126,15 @@ export const usePersistStore = defineStore('persist', {
       }
 
     },
-    addProcess(process: Process) {
+    addProcess(process: Process, updateNameIfExist = false) {
       const exists = this.processes.find(p => p.pid === process.pid);
       if (exists) {
-        exists.name = process.name;
+        if (updateNameIfExist)
+          exists.name = process.name;
+        return;
+      }
+      if (process.pid.length !== 43) {
+        console.error('invalid pid:', process.pid);
         return;
       }
       this.processes.push(process);

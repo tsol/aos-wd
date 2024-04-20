@@ -1,16 +1,12 @@
 <template>
   <div>
     <div class="d-flex justify-space-between mb-2">
-      <v-text-field v-model="currentFilter" label="Filter" density="compact"></v-text-field>
-      <v-checkbox v-model="substitudePids" label="Substitute PIDs"></v-checkbox>
+      <v-text-field v-model="currentFilter" label="Live filter regex" density="compact"></v-text-field>
+      <v-checkbox v-model="substitudePids" label="PID->Name"></v-checkbox>
       <v-checkbox v-model="disableLive" label="Disable Live"></v-checkbox>
     </div>
     <div ref="divRef" style="height: 50vh;">
     </div>
-    <v-alert v-if="errors.length > 0" type="error" elevation="2" class="mt-2" clearable colored-border dense outlined
-      v-for="error in errors" :key="error">
-      {{ error }}
-    </v-alert>
   </div>
 </template>
 
@@ -42,8 +38,6 @@ const divRef = ref<HTMLDivElement | null>(null);
 const currentFilter = ref<string>('');
 const disableLive = ref(false);
 const substitudePids = ref(false);
-
-const errors = computed(() => useProcesses().errors.value);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);

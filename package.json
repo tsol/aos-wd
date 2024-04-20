@@ -25,6 +25,7 @@
     "vue": "^3.4.21",
     "vue-prism-editor": "^2.0.0-alpha.2",
     "vue-router": "^4.3.0",
+    "vuetify-sonner": "^0.3.14",
     "xterm-readline": "^1.1.1",
     "zod": "^3.22.4"
   },

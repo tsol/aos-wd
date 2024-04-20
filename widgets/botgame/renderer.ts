@@ -26,9 +26,9 @@ export function Renderer() {
 
     p5Instance = new p5(sketch, canvas);
   }
- 
 
-  function sketch (p: p5) {
+
+  function sketch(p: p5) {
 
     function writeLines(x: number, y: number, lineHeight = 15) {
       let curY = y;
@@ -64,9 +64,11 @@ export function Renderer() {
           p.strokeWeight(1);
 
           if (key === myPid) {
-            p.stroke('blue'); // Set border color to blue
+            p.stroke('blue');
           } else if (key === gameState?.BotState?.victim) {
-            p.stroke('red'); // Set border color to red
+            p.stroke('red');
+          } else if (gameState?.BotState?.friends?.[key]) {
+            p.stroke('green');
           }
           else {
             p.stroke('black'); // Set border color to black
@@ -74,9 +76,9 @@ export function Renderer() {
 
           p.fill('white');
 
-          p.rect((player.x-1) * 10, (player.y-1) * 10, 10, 10);
+          p.rect((player.x - 1) * 10, (player.y - 1) * 10, 10, 10);
 
-          if (p.mouseX > (player.x-1) * 10 && p.mouseX < player.x * 10 && p.mouseY > (player.y-1) * 10 && p.mouseY < player.y * 10) {
+          if (p.mouseX > (player.x - 1) * 10 && p.mouseX < player.x * 10 && p.mouseY > (player.y - 1) * 10 && p.mouseY < player.y * 10) {
             // Display a popup with the player's data
 
             const w = 120;
@@ -102,7 +104,7 @@ export function Renderer() {
 
         });
 
-        
+
     }; // draw
 
 

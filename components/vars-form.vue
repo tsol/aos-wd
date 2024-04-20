@@ -2,18 +2,24 @@
   <div>
     <div v-if="props.variables.length === 0">No &#123;&#123;variables&#125;&#125; in template</div>
     <div v-else>
-    <v-text-field
-      v-for="variable in props.variables"
-      :key="variable"
-      v-model="values[variable]"
-      :label="variable"
-      outlined
-      density="compact"
-      required
-      :rules="[v => !!v || 'Field is required']"
-    ></v-text-field>
-    <v-btn @click="doSubmit">Apply</v-btn>
-  </div>
+      <div v-for="variable in props.variables" :key="variable">
+        <select-process v-if="variable.toLocaleLowerCase().endsWith('pid')" v-model="values[variable]" :label="variable" required />
+        <v-text-field
+          v-else
+          v-model="values[variable]"
+          :label="variable"
+          required
+          :rules="[v => !!v || 'Field is required']"
+        >
+        </v-text-field>
+      </div>
+      <v-btn @click="doSubmit">
+        <template #prepend>
+          <v-icon>mdi-content-save</v-icon>
+        </template>
+        SAVE
+      </v-btn>
+    </div>
   </div>
 </template>
 
@@ -27,11 +33,6 @@ const props = defineProps<{
 const process = useProcess<any>(props.pid);
 const values = ref<{ [key: string]: string }>({});
 
-// watch(() => process.state.value, (value) => {
-//   Object.entries(value).forEach(([key, value]) => {
-//     (values.value[key] as any) = value;
-//   });
-// }, { immediate: true, deep: true });
 
 onMounted(() => {
   props.variables.forEach((variable) => {

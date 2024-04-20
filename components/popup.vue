@@ -14,66 +14,72 @@ const loading = ref(false);
 const open = ref(false);
 const shake = ref(false);
 
-const selectedProcess = ref<string | Process | undefined>(persist.getCurrentProcess);
+const selectedProcessPid = ref<string | undefined>(persist.currentPid);
 
-const label = computed(() => {
-  if (persist.currentPid && persist.currentPid !== undefined) {
-    return shortenCutMiddle(persist?.currentPid || '',
-    xs.value ? 9 : 15
-  );
-  }
-  return 'Not connected';
+const newProcessName = ref<string | undefined>(undefined);
+
+
+function validPid(pid?: string) {
+  return !!pid && pid?.length === 43;
+}
+
+function validNameExists(name?: string) {
+  return !!persist.processes.find((p) => p.name === name);
+}
+
+
+const selectedProcess = computed(() => {
+  return persist.processes.find((p) => p.pid === selectedProcessPid.value);
 });
 
 const selectedProcessName = computed(() => {
-  if (typeof selectedProcess.value === 'string') {
-    return selectedProcess.value;
-  }
   return selectedProcess.value?.name;
 });
-
-const selectedProcessPid = computed(() => {
-  const probablyPid = typeof selectedProcess.value === 'string' ? selectedProcess.value : selectedProcess.value?.pid;
-  if (probablyPid?.length === 43) {
-    return probablyPid;
-  }
-  return undefined;
-});
-
 
 const isSelectedCurrent = computed(() => {
   return persist.currentPid && selectedProcessPid.value === persist.currentPid;
 });
 
-const isSelectedAProcess = computed(() => !!selectedProcessPid.value);
-
 const isSelectedRunning = computed(() => {
-  const selectedProcess = persist.processes.find((p) => p.pid === selectedProcessPid.value);
-  return selectedProcess?.isRunning;
+  return selectedProcess.value?.isRunning;
 });
 
+const label = computed(() => {
+  if (persist.currentPid && persist.currentPid !== undefined) {
+    return shortenCutMiddle(persist?.currentPid || '',
+      xs.value ? 9 : 15
+    );
+  }
+  return 'Not connected';
+});
 
-async function doRegister() {
-  if (!selectedProcess.value) {
-    console.error('No process selected');
+async function doRegister(name?: string) {
+
+  if (validPid(name)) {
+    await doConnect();
     return;
   }
-  if (typeof selectedProcess.value !== 'string') {
-    console.error('Input field is not a new process name, but an existing process object.');
+
+  if (!name) {
+    useToast().error('Please provide a name');
     return;
   }
+
 
   loading.value = true;
-  const pid = await ao.newProcess(selectedProcess.value);
+  const pid = await ao.newProcess(name);
 
   if (!pid) {
-    console.error('Failed to create new process');
+    useToast().error('Failed to create new process');
+
     loading.value = false;
     return;
   }
 
   persist.setCurrentPid(pid);
-  selectedProcess.value = persist.processes.find((p) => p.pid === pid);
+  selectedProcessPid.value = pid;
+  
+  useToast().ok('Process created');
 
   loading.value = false;
 }
@@ -84,7 +90,7 @@ async function doConnect() {
   loading.value = true;
   ao.connect(pid, selectedProcessName.value);
   persist.setCurrentPid(pid);
-  selectedProcess.value = persist.processes.find((p) => p.pid === pid);
+  selectedProcessPid.value = pid;
   loading.value = false;
 }
 
@@ -103,8 +109,6 @@ function saveProcessName($event: string) {
   if (!selectedProcessPid.value) return;
 
   persist.updateName(selectedProcessPid.value, $event);
-
-  selectedProcess.value = persist.processes.find((p) => p.pid === selectedProcessPid.value);
 }
 
 function copyCurrentPidToClipboard() {
@@ -115,7 +119,7 @@ function copyCurrentPidToClipboard() {
 
 function onDialogStateChange(val: boolean) {
   if (val) {
-    selectedProcess.value = persist.getCurrentProcess;
+    selectedProcessPid.value = persist.currentPid;
   }
 }
 
@@ -147,9 +151,9 @@ function onDialogStateChange(val: boolean) {
           <template #subtitle v-if="selectedProcessPid">
             <!-- Here copy to clipboard icon and onclick event to copy fullPid to clipboard -->
             <div :class="shake ? 'shake' : undefined" @click="copyCurrentPidToClipboard">
-            {{ selectedProcessPid }}
-            <v-icon size="x-small" color="grey" class="ml-2">mdi-content-copy</v-icon>
-           </div>
+              {{ selectedProcessPid }}
+              <v-icon size="x-small" color="grey" class="ml-2">mdi-content-copy</v-icon>
+            </div>
           </template>
         </v-list-item>
         <v-list-item v-else>
@@ -159,45 +163,29 @@ function onDialogStateChange(val: boolean) {
 
       <v-divider class="my-4" />
 
-      <v-combobox label="A process ID or process name"
-        hint="Select a process to connect to or enter name to create a new one." v-model="selectedProcess"
-        :items="persist.processes" :return-object="true" item-title="name" item-value="pid" clearable
-        @click:clear="console.log('clear')">
-        <template #item="{ item, props }">
-          <v-list-item v-bind="props" title="">
-            <v-list-item-title>
-              {{ item.raw.name }}
-            </v-list-item-title>
-            <v-list-item-subtitle>
-              {{ item.raw.pid }}
-            </v-list-item-subtitle>
-          </v-list-item>
-        </template>
+      <SelectProcess v-model="selectedProcessPid" />
 
-      </v-combobox>
+      <v-btn v-if="!isSelectedRunning" color="primary" variant="elevated" :disabled="isSelectedRunning"
+        @click="doConnect" :loading="loading">
+        Connect
+      </v-btn>
+
+      <v-btn v-else color="error" variant="elevated" @click="doLogout()" :loading="loading">
+        Disconnect
+      </v-btn>
 
 
       <v-divider class="my-4" />
 
-      <v-card-actions>
-        <v-spacer />
+      <v-text-field v-model="newProcessName" label="New process name" />
 
-        <v-btn color="primary" variant="elevated" :disabled="isSelectedRunning"
-          @click="doConnect" :loading="loading">
-          Connect
-        </v-btn>
+      <v-btn color="primary" variant="elevated"
+        :disabled="!newProcessName || validNameExists(newProcessName) || validPid(newProcessName)"
+        @click="doRegister(newProcessName)" :loading="loading">
+        Create
+      </v-btn>
 
-        <v-btn color="primary" variant="elevated"
-          :disabled="isSelectedCurrent || isSelectedAProcess || !selectedProcessName" @click="doRegister"
-          :loading="loading">
-          Create
-        </v-btn>
 
-        <v-btn color="error" :disabled="!isSelectedRunning" variant="elevated" @click="doLogout()" :loading="loading">
-          Disconnect
-        </v-btn>
-        <v-spacer />
-      </v-card-actions>
     </v-card>
   </v-menu>
 </template>
@@ -208,16 +196,48 @@ function onDialogStateChange(val: boolean) {
 }
 
 @keyframes shake {
-  0% { transform: translate(1px, 1px) rotate(0deg); }
-  10% { transform: translate(-1px, -2px) rotate(-1deg); }
-  20% { transform: translate(-3px, 0px) rotate(1deg); }
-  30% { transform: translate(3px, 2px) rotate(0deg); }
-  40% { transform: translate(1px, -1px) rotate(1deg); }
-  50% { transform: translate(-1px, 2px) rotate(-1deg); }
-  60% { transform: translate(-3px, 1px) rotate(0deg); }
-  70% { transform: translate(3px, 1px) rotate(-1deg); }
-  80% { transform: translate(-1px, -1px) rotate(1deg); }
-  90% { transform: translate(1px, 2px) rotate(0deg); }
-  100% { transform: translate(1px, -2px) rotate(-1deg); }
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+
+  30% {
+    transform: translate(3px, 2px) rotate(0deg);
+  }
+
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+
+  70% {
+    transform: translate(3px, 1px) rotate(-1deg);
+  }
+
+  80% {
+    transform: translate(-1px, -1px) rotate(1deg);
+  }
+
+  90% {
+    transform: translate(1px, 2px) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(1px, -2px) rotate(-1deg);
+  }
 }
 </style>~/composables/useProcesses

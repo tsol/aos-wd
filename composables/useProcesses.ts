@@ -1,7 +1,7 @@
 import { loadBlueprint } from "~/lib/ao/commands/blueprints";
 import { evaluate } from "~/lib/ao/evaluate";
 import { live } from "~/lib/ao/live";
-import { findPid } from "~/lib/ao/query";
+import { findPid, processesList } from "~/lib/ao/query";
 import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
 import { ref } from 'vue';
@@ -33,9 +33,7 @@ type RunningProcess = {
 const running = ref<RunningProcess[]>([]);
 
 export const useProcesses = () => {
-
-  const errors = ref<string[]>([]);
-  
+ 
   function getRunning(pid: string) {
     return running.value.find(r => r.pid === pid);
   }
@@ -83,7 +81,7 @@ export const useProcesses = () => {
     }
 
     if (pid?.length !== 43) {
-      errors.value.push('Connect to a process to get started.');
+      useToast().error('Connect to a process to get started.');
       return;
     }
 
@@ -94,7 +92,7 @@ export const useProcesses = () => {
       const msgs = String(result).split('\n').map((line) => ({ data: line, tags: [], type: 'evaluate' } as BrodcastMsg));
       broadcast(pid, msgs);
     } catch (e: any) {
-      errors.value.push(e.message);
+      useToast().error(e.message);
     }
 
   }
@@ -144,7 +142,7 @@ export const useProcesses = () => {
       await startProcess(pid, name);
       return pid;
     } catch (e: any) {
-      errors.value.push(e.message);
+      useToast().error(e.message);
     }
     return undefined
   }
@@ -176,10 +174,21 @@ export const useProcesses = () => {
 
     }
     catch (e: any) {
-      errors.value.push(e.message);
+      useToast().error(e.message);
       return;
     }
 
+  }
+
+
+  async function queryAllProcessesWithNames() {
+    const address = await (window as any).arweaveWallet.getActiveAddress();
+    if (!address) {
+      useToast().error('No wallet connected!');
+      return [];
+    }
+    const list = await processesList(address);
+    return list;
   }
 
   async function connect(pidOrName: string, setName?: string) {
@@ -192,8 +201,9 @@ export const useProcesses = () => {
       let address = await (window as any).arweaveWallet.getActiveAddress();
       const _pid = await findPid(pidOrName, address);
 
-      if (_pid.length !== 43) {
-        errors.value.push('Could not find Process!');
+      if (_pid?.length !== 43) {
+        useToast().error('Could not find Process!');
+        useToast().error(`Could not find Process! ${pidOrName}`);
         return;
       }
 
@@ -225,14 +235,9 @@ export const useProcesses = () => {
 
   }
 
-  function flushErrors() {
-    errors.value = [];
-  }
-
 
   return { 
     running,
-    errors,
     
     broadcast,
     addListener,
@@ -246,7 +251,8 @@ export const useProcesses = () => {
   
     connect,
     disconnect,
-    flushErrors
+
+    queryAllProcessesWithNames,
   };
 
 }

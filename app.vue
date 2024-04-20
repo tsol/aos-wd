@@ -1,5 +1,7 @@
 <template>
   <v-app>
+    <VSonner position="top-center" />
+   
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-tabs v-model="currentPid">
@@ -44,6 +46,7 @@
 <script lang="ts" setup>
 import { usePersistStore } from './store/persist';
 import { shortenCutMiddle } from './lib/utils';
+import { VSonner } from 'vuetify-sonner';
 
 const persist = usePersistStore();
 
@@ -65,7 +68,9 @@ const running = computed(() => {
 
 watch(currentPid, (pid) => {
   if (!pid) return;
+  // TODO: move this to persist itself
   usePersistStore().updateProcessDefaultWidgets(pid);
 }, { immediate: true });
+
 
 </script>

@@ -85,6 +85,7 @@ import { extractTemplateVariables } from '~/lib/utils';
 
 import { debounce } from 'lodash';
 import { useDisplay } from 'vuetify';
+import { widget } from '~/widgets/botgame';
 
 const props = defineProps<{
   modelValue: boolean | undefined;
@@ -109,7 +110,7 @@ const dialogOpen = computed({
 
 const process = useProcess(props.pid);
 
-const { runSnippet, snippetLoading, snippetMenu } = useSnippets(process);
+const { runSnippet, snippetLoading, snippetMenu , snippetID } = useSnippets(process);
 
 const variablesList = ref<string[]>([]);
 const sendTo = ref('');
@@ -148,8 +149,8 @@ watch(() => props.modelValue, (value) => {
 // });
 
 function doRenameSnippet(name: string) {
-  const oldName = props.snippet.name;
-  snippetMenu[name] = snippetMenu[oldName];
+  const oldSnip = { ... props.snippet };
+  snippetMenu[snippetID(props.snippet)] = snippetMenu[snippetID(oldSnip)];
   props.snippet.name = name;
   emit('update:modelValue', true);
 }

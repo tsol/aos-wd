@@ -6,6 +6,10 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
   const snippetLoading = reactive<Record<string, boolean>>({});
   const snippetMenu = reactive<Record<string, boolean>>({});
 
+  function snippetID(snippet: StoredSnippet) {
+    return `${snippet.widgetName || 'default'}:${snippet.name}`;
+  }
+
   function evaluateSnippetTemplate(snippet: StoredSnippet) {
     const data = snippet.data;
     if (!data) return undefined;
@@ -18,17 +22,17 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
   
     const passed = varsInTemplate.every((variable) => {
       const res = variable in state && !!state[variable];
-      if (! res) error(`Variable ${variable} not found in state`);
+      if (! res) error(`Variable ${variable} is not defined!`);
       return res;
     });
   
     if (!passed) return undefined;
   
     function error(msg?: string) {
-      console.error(`Error evaluating snippet data for ${snippet.name}`);
+      useToast().error(msg || `Error evaluating snippet data for ${snippet.name}`);
       console.log('Error:', msg);
       console.log('State:', state);
-      snippetMenu[snippet.name] = true;
+      snippetMenu[snippetID(snippet)] = true;
       return undefined;
     }
   
@@ -46,10 +50,10 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
   async function runSnippet(snippet: StoredSnippet) {
   
     if (snippet.pid && snippet.tags) {
-      snippetLoading[snippet.name] = true;
+      snippetLoading[snippetID(snippet)] = true;
       const data = evaluateSnippetTemplate(snippet);
       const res = await process.rundry(snippet.pid, snippet.tags, data);
-      snippetLoading[snippet.name] = false;
+      snippetLoading[snippetID(snippet)] = false;
       return res;
     }
   
@@ -58,9 +62,9 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
     const data = evaluateSnippetTemplate(snippet);
     if (!data) return undefined;
   
-    snippetLoading[snippet.name] = true;
+    snippetLoading[snippetID(snippet)] = true;
     const res = await process.command(data);
-    snippetLoading[snippet.name] = false;
+    snippetLoading[snippetID(snippet)] = false;
     return res;
   
   }
@@ -69,6 +73,7 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
 return {
     snippetLoading,
     snippetMenu,
+    snippetID,
     runSnippet,
     evaluateSnippetTemplate,
 };
