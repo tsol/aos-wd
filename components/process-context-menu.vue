@@ -47,8 +47,7 @@ async function doForget() {
 }
 
 function doResetCursor() {
-  const cursors = persist.getAllCursors;
-  cursors[props.pid] = undefined;
+  persist.updateCursor(props.pid, undefined);
   dialogOpen.value = false;
 }
 
