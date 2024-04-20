@@ -1,9 +1,9 @@
 <template>
   <div>
-    <div class="d-flex justify-space-between mb-2">
-      <v-text-field v-model="currentFilter" label="Live filter regex" density="compact"></v-text-field>
-      <v-checkbox v-model="substitudePids" label="PID->Name"></v-checkbox>
-      <v-checkbox v-model="disableLive" label="Disable Live"></v-checkbox>
+    <div v-if="process.process" class="d-flex justify-space-between mb-2">
+      <v-text-field v-model="process.process.regexFilter" label="Live filter regex" density="compact"></v-text-field>
+      <v-checkbox v-model="process.process.substPIDs" label="PID/Name"></v-checkbox>
+      <v-checkbox v-model="process.process.disableLive" label="Stop Live"></v-checkbox>
     </div>
     <div ref="divRef" style="height: 50vh;">
     </div>
@@ -35,9 +35,10 @@ process.addListener({ client: 'Console', handler: listen });
 
 
 const divRef = ref<HTMLDivElement | null>(null);
-const currentFilter = ref<string>('');
-const disableLive = ref(false);
-const substitudePids = ref(false);
+
+// const currentFilter = ref<string>('');
+// const disableLive = ref(false);
+// const substitudePids = ref(false);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);
@@ -62,17 +63,17 @@ function listen(text: BrodcastMsg[]) {
     const res = [] as string[];
 
     text.forEach((msg) => {
-      if (disableLive.value && msg.type === 'live') return;
+      if (process.process?.disableLive && msg.type === 'live') return;
       const lines = msg.data.split(/\r?\n/);
       res.push(...lines);
     });
 
     const filtered = res.filter((msg) => {
-      if (!currentFilter.value) return true;
-      return msg.match(new RegExp(currentFilter.value, 'i'));
+      if (!process.process?.regexFilter) return true;
+      return msg.match(new RegExp(process.process?.regexFilter, 'i'));
     });
 
-    if (substitudePids.value) {
+    if (process.process?.substPIDs) {
 
       //  New Message From RF1...D4c: Action = Attack-Failed
       // cover this short version also
@@ -132,7 +133,7 @@ function createTerminal() {
   }
 
   terminal.value = new Terminal({
-    theme: {
+    theme: persist.theme === 'light' ?{
       background: '#FFF',
       foreground: '#191A19',
       selectionForeground: '#FFF',
@@ -140,6 +141,13 @@ function createTerminal() {
 
       cursor: 'black',
 
+    } : {
+      background:'#2d2d2d',
+      foreground: '#FFF',
+      selectionForeground: '#444',
+      selectionBackground: '#191A19',
+
+      cursor: 'white',
     },
     cursorBlink: true,
     cursorStyle: 'block',

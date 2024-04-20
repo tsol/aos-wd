@@ -9,10 +9,10 @@
       Create fast to execute snippets, load blueprints, update Handlers by selecting only
       the portion of code you want to update, and much more.</p>
 
-      <p class="highlight">
+      <v-alert color="amber" type="info" icon="mdi-information" class="mt-4">
         Also you can develop your own widgets to make User Interface for any game
         or service you come up with.
-      </p>
+      </v-alert>
       
       <h2 class="mt-2">Features</h2>
       <ul class="styled-list">
@@ -44,11 +44,4 @@
   list-style-type: disc;
   padding-left: 20px;
 }
-
-.highlight {
-  background-color: #ffff99;
-  padding: 2em;
-  margin-top: 1em;
-}
-
 </style>

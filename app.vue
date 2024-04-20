@@ -1,16 +1,24 @@
 <template>
-  <v-app>
+  <v-app :theme="persist.theme">
     <VSonner position="top-center" />
    
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
+      
       <v-tabs v-model="currentPid">
         <v-tab v-for="proc in running" :key="proc.pid" :value="proc.pid">
           {{ shortenCutMiddle(proc.name, 10) }}
         </v-tab>
       </v-tabs>
+
       <v-spacer />
+
       <Popup />
+
+      <v-btn icon @click="persist.toggleTheme">
+        <v-icon>{{ persist.theme === 'dark' ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
+      </v-btn>
+
     </v-app-bar>
 
     <v-navigation-drawer v-model="drawer" :temporary="false">

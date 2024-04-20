@@ -109,6 +109,11 @@ npm run dev
 - bug: About menu item is not working
 - bug: Resize console when drawer is opened/closed (or make it laways overlay?)
 
+x. Lua interpreter in IDE
+
+x. Widget Layout change column width, alter widget height.
+ - also remove empty cols
+
 x. Snippet editor context menu: 'Send (and execute) to other processes'. 
 
 x. Copy PID by click from process name (also context menu)
@@ -117,12 +122,7 @@ x. Widget context menu: 'Send layout to other processes'
 
 x. Cron poll (snippet option to schedule interval)
 
-x. Substitute process ids with known names (even if with dots)
- - make active links to connect to process by Ctrl+click
-
-x. Widget Layout change column width, alter widget height.
- - also remove empty cols
- - 
+x. - make active links to connect to process by Ctrl+click
 
 x. Time for each line of console
 

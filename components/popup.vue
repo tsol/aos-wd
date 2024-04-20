@@ -12,7 +12,6 @@ const width = computed(() => (xs.value ? undefined : 600));
 
 const loading = ref(false);
 const open = ref(false);
-const shake = ref(false);
 
 const selectedProcessPid = ref<string | undefined>(persist.currentPid);
 
@@ -111,11 +110,6 @@ function saveProcessName($event: string) {
   persist.updateName(selectedProcessPid.value, $event);
 }
 
-function copyCurrentPidToClipboard() {
-  navigator.clipboard.writeText(persist.currentPid || '');
-  shake.value = true;
-  setTimeout(() => shake.value = false, 500);
-}
 
 function onDialogStateChange(val: boolean) {
   if (val) {
@@ -150,10 +144,7 @@ function onDialogStateChange(val: boolean) {
           </template>
           <template #subtitle v-if="selectedProcessPid">
             <!-- Here copy to clipboard icon and onclick event to copy fullPid to clipboard -->
-            <div :class="shake ? 'shake' : undefined" @click="copyCurrentPidToClipboard">
-              {{ selectedProcessPid }}
-              <v-icon size="x-small" color="grey" class="ml-2">mdi-content-copy</v-icon>
-            </div>
+            <ClickToClipboard :value="selectedProcessPid" />
           </template>
         </v-list-item>
         <v-list-item v-else>
@@ -191,54 +182,4 @@ function onDialogStateChange(val: boolean) {
   </v-menu>
 </template>
 
-<style scoped>
-.shake {
-  animation: shake 0.5s;
-}
-
-@keyframes shake {
-  0% {
-    transform: translate(1px, 1px) rotate(0deg);
-  }
-
-  10% {
-    transform: translate(-1px, -2px) rotate(-1deg);
-  }
-
-  20% {
-    transform: translate(-3px, 0px) rotate(1deg);
-  }
-
-  30% {
-    transform: translate(3px, 2px) rotate(0deg);
-  }
-
-  40% {
-    transform: translate(1px, -1px) rotate(1deg);
-  }
-
-  50% {
-    transform: translate(-1px, 2px) rotate(-1deg);
-  }
-
-  60% {
-    transform: translate(-3px, 1px) rotate(0deg);
-  }
-
-  70% {
-    transform: translate(3px, 1px) rotate(-1deg);
-  }
-
-  80% {
-    transform: translate(-1px, -1px) rotate(1deg);
-  }
-
-  90% {
-    transform: translate(1px, 2px) rotate(0deg);
-  }
-
-  100% {
-    transform: translate(1px, -2px) rotate(-1deg);
-  }
-}
-</style>~/composables/useProcesses
+~/composables/useProcesses

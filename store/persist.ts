@@ -24,10 +24,15 @@ export type Process = {
   isRunning?: boolean;
   widgets?: StoredWidget[];
   state?: any;
+
+  regexFilter?: string;
+  disableLive?: boolean;
+  substPIDs?: boolean;
 }
 
 export const usePersistStore = defineStore('persist', {
   state: () => ({
+    theme: 'light' as 'light' | 'dark',
     currentPid: undefined as string | undefined,
     processes: [] as Process[],
     cursor: {} as Record<string, string | undefined>
@@ -45,6 +50,9 @@ export const usePersistStore = defineStore('persist', {
     }
   },
   actions: {
+    toggleTheme() {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+    },
     updateProcessDefaultWidgets(pid: string) {
       const process = this.processes.find(p => p.pid === pid);
       if (!process) throw new Error('process not found');

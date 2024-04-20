@@ -6,7 +6,11 @@
         <div v-bind="props" class="text-caption bubble text-no-wrap text-success">Add Widget</div>
       </add-widget>
       <v-divider class="ml-2 mr-2"></v-divider>
-      <div class="text-caption bubble bubble-gray text-no-wrap">{{ processName }}</div>
+      <div class="text-caption bubble bubble-gray text-no-wrap">
+        <ClickToClipboard :value="pid">
+          {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9 ) }}
+        </ClickToClipboard>
+      </div>
       <v-divider class="ml-2 mr-2"></v-divider>
 
       <ProcessContextMenu :pid="pid" v-slot="pProps">
@@ -104,12 +108,12 @@ process.addListener({ client: 'Parser', handler: listen });
 const { snippetLoading, snippetMenu, runSnippet , snippetID } = useSnippets(process);
 
 
-const processName = computed(() => {
-  let res = '';
-  if (props.pid === process.name.value || !process.name.value) res = props.pid;
-  else res = `${props.pid} - ${process.name.value}`;
-  return shortenCutMiddle(res, mdAndUp.value ? 40 : 15);
-});
+// const processName = computed(() => {
+//   let res = '';
+//   if (props.pid === process.name.value || !process.name.value) res = props.pid;
+//   else res = `${props.pid} - ${process.name.value}`;
+//   return shortenCutMiddle(res, mdAndUp.value ? 40 : 15);
+// });
 
 
 const maxColumns = computed(() => {

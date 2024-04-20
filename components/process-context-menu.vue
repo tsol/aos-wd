@@ -10,7 +10,7 @@
         <v-list-item-title>Disconnect</v-list-item-title>     
       </v-list-item>
       <v-list-item @click="doForget">
-        <v-list-item-title>Forget</v-list-item-title>     
+        <v-list-item-title>Forget process</v-list-item-title>     
       </v-list-item>
     </v-list>
   </v-menu>
