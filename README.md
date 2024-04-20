@@ -108,11 +108,6 @@ npm run dev
 
 - bug: About menu item is not working
 - bug: Resize console when drawer is opened/closed (or make it laways overlay?)
-- when user fills in field in snippet - he presses PLAY without Apply hence nothing happens
-
-x. Load own processes from graphql to the list automatically
-
-x. Input process v-combobox when variable ends with PID
 
 x. Snippet editor context menu: 'Send (and execute) to other processes'. 
 

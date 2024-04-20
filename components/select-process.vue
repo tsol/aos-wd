@@ -1,6 +1,6 @@
 <template>
   <v-combobox label="A process ID or process name"
-    hint="Select a process to connect to or enter name to create a new one." v-model="selectedProcess"
+    hint="Select a process from the list of your processes." v-model="selectedProcess"
     :items="persist.processes" :return-object="false" item-title="name" item-value="pid" clearable
     @click:clear="console.log('clear')">
     <template #item="{ item, props }">
@@ -18,7 +18,6 @@
 </template>
 
 <script lang="ts" setup>
-import { string } from 'zod';
 import { usePersistStore } from '~/store/persist';
 
 const props = defineProps<{

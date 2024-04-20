@@ -78,7 +78,7 @@ async function doRegister(name?: string) {
 
   persist.setCurrentPid(pid);
   selectedProcessPid.value = pid;
-  
+
   useToast().ok('Process created');
 
   loading.value = false;
@@ -177,7 +177,8 @@ function onDialogStateChange(val: boolean) {
 
       <v-divider class="my-4" />
 
-      <v-text-field v-model="newProcessName" label="New process name" />
+      <v-text-field v-model="newProcessName" label="New process name"
+        hint="Type new process name to create new process." />
 
       <v-btn color="primary" variant="elevated"
         :disabled="!newProcessName || validNameExists(newProcessName) || validPid(newProcessName)"
