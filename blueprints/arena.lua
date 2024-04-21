@@ -1,3 +1,29 @@
+-- TSOL Common
+
+Colors = Colors or {
+    red = "\27[31m",
+    green = "\27[32m",
+    blue = "\27[34m",
+    reset = "\27[0m",
+    gray = "\27[90m"
+}
+
+  -- compatability with any Lua environment
+Handlers = Handlers or {
+utils = { hasMatchingTag = function(tag, val) end },
+add = function(name, check, exec) end
+}
+ao = ao or { send = function(obj) end, id = "unknown" }
+undefined = undefined or "undefined"
+
+-- my syntax sugar
+TAGS = Handlers.utils.hasMatchingTag
+HANDLER = Handlers.add
+SEND = ao.send
+ME = ao.id
+
+
+
 -- ARENA GAME BLUEPRINT.
 
 GameMode = GameMode or "Not-Started"
@@ -39,6 +65,8 @@ EnergyPerSec = 1 -- Energy gained per second
 
 -- Attack settings
 AverageMaxStrengthHitsToKill = 3 -- Average number of hits to eliminate a player
+
+
 
 -- Initializes default player state
 -- @return Table representing player's initial state
@@ -408,6 +436,24 @@ Handlers.add(
             Data = GameState})
     end
 )
+
+-- Force the game to start immediately.
+Handlers.add(
+    "Force NOW",
+    Handlers.utils.hasMatchingTag("Action", "ForceNow"),
+    function (Msg)
+        -- make full reset
+        -- Waiting = {}
+        -- Players = {}
+        -- Winners = 0
+        -- Listeners = {}
+        -- GameMode = "Not-Started"
+        print( Colors.blue .. "Forcing waiting period to end in 5 sec" .. Colors.reset)
+        StateChangeTime = Now + 5000
+        ao.send({ Target = ao.id, Action = "Tick" })
+    end
+)
+
 
 -- Alerts users regarding the time remaining in each game state.
 Handlers.add(
