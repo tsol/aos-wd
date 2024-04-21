@@ -1,3 +1,5 @@
+-- Crosshair gang bot (c) TSOL
+
 Game = "{{gamePid}}"
 CredPid = "{{credPid}}"
 CredAmount = "{{credAmount}}"
@@ -376,6 +378,12 @@ function moveToTarget()
   if State.steppingTo then
     if math.floor(player.x) ~= math.floor(State.steppingTo.x) or math.floor(player.y) ~= math.floor(State.steppingTo.y) then
       print(Colors.gray .. "NVG: step still in progress..." .. Colors.reset)
+      State.steppingTo["count"] = (State.steppingTo["count"] or 0) + 1
+      if State.steppingTo["count"] > 3 then
+        print(Colors.red .. "NVG: step timeout." .. Colors.reset)
+        State.steppingTo = nil
+      end
+
       return
     end
     State.steppingTo = nil
@@ -512,6 +520,23 @@ HANDLER("KillRequest", TAGS("Action", "KillRequest"),
   function(msg)
     print(Colors.green .. "Kill request received." .. Colors.reset)
     SEND({ Target = msg.From, Action = "KILL", Victim = State.victim })
+  end
+)
+
+-- Grid adaptation
+
+HANDLER("ReSpawn", TAGS("Action", "Eliminated"),
+  function (msg)
+    print("Elminated! " .. "Playing again!")
+    SEND({Target = CredPid, Action = "Transfer", Quantity = CredAmount, Recipient = Game})
+  end
+)
+
+HANDLER("StartTick", TAGS("Action", "Payment-Received"),
+  function (msg)
+    resetState()
+    requestGameState()
+    print('Start Moooooving!')
   end
 )
 
