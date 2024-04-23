@@ -65,19 +65,20 @@ export function Renderer() {
       Object.entries(gameState.Players).forEach(([key, player]) => {
 
           p.strokeWeight(1);
+          p.stroke('black');
 
           if (key === myPid) {
-            p.stroke('blue');
+            p.fill('blue');
           } else if (key === gameState?.BotState?.victim) {
+            p.fill('red');
             p.stroke('red');
           } else if (gameState?.BotState?.friends?.[key]) {
-            p.stroke('green');
+            p.fill('green');
           }
           else {
-            p.stroke('black');
+            p.fill('white');
           }
 
-          p.fill('white');
           p.rect((player.x - 1) * 10, (player.y - 1) * 10, 10, 10);
           const firstLetter = (gameState.Players[key].name || key).slice(0, 1);
           p.fill('black');
