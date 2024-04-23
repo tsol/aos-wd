@@ -13,6 +13,10 @@
           <span>&#x1F50B;</span>
         </th>
         <th>
+          <!-- balance (dollar) -->
+          <span>&#x1F4B5;</span>
+        </th>
+        <th>
           <span>&#x1F46F;</span>
         </th>
       </tr>
@@ -22,6 +26,7 @@
         <td class="px-1">{{ player.name || shortenCutMiddle(player.pid, 9) }}</td>
         <td class="px-1">{{ player.health }}</td>
         <td class="px-1">{{ player.energy }}</td>
+        <td class="px-1">{{ player.balance }}</td>
         <td class="px-1">{{ player.friendIndex }}</td>
       </tr>
     </table>
@@ -37,6 +42,7 @@ type PlayerWithPid = Player & {
   friendIndex?: number;
   positionIndex?: number;
   isVictim?: boolean;
+  balance: number;
 };
 
 const props = defineProps<{

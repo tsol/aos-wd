@@ -58,8 +58,9 @@ export function Renderer() {
 
       p.text(`State: ${state?.gameState?.GameMode}`, 10, 20);
 
-      if (gameState.Players)
-        Object.entries(gameState.Players).forEach(([key, player], index) => {
+      if (!gameState.Players) return;
+
+      Object.entries(gameState.Players).forEach(([key, player]) => {
 
           p.strokeWeight(1);
 
@@ -71,15 +72,17 @@ export function Renderer() {
             p.stroke('green');
           }
           else {
-            p.stroke('black'); // Set border color to black
+            p.stroke('black');
           }
 
           p.fill('white');
-
           p.rect((player.x - 1) * 10, (player.y - 1) * 10, 10, 10);
+        });
 
+        p.stroke('black');
+
+        Object.entries(gameState.Players).forEach(([key, player]) => {
           if (p.mouseX > (player.x - 1) * 10 && p.mouseX < player.x * 10 && p.mouseY > (player.y - 1) * 10 && p.mouseY < player.y * 10) {
-            // Display a popup with the player's data
 
             const w = 120;
             const h = 90;
@@ -87,15 +90,16 @@ export function Renderer() {
             const startX = p.mouseX + w > 400 ? p.mouseX - w : p.mouseX;
             const startY = p.mouseY + h > 400 ? p.mouseY - h : p.mouseY;
 
+            p.strokeWeight(0);
+            p.stroke('black');
             p.fill(255);
             p.rect(startX, startY, w, h);
             p.fill(0);
-            p.strokeWeight(0);
-            p.stroke('black');
 
             const line = writeLines(startX + 10, startY + 20);
 
-            line(`Player ${shortenCutMiddle(key, 9)}`);
+            line(`${shortenCutMiddle(key, 9)}`);
+            line('');
             line(`Health: ${player.health}`);
             line(`Energy: ${player.energy}`);
             line(`XY: ${player.x}, ${player.y}`);
@@ -106,9 +110,6 @@ export function Renderer() {
 
 
     }; // draw
-
-
-
 
   }
 

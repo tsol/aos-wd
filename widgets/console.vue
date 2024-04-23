@@ -19,7 +19,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Readline } from 'xterm-readline';
 import { splash } from '@/lib/ao/splash.js';
 
-import { type BrodcastMsg, useProcesses } from '~/composables/useProcesses';
+import { type BrodcastMsg } from '~/composables/useProcesses';
 import { useProcess } from '~/composables/useProcess';
 import { usePersistStore } from '~/store/persist';
 import { shortenCutMiddle } from '~/lib/utils';
@@ -33,12 +33,7 @@ const persist = usePersistStore();
 const process = useProcess(props.pid);
 process.addListener({ client: 'Console', handler: listen });
 
-
 const divRef = ref<HTMLDivElement | null>(null);
-
-// const currentFilter = ref<string>('');
-// const disableLive = ref(false);
-// const substitudePids = ref(false);
 
 const aosPrompt = usePrompt();
 const terminal = ref<Terminal | null>(null);

@@ -17,10 +17,10 @@
           </template>
           <v-list>
             <v-list-item @click="dialogOpen = false">
-              <v-list-item-title>Close</v-list-item-title>
+              <v-list-item-title>Close Snippet</v-list-item-title>
             </v-list-item>
             <v-list-item @click="process.removeSnippet(widgetName, snippet.name)">
-              <v-list-item-title>Delete</v-list-item-title>
+              <v-list-item-title>Remove Snippet</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>

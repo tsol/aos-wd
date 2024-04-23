@@ -10,7 +10,6 @@ type State = {
 import ViewComponent from './utils.vue';
 
 const CRED = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
-const ARENA_GAME = "wudLa8_VIjHZ6VA5ZG1ZHZs5CYkaIUw4Je_ePYEqmGQ";
 
 const widget: WidgetDefinition<State> = {
   name: 'Utils',
@@ -30,12 +29,8 @@ const widget: WidgetDefinition<State> = {
         data: `Send({ Target = "${CRED}", Action = "Balance", Tags = { Target = ao.id } })`,
     },
     {
-        name: 'Pay Arena for bot',
-        data: `Send({Target = "${CRED}", Action = "Transfer", Quantity = "{{toBotQuantity}}", Recipient = "{{botPid}}"})`,
-    },
-    {
-        name: 'Pay Arena to play',
-        data: `Send({Target = "${CRED}", Action = "Transfer", Quantity = "{{toGameQuantity}}", Recipient = "${ARENA_GAME}"})`,
+        name: 'Pay CRED',
+        data: `Send({Target = "${CRED}", Action = "Transfer", Quantity = "{{quantity}}", Recipient = "{{recipentPid}}"})`,
     },
     {
         name: 'Tick self',
