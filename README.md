@@ -102,6 +102,7 @@ npm run dev
 
 ![image](https://github.com/tsol/aos-wd/assets/1220139/fe73990a-0969-46d6-b596-f9947863704a)
 ![image](https://github.com/tsol/aos-wd/assets/1220139/84c9ae8f-5f42-4b4e-801e-28d63d8eec62)
+![image](https://github.com/tsol/aos-wd/assets/1220139/5834a7e1-ace7-49c9-bbc0-45b6b7771a63)
 
 
 ## TODO
