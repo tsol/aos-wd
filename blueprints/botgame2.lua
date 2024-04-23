@@ -156,6 +156,24 @@ function friendInRange()
   return false
 end
 
+function victimInRange()
+  if not LatestGameState then
+    return false
+  end
+
+  local victim = LatestGameState.Players[State.victim]
+  if not victim then
+    return false
+  end
+
+  local player = LatestGameState.Players[ME]
+  if inRange(player.x, player.y, victim.x, victim.y, 1) then
+    return true
+  end
+
+  return false
+end
+
 function enemyInRange()
   if not LatestGameState then
     return false
@@ -211,6 +229,24 @@ function avarageDistanceFromFriendsToTarget(target)
   end
 
   return sum / count
+end
+
+function victimIsWeak()
+  if not LatestGameState then
+    return false
+  end
+
+  if not State.victim then
+    return false
+  end
+
+  local victim = LatestGameState.Players[State.victim]
+
+  if not victim then
+    return false
+  end
+
+  return victim.health < 10
 end
 
 function findNextVictim()
@@ -319,6 +355,12 @@ function calcAttackPosition(player, target)
     local times = math.ceil(myIndex / 4) + 1
     myAttackOffset.x = myAttackOffset.x * times
     myAttackOffset.y = myAttackOffset.y * times
+
+    if victimIsWeak() then
+      myAttackOffset.x = resX
+      myAttackOffset.y = resY
+    end
+
   end
 
   resX = resX + myAttackOffset.x
@@ -378,8 +420,8 @@ function decideNextAction()
     reSortFriends()
   end
 
-  local needToAttack = enemyInRange() and not friendInRange()
-
+  local needToAttack =  ( victimInRange() and victimIsWeak() ) or
+                        ( enemyInRange() and not friendInRange())
   if player.energy > 5 and needToAttack then
     print(Colors.red .. "Player in range. Attacking." .. Colors.reset)
     SEND({ Target = Game, Action = "PlayerAttack", Player = ME, AttackEnergy = tostring(player.energy) })
@@ -408,12 +450,22 @@ function cmdGoTo(x, y)
   moveToTarget()
 end
 
+function cmdWithdraw()
+  print(Colors.green .. "Withdrawing CRED." .. Colors.reset)
+  SEND({ Target = Game, Action = "Withdraw"})
+end
+
 function onTargetReached()
   print(Colors.green .. "NVG: Target reached." .. Colors.reset)
   State.mode = 'arrived'
 end
 
 function moveToTarget()
+  if not LatestGameState then
+    print(Colors.red .. "No game state available to move to target." .. Colors.reset)
+    return
+  end
+
   local player = LatestGameState.Players[ME]
   local target = State.targetXY
 
@@ -451,6 +503,12 @@ function moveToTarget()
 end
 
 function moveDirection(x, y)
+
+  if not LatestGameState then
+    print(Colors.red .. "No game state available to move." .. Colors.reset)
+    return
+  end
+
   local normX = 0
   if x ~= 0 then
     normX = x / math.abs(x)
@@ -493,6 +551,10 @@ function randomMove()
   local directionMap = { "Up", "Down", "Left", "Right", "UpRight", "UpLeft", "DownRight", "DownLeft" }
   local randomIndex = math.random(#directionMap)
   SEND({ Target = Game, Action = "PlayerMove", Player = ME, Direction = directionMap[randomIndex] })
+end
+
+function cmdGetBalances()
+  SEND({ Target = Game, Action = "Balances"})
 end
 
 function requestGameState()
@@ -616,6 +678,7 @@ HANDLER("KillRequest", TAGS("Action", "KillRequest"),
   function(msg)
     print(Colors.green .. "Kill request received." .. Colors.reset)
     SEND({ Target = msg.From, Action = "KILL", Victim = State.victim })
+    requestGameState()
   end
 )
 
@@ -636,7 +699,6 @@ HANDLER("StartTick", TAGS("Action", "Payment-Received"),
   end
 )
 
-
 HANDLER("Message", TAGS("Type", "Message"),
   function (msg)
     if string.sub(msg.Data, 1, 1) == "{" then
@@ -654,6 +716,12 @@ HANDLER("Message", TAGS("Type", "Message"),
       y = tonumber(y)
 
       print (Colors.blue .. "Player moved to: " .. x .. "," .. y .. Colors.reset)
+
+      if not LatestGameState then
+        print(Colors.red .. "No game state available to update player position." .. Colors.reset)
+        return
+      end
+
       LatestGameState.Players[ME].x = x
       LatestGameState.Players[ME].y = y
       return
