@@ -11,8 +11,9 @@
           <v-icon>mdi-target</v-icon>
         </v-btn>
         <div>
-        BS = {{ state?.gameState?.BotState }}
-      </div>
+          <!-- BS = {{ state?.gameState?.BotState }} -->
+          <PlayerStat :players="players" />
+        </div>
       </div>
     </div>
   </div>
@@ -23,6 +24,7 @@ import { ref, computed, watch } from 'vue';
 import { type State } from '../botgame';
 import { Renderer } from './renderer';
 import { useProcess } from '~/composables/useProcess';
+import PlayerStat from './player-stat.vue';
 
 const props = defineProps<{
   pid: string,
@@ -37,6 +39,15 @@ const redrawCount = ref(0);
 
 const selectingTarget = ref(false);
 
+const players = computed(() => {
+  return Object.entries(props.state?.gameState?.Players || {})
+    .map(([pid, player]) => ({
+      pid, ...player,
+      friendIndex: props.state?.gameState?.BotState?.friends?.[pid]?.index,
+      isVictim: props.state?.gameState?.BotState?.victim === pid,
+    }));
+});
+
 const gameMode = computed(() => {
   return props.state?.gameState?.GameMode || 'Unknown';
 });
@@ -46,7 +57,7 @@ const timeRemainingInSeconds = computed(() => {
 });
 
 function setTarget() {
-  selectingTarget.value = ! selectingTarget.value;
+  selectingTarget.value = !selectingTarget.value;
 }
 
 function onCanvasClick() {

@@ -1,3 +1,5 @@
+-- Simple random bot for AO-Effect style game, which has it's own tokens
+
 Game = "{{gamePid}}"
 
 LatestGameState = LatestGameState or nil

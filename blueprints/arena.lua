@@ -1,3 +1,5 @@
+-- ARENA (AO-EFFECT ROUND BASED) GAME BLUEPRINT.
+
 -- TSOL Common
 
 Colors = Colors or {
@@ -22,9 +24,6 @@ HANDLER = Handlers.add
 SEND = ao.send
 ME = ao.id
 
-
-
--- ARENA GAME BLUEPRINT.
 
 GameMode = GameMode or "Not-Started"
 StateChangeTime = StateChangeTime or undefined

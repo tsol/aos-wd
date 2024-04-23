@@ -1,15 +1,20 @@
 -- Crosshair gang bot (c) TSOL
 
+-- TODO:
+-- Withdraw and re-enter after gaining CRED
+-- Victim search by clustering 10x10 heat map
+-- Persist victim when captain dies
+-- Once on march (far from target) don't waste energy on attacking
+
 Game = "{{gamePid}}"
 CredPid = "{{credPid}}"
 CredAmount = "{{credAmount}}"
 
 LatestGameState = LatestGameState or nil
-InAction = InAction or false -- not using
 
 Logs = Logs or {}
 
-State = {
+State = State or {
   mode = 'waiting',
   targetXY = { x = 20, y = 20 },
   victim = nil,
@@ -45,7 +50,7 @@ HANDLER = Handlers.add
 SEND = ao.send
 ME = ao.id
 
--- Migration
+-- Migrations
 
 Handlers.remove("decideNextAction")
 
@@ -175,6 +180,10 @@ function isVictimAlive()
     return false
   end
 
+  if not State.victim then
+    return false
+  end
+
   return LatestGameState.Players[State.victim] ~= nil
 end
 
@@ -187,8 +196,32 @@ function getFriendWithIndex(index)
   return nil
 end
 
+
+function avarageDistanceFromFriendsToTarget(target)
+  if not LatestGameState then
+    return 0
+  end
+
+  local sum = 0
+  local count = 0
+
+  for k, v in pairs(State.friends) do
+    if LatestGameState.Players[k] then
+      sum = sum + math.abs(LatestGameState.Players[k].x - target.x) + math.abs(LatestGameState.Players[k].y - target.y)
+      count = count + 1
+    end
+  end
+
+  return sum / count
+end
+
 function findNextVictim()
   -- pick closest enemy
+
+  if not LatestGameState then
+    print(Colors.red .. "No game state available to find next victim." .. Colors.reset)
+    return nil
+  end
 
   if State.friends[ME] and State.friends[ME].index ~= 1 then
     print(Colors.red .. "Im not in charge here" .. Colors.reset)
@@ -206,16 +239,26 @@ function findNextVictim()
     return nil
   end
 
+  -- Select victim based on avarage distance + health + energy + crowding around
+
   local player = LatestGameState.Players[ME]
 
-  local minDistance = 1000
+  local minScore = 10000
   local closestEnemy = nil
 
   for target, state in pairs(LatestGameState.Players) do
     if target ~= ME and not State.friends[target] then
-      local distance = math.abs(player.x - state.x) + math.abs(player.y - state.y)
-      if distance < minDistance then
-        minDistance = distance
+      local victim = LatestGameState.Players[target]
+
+      local healthCoef = math.exp(- victim.health / 25) * 50
+      local energyCoef = math.exp(- victim.energy / 25) * 15
+      local distanceCoef = avarageDistanceFromFriendsToTarget(state);
+
+      print (Colors.gray .. "Victim? " .. target .. " health: " .. healthCoef .. " energy: " .. energyCoef .. " distance: " .. distanceCoef .. Colors.reset)
+
+      local score = distanceCoef - healthCoef - energyCoef;
+      if score < minScore then
+        minScore = score
         closestEnemy = target
       end
     end
@@ -275,7 +318,8 @@ function calcAttackPosition(player, target)
   local myAttackOffset = attackOffsets[myIndex % 4 + 1]
 
   if (myIndex > 4) then
-    local times = math.floor(myIndex / 4)
+    -- TODO: better logic here - for example infinite chess pattern 
+    local times = math.ceil(myIndex / 4)
     myAttackOffset.x = myAttackOffset.x * times
     myAttackOffset.y = myAttackOffset.y * times
   end
@@ -345,12 +389,10 @@ function decideNextAction()
     end
 
     print(Colors.red .. "Victim is dead." .. Colors.reset)
-    setVictim(findNextVictim())
-    
-    return
   end
 
   print (Colors.gray .. "No victim found." .. Colors.reset)
+  setVictim(findNextVictim())
   
 end
 
@@ -434,9 +476,10 @@ function moveDirection(x, y)
     return
   end
 
-  print (Colors.gray .. "NVG: Dir Index: " .. dirIndex .. " Dir:" .. direction .. Colors.reset)
-
   State.steppingTo = { x = LatestGameState.Players[ME].x + normX, y = LatestGameState.Players[ME].y + normY }
+  
+  print (Colors.gray .. "NVG: step to (" .. State.steppingTo.x .. "," .. State.steppingTo.y .. "): " .. direction .. Colors.reset)
+
   SEND({ Target = Game, Action = "PlayerMove", Player = ME, Direction = direction })
 end
 
@@ -447,9 +490,18 @@ function randomMove()
   SEND({ Target = Game, Action = "PlayerMove", Player = ME, Direction = directionMap[randomIndex] })
 end
 
-function requestGameState(force)
+function requestGameState()
   print(Colors.gray .. "Getting game state..." .. Colors.reset)
   SEND({ Target = Game, Action = "GetGameState" })
+end
+
+function parseGameState(msg)
+  local json = require("json")
+  LatestGameState = json.decode(msg.Data)
+  if LatestGameState.GameMode == "Playing" then
+    LatestGameState.BotState = State
+  end
+  print(json.encode(LatestGameState))
 end
 
 HANDLER("PrintAnnouncements", TAGS("Action", "Announcement"),
@@ -471,19 +523,24 @@ HANDLER("PrintAnnouncements", TAGS("Action", "Announcement"),
 
 HANDLER("UpdateGameState", TAGS("Action", "GameState"),
   function(msg)
-    local json = require("json")
-    LatestGameState = json.decode(msg.Data)
-    if LatestGameState.GameMode == "Playing" then
-      LatestGameState.BotState = State
+
+    local status, err = pcall(parseGameState, msg)
+    if not status then
+      print(err)
+      addLog("parseGameState", err)
     end
-    print(json.encode(LatestGameState))
+
     SEND({ Target = ME, Action = "Tick" })
   end
 )
 
 HANDLER("GetGameStateOnTick", TAGS("Action", "Tick"),
   function()
-    decideNextAction()
+    local status, err = pcall(decideNextAction)
+    if not status then
+      print(err)
+      addLog("decideNextAction", err)
+    end
     requestGameState()
   end
 )
@@ -491,6 +548,7 @@ HANDLER("GetGameStateOnTick", TAGS("Action", "Tick"),
 HANDLER("ReturnAttack", TAGS("Action", "Hit"),
   function(msg)
     print(Colors.red .. "Got Hit" .. Colors.reset)
+    requestGameState()
   end
 )
 
