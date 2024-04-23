@@ -47,6 +47,8 @@ export function Renderer() {
       p.background(220);
 
       p.strokeWeight(0);
+      p.textSize(10);
+
       p.stroke('black');
       p.fill('black');
 
@@ -77,6 +79,12 @@ export function Renderer() {
 
           p.fill('white');
           p.rect((player.x - 1) * 10, (player.y - 1) * 10, 10, 10);
+          const firstLetter = (gameState.Players[key].name || key).slice(0, 1);
+          p.fill('black');
+          p.strokeWeight(0);
+          // reduce font size
+          p.textSize(8);
+          p.text(firstLetter, (player.x - 1) * 10 + 2, (player.y - 1) * 10 + 8);
         });
 
         p.stroke('black');
@@ -91,6 +99,7 @@ export function Renderer() {
             const startY = p.mouseY + h > 400 ? p.mouseY - h : p.mouseY;
 
             p.strokeWeight(0);
+            p.textSize(12);
             p.stroke('black');
             p.fill(255);
             p.rect(startX, startY, w, h);
@@ -98,7 +107,8 @@ export function Renderer() {
 
             const line = writeLines(startX + 10, startY + 20);
 
-            line(`${shortenCutMiddle(key, 9)}`);
+            const name = gameState.Players[key].name || shortenCutMiddle(key, 9);
+            line(`${name}`);
             line('');
             line(`Health: ${player.health}`);
             line(`Energy: ${player.energy}`);
