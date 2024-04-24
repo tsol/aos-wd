@@ -11,6 +11,8 @@ LatestGameState = LatestGameState or nil
 PlayerBalances = PlayerBalances or {}
 
 Now = Now or undefined -- Current time, updated on every message.
+LastRequestTime = LastRequestTime or undefined -- Last time we requested a game state.
+LastResponseTime = LastResponseTime or undefined -- Last time we received a game state.
 
 Logs = Logs or {}
 
@@ -100,24 +102,22 @@ function updateTimerAntiStale(msg)
     return
   end
 
-  -- find out latest lastTurn from all players
-
   for k, v in pairs(LatestGameState.Players) do
     if v.lastTurn and v.lastTurn > lastTurn then
       lastTurn = v.lastTurn
     end
   end
 
-  local Elapsed = (Now - lastTurn) / 1000
+  local sinceLastMove = (Now - lastTurn) / 1000
+  local sinceLastRequest = (Now - LastRequestTime) / 1000
+  local sinceLastResponse = (Now - LastResponseTime) / 1000
 
-  print (Colors.gray .. "Elapsed: " .. Elapsed .. " seconds " .. Colors.reset)
-
-  if Elapsed >= 5 then
+  print (Colors.gray .. "Response: " .. sinceLastResponse .. " Request: " .. sinceLastRequest .. " Move: " .. sinceLastMove .. " seconds ago" .. Colors.reset)
+  if sinceLastResponse >= 30 and sinceLastRequest >= 30 then
     print(Colors.red .. "Game state is stale. Requesting new one." .. Colors.reset)
     requestGameState()
   end
   
-
 end
 
 function pingAllFriendsExceptMe()
@@ -503,6 +503,7 @@ function decideNextAction()
     end
 
     print(Colors.red .. "Victim is dead." .. Colors.reset)
+    cmdGetBalances()
   end
 
   print (Colors.gray .. "No victim found." .. Colors.reset)
@@ -628,7 +629,7 @@ end
 function requestGameState()
   print(Colors.gray .. "Getting game state..." .. Colors.reset)
   SEND({ Target = Game, Action = "GetGameState" })
-  cmdGetBalances()
+  LastRequestTime = Now
 end
 
 function parseGameState(msg)
@@ -661,7 +662,7 @@ function parseBalances(msg)
 
   local numDefaultCred = tonumber(PlayerBalances[Game]) or 1000
   local myNewBalance = tonumber(PlayerBalances[ME]) or 0
-  if myNewBalance > numDefaultCred then
+  if myNewBalance > numDefaultCred * 5 then
     print(Colors.green .. "CRED gained: " .. myNewBalance - numDefaultCred .. Colors.reset)
     cmdWithdraw()
   end
@@ -692,6 +693,7 @@ HANDLER("PrintAnnouncements", TAGS("Action", "Announcement"),
 
 HANDLER("UpdateGameState", TAGS("Action", "GameState"),
   function(msg)
+    LastResponseTime = msg.Timestamp or Now
 
     local status, err = pcall(parseGameState, msg)
     if not status then
@@ -764,6 +766,7 @@ HANDLER("StartTick", TAGS("Action", "Payment-Received"),
   function (msg)
     resetState()
     requestGameState()
+    cmdGetBalances()
     print('Start Moooooving!')
   end
 )
