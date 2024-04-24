@@ -62,6 +62,7 @@ const props = defineProps<{
 }>();
 
 const process = useProcess(props.pid);
+const processes = useProcesses();
 
 const canvas = ref<HTMLDivElement | null>(null);
 const renderer = ref<ReturnType<typeof Renderer> | null>(null);
@@ -73,6 +74,7 @@ const players = computed(() => {
   return Object.entries(props.state?.gameState?.Players || {})
     .map(([pid, player]) => ({
       pid, ...player,
+      name: player.name || processes.getName(pid),
       friendIndex: props.state?.gameState?.BotState?.friends?.[pid]?.index,
       isVictim: props.state?.gameState?.BotState?.victim === pid,
       balance: Number(props.state?.gameState?.PlayerBalances?.[pid] || 0) / 1000,

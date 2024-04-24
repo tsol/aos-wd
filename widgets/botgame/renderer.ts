@@ -1,5 +1,4 @@
 import p5 from "p5";
-import { shortenCutMiddle } from "~/lib/utils";
 import type { State } from '../botgame';
 
 export function Renderer() {
@@ -8,6 +7,8 @@ export function Renderer() {
   let canvas: HTMLDivElement | null = null;
   let myPid: string | null = null;
   let state: State | null = null;
+
+  const processes = useProcesses();
 
   function redraw(_state: State) {
     state = _state;
@@ -108,7 +109,7 @@ export function Renderer() {
 
             const line = writeLines(startX + 10, startY + 20);
 
-            const name = gameState.Players[key].name || shortenCutMiddle(key, 9);
+            const name = gameState.Players[key].name || processes.getName(key);
             line(`${name}`);
             line('');
             line(`Health: ${player.health}`);

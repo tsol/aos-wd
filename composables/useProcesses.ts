@@ -6,6 +6,7 @@ import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
 import { ref } from 'vue';
 import { dryrun } from "@permaweb/aoconnect";
+import { shortenCutMiddle } from "~/lib/utils";
 
 console.log('useProcesses: init');
 
@@ -236,9 +237,15 @@ export const useProcesses = () => {
   }
 
 
+  function getName(pid: string) {
+    return usePersistStore().getProcesses.find(p => p.pid === pid)?.name || shortenCutMiddle(pid, 9);
+  }
+
   return { 
     running,
     
+    getName,
+
     broadcast,
     addListener,
     removeListener,
@@ -251,6 +258,7 @@ export const useProcesses = () => {
   
     connect,
     disconnect,
+
 
     queryAllProcessesWithNames,
   };

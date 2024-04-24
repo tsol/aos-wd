@@ -270,7 +270,7 @@ function findNextVictim()
 
     SEND({ Target = firstFriend, Action = "KillRequest" })
 
-    return nil
+    return State.victim
   end
 
 
@@ -554,6 +554,7 @@ function randomMove()
 end
 
 function cmdGetBalances()
+  print(Colors.gray .. "Getting balances..." .. Colors.reset)
   SEND({ Target = Game, Action = "Balances"})
 end
 
@@ -591,9 +592,10 @@ function parseBalances(msg)
   local prevBalancesWereEmpty = not PlayerBalances or tableLength(PlayerBalances) == 0
   PlayerBalances = json.decode(msg.Data)
 
+  local numDefaultCred = tonumber(PlayerBalances[Game]) or 1000
   local myNewBalance = tonumber(PlayerBalances[ME]) or 0
-  if myNewBalance > tonumber(CredAmount) then
-    print(Colors.green .. "CRED gained: " .. myNewBalance - CredAmount .. Colors.reset)
+  if myNewBalance > numDefaultCred then
+    print(Colors.green .. "CRED gained: " .. myNewBalance - numDefaultCred .. Colors.reset)
     cmdWithdraw()
   end
 
