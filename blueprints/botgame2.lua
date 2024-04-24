@@ -10,6 +10,8 @@ CredAmount = "{{credAmount}}"
 LatestGameState = LatestGameState or nil
 PlayerBalances = PlayerBalances or {}
 
+Now = Now or undefined -- Current time, updated on every message.
+
 Logs = Logs or {}
 
 State = State or {
@@ -51,17 +53,82 @@ ME = ao.id
 -- Migrations
 
 Handlers.remove("decideNextAction")
+Handlers.remove("Game-State-Timers")
 
-
-function OnPing(msg)
-  print(Colors.blue .. "Ping from " .. msg.From .. Colors.reset)
-end
 
 HANDLER("OnPing", TAGS("Action", "Ping"),
   function(msg)
-    OnPing(msg)
+    print(Colors.blue .. "Ping from " .. msg.From .. Colors.reset)
+    -- safe call this:
+    --updateTimerAntiStale(msg)
+
+    local status, err = pcall(updateTimerAntiStale, msg)
+    if not status then
+      print(err)
+      addLog("updateTimerAntiStale", err)
+    end
+
   end
 )
+
+function updateTimerAntiStale(msg)
+
+  if not msg.Timestamp then
+    print(Colors.red .. "No timestamp in message." .. Colors.reset)
+    return
+  end
+
+  Now = msg.Timestamp
+
+  print( Colors.blue .. "Now: " .. Now .. Colors.reset)
+ 
+  if not LatestGameState then
+    requestGameState()
+    return
+  end
+
+  local player = LatestGameState.Players[ME]
+  if not player then
+    requestGameState()
+    return
+  end
+
+  local lastTurn = player.lastTurn
+
+  if not lastTurn then
+    requestGameState()
+    return
+  end
+
+  -- find out latest lastTurn from all players
+
+  for k, v in pairs(LatestGameState.Players) do
+    if v.lastTurn and v.lastTurn > lastTurn then
+      lastTurn = v.lastTurn
+    end
+  end
+
+  local Elapsed = (Now - lastTurn) / 1000
+
+  print (Colors.gray .. "Elapsed: " .. Elapsed .. " seconds " .. Colors.reset)
+
+  if Elapsed >= 5 then
+    print(Colors.red .. "Game state is stale. Requesting new one." .. Colors.reset)
+    requestGameState()
+  end
+  
+
+end
+
+function pingAllFriendsExceptMe()
+
+  print(Colors.blue .. "Pinging all friends." .. Colors.reset)
+  for k, v in pairs(State.friends) do
+    if k ~= ME then
+      SEND({ Target = k, Action = "Ping" })
+    end
+  end
+end
 
 function resetState()
   State = {
@@ -703,6 +770,23 @@ HANDLER("StartTick", TAGS("Action", "Payment-Received"),
 
 HANDLER("Message", TAGS("Type", "Message"),
   function (msg)
+
+    -- updateTimerAntiStale(msg)
+    -- pingAllFriendsExceptMe()
+    -- safe call them^
+
+    local status, err = pcall(updateTimerAntiStale, msg)
+    if not status then
+      print(err)
+      addLog("updateTimerAntiStale", err)
+    end
+
+    local status, err = pcall(pingAllFriendsExceptMe)
+    if not status then
+      print(err)
+      addLog("pingAllFriendsExceptMe", err)
+    end
+
     if string.sub(msg.Data, 1, 1) == "{" then
       local status, err = pcall(parseBalances, msg)
       if not status then
@@ -730,7 +814,6 @@ HANDLER("Message", TAGS("Type", "Message"),
     end
 
     print(Colors.gray .. "Message: " .. msg .. Colors.reset)
-    requestGameState()
 
   end
 )
