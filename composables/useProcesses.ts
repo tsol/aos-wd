@@ -35,7 +35,7 @@ type RunningProcess = {
 const running = ref<RunningProcess[]>([]);
 
 export const useProcesses = () => {
- 
+
   const persist = usePersistStore()
 
   function getRunning(pid: string) {
@@ -103,7 +103,7 @@ export const useProcesses = () => {
 
 
   async function startProcess(pid: string, name?: string) {
- 
+
     console.log('starting live ', pid);
     let runningProcess = getRunning(pid);
 
@@ -112,7 +112,7 @@ export const useProcesses = () => {
       return;
     }
 
-    persist.addProcess({ pid, name: name || pid});
+    persist.addProcess({ pid, name: name || pid });
 
     running.value.push({ pid, interval: null, listeners: [] });
     runningProcess = getRunning(pid);
@@ -127,7 +127,7 @@ export const useProcesses = () => {
         return;
       }
       const msgs = await live(pid);
-  
+
       const bmsgs = msgs?.map((line) => ({ data: line, tags: [], type: 'live' } as BrodcastMsg));
 
       if (bmsgs?.length) broadcast(pid, bmsgs);
@@ -220,7 +220,7 @@ export const useProcesses = () => {
   }
 
   async function disconnect(pid: string) {
-   
+
     const runningProcess = getRunning(pid);
     if (!runningProcess) return;
 
@@ -245,29 +245,38 @@ export const useProcesses = () => {
   }
 
   async function monitor(pid: string) {
-    const res = await startMonitor(pid);
-    if (res) {
-      const process = persist.getProcesses.find(p => p.pid === pid);
-      if (process) {
-        process.monitored = true;
+    try {
+      const res = await startMonitor(pid);
+      if (res) {
+        const process = persist.getProcesses.find(p => p.pid === pid);
+        if (process) {
+          process.monitored = true;
+        }
       }
+    } catch (e: any) {
+      useToast().error(e.message);
     }
   }
 
   async function unmonitor(pid: string) {
-    const res = await stopMonitor(pid);
-    if (res) {
-      const process = persist.getProcesses.find(p => p.pid === pid);
-      if (process) {
-        process.monitored = false;
+    try {
+      const res = await stopMonitor(pid);
+      if (res) {
+        const process = persist.getProcesses.find(p => p.pid === pid);
+        if (process) {
+          process.monitored = false;
+        }
       }
+    }
+    catch (e: any) {
+      useToast().error(e.message);
     }
   }
 
 
-  return { 
+  return {
     running,
-    
+
     getName,
 
     broadcast,
@@ -279,7 +288,7 @@ export const useProcesses = () => {
     rundry,
 
     newProcess,
-  
+
     connect,
     disconnect,
 
