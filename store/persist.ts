@@ -22,6 +22,7 @@ export type Process = {
   pid: string;
   name: string
   isRunning?: boolean;
+  monitored?: boolean;
   widgets?: StoredWidget[];
   state?: any;
 

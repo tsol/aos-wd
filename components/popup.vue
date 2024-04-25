@@ -3,6 +3,7 @@ import { shortenCutMiddle } from '~/lib/utils';
 import { usePersistStore, type Process } from '~/store/persist';
 import { useProcesses } from "~/composables/useProcesses";
 import { useDisplay } from 'vuetify';
+import { processesList } from '~/lib/ao/query';
 
 const persist = usePersistStore();
 const ao = useProcesses();
@@ -15,7 +16,33 @@ const open = ref(false);
 
 const selectedProcessPid = ref<string | undefined>(persist.currentPid);
 
-const newProcessName = ref<string | undefined>(undefined);
+const newProcessName = ref<string | undefined>();
+
+const cronModes = ['none', '1-second', '3-seconds', '10-seconds', '1-minute', '5-minutes', '15-minutes', '30-minutes', '1-hour', '1-day'];
+const selectedCronMode = ref<string | undefined>('none');
+
+const monitoringChanging = ref(false);
+
+const monitored = computed({
+  get: () => selectedProcess.value?.monitored || false,
+  set: (val: boolean) => {
+    if (!selectedProcessPid.value) return;
+    monitoringChanging.value = true;
+    if (val) {
+      
+      useProcesses().monitor(selectedProcessPid.value)
+        .then(() => {
+          monitoringChanging.value = false;
+        });
+    }
+    else {
+      useProcesses().unmonitor(selectedProcessPid.value)
+        .then(() => {
+          monitoringChanging.value = false;
+        });
+    }
+  }
+});
 
 
 function validPid(pid?: string) {
@@ -64,9 +91,11 @@ async function doRegister(name?: string) {
     return;
   }
 
+  const cronMode = selectedCronMode.value === 'none' ? undefined : selectedCronMode.value;
+
 
   loading.value = true;
-  const pid = await ao.newProcess(name);
+  const pid = await ao.newProcess(name, cronMode);
 
   if (!pid) {
     useToast().error('Failed to create new process');
@@ -156,20 +185,33 @@ function onDialogStateChange(val: boolean) {
 
       <SelectProcess v-model="selectedProcessPid" />
 
-      <v-btn v-if="!isSelectedRunning" color="primary" variant="elevated" :disabled="isSelectedRunning"
-        @click="doConnect" :loading="loading">
-        Connect
-      </v-btn>
+      <v-row class="align-center">
+        <div class="v-col-md-6">
 
-      <v-btn v-else color="error" variant="elevated" @click="doLogout()" :loading="loading">
-        Disconnect
-      </v-btn>
+          <v-btn v-if="!isSelectedRunning" color="primary" variant="elevated" :disabled="isSelectedRunning"
+            @click="doConnect" :loading="loading">
+            Connect
+          </v-btn>
+
+          <v-btn v-else color="error" variant="elevated" @click="doLogout()" :loading="loading">
+            Disconnect
+          </v-btn>
+        </div>
+        <div class="v-col-md-6">
+          <v-switch v-model="monitored" :loading="monitoringChanging"  :label="`Cron Monitor: ${ monitored ? 'ON' : 'OFF' }`" />
+        </div>
+      </v-row>
 
 
       <v-divider class="my-4" />
 
-      <v-text-field v-model="newProcessName" label="New process name"
-        hint="Type new process name to create new process." />
+      <v-row>
+        <v-text-field class="v-col-md-8" v-model="newProcessName" label="New process name"
+          hint="Type new process name to create new process." />
+
+        <v-select class="v-col-md-4" v-model="selectedCronMode" :items="cronModes" label="Cron mode"
+          hint="Select cron mode for the process" clearable />
+      </v-row>
 
       <v-btn color="primary" variant="elevated"
         :disabled="!newProcessName || validNameExists(newProcessName) || validPid(newProcessName)"

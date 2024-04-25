@@ -7,6 +7,7 @@ import { usePersistStore } from "~/store/persist";
 import { ref } from 'vue';
 import { dryrun } from "@permaweb/aoconnect";
 import { shortenCutMiddle } from "~/lib/utils";
+import { startMonitor, stopMonitor } from "~/lib/ao/cron";
 
 console.log('useProcesses: init');
 
@@ -35,6 +36,8 @@ const running = ref<RunningProcess[]>([]);
 
 export const useProcesses = () => {
  
+  const persist = usePersistStore()
+
   function getRunning(pid: string) {
     return running.value.find(r => r.pid === pid);
   }
@@ -109,14 +112,14 @@ export const useProcesses = () => {
       return;
     }
 
-    usePersistStore().addProcess({ pid, name: name || pid});
+    persist.addProcess({ pid, name: name || pid});
 
     running.value.push({ pid, interval: null, listeners: [] });
     runningProcess = getRunning(pid);
 
     if (!runningProcess) throw new Error('Could not start process');
 
-    usePersistStore().setRunning(pid, true);
+    persist.setRunning(pid, true);
 
     runningProcess.interval = setInterval(async () => {
       if (!pid) {
@@ -132,14 +135,14 @@ export const useProcesses = () => {
     }, 3000);
   }
 
-  async function newProcess(name: string) {
+  async function newProcess(name: string, cronMode?: string) {
     if (name.length === 0) {
       console.error('Name is required!');
       return;
     }
 
     try {
-      const pid = await register(name);
+      const pid = await register(name, cronMode);
       await startProcess(pid, name);
       return pid;
     } catch (e: any) {
@@ -228,18 +231,39 @@ export const useProcesses = () => {
     }
 
     running.value = running.value.filter(r => r.pid !== pid);
-    usePersistStore().setRunning(pid, false);
+    persist.setRunning(pid, false);
 
-    if (pid === usePersistStore().currentPid) {
-      usePersistStore().setCurrentPid(undefined);
+    if (pid === persist.currentPid) {
+      persist.setCurrentPid(undefined);
     }
 
   }
 
 
   function getName(pid: string) {
-    return usePersistStore().getProcesses.find(p => p.pid === pid)?.name || shortenCutMiddle(pid, 9);
+    return persist.getProcesses.find(p => p.pid === pid)?.name || shortenCutMiddle(pid, 9);
   }
+
+  async function monitor(pid: string) {
+    const res = await startMonitor(pid);
+    if (res) {
+      const process = persist.getProcesses.find(p => p.pid === pid);
+      if (process) {
+        process.monitored = true;
+      }
+    }
+  }
+
+  async function unmonitor(pid: string) {
+    const res = await stopMonitor(pid);
+    if (res) {
+      const process = persist.getProcesses.find(p => p.pid === pid);
+      if (process) {
+        process.monitored = false;
+      }
+    }
+  }
+
 
   return { 
     running,
@@ -259,6 +283,8 @@ export const useProcesses = () => {
     connect,
     disconnect,
 
+    monitor,
+    unmonitor,
 
     queryAllProcessesWithNames,
   };
