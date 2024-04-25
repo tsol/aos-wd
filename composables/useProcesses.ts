@@ -244,33 +244,39 @@ export const useProcesses = () => {
     return persist.getProcesses.find(p => p.pid === pid)?.name || shortenCutMiddle(pid, 9);
   }
 
+  function setMonitoredFlag(pid: string, monitored: boolean) {
+    const process = persist.getProcesses.find(p => p.pid === pid);
+    if (process) {
+      process.monitored = monitored;
+    }
+  }
+
   async function monitor(pid: string) {
     try {
       const res = await startMonitor(pid);
-      if (res) {
-        const process = persist.getProcesses.find(p => p.pid === pid);
-        if (process) {
-          process.monitored = true;
-        }
-      }
+      setMonitoredFlag(pid, true);
     } catch (e: any) {
       useToast().error(e.message);
+      if (e.message?.includes('already')) {
+        setMonitoredFlag(pid, true);
+      }
     }
   }
+
+
 
   async function unmonitor(pid: string) {
     try {
       const res = await stopMonitor(pid);
-      if (res) {
-        const process = persist.getProcesses.find(p => p.pid === pid);
-        if (process) {
-          process.monitored = false;
-        }
-      }
+      setMonitoredFlag(pid, false);
     }
     catch (e: any) {
       useToast().error(e.message);
+      if (e.message?.includes('already')) {
+        setMonitoredFlag(pid, false);
+      }
     }
+    
   }
 
 
