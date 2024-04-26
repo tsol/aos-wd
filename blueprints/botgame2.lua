@@ -139,6 +139,7 @@ function resetState()
     requestedFriends = false,
     steppingTo = nil
   }
+  PlayerBalances = {}
   print(Colors.green .. "State reset." .. Colors.reset)
 end
 
@@ -660,13 +661,13 @@ function parseBalances(msg)
   local prevBalancesWereEmpty = not PlayerBalances or tableLength(PlayerBalances) == 0
   PlayerBalances = json.decode(msg.Data)
 
-  local numDefaultCred = tonumber(PlayerBalances[Game]) or 1000
+  local numDefaultCred = tonumber(CredAmount) or 1000
   local myNewBalance = tonumber(PlayerBalances[ME]) or 0
+
+  print(Colors.green .. "CRED total gained: " .. (myNewBalance - numDefaultCred) .. Colors.reset)
   if myNewBalance > numDefaultCred * 5 then
-    print(Colors.green .. "CRED gained: " .. myNewBalance - numDefaultCred .. Colors.reset)
     cmdWithdraw()
   end
-
   if prevBalancesWereEmpty then
     -- select new victim
     setVictim(findNextVictim())
