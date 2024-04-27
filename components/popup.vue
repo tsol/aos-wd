@@ -18,7 +18,7 @@ const selectedProcessPid = ref<string | undefined>(persist.currentPid);
 
 const newProcessName = ref<string | undefined>();
 
-const cronModes = ['none', '1-second', '3-seconds', '10-seconds', '1-minute', '5-minutes', '15-minutes', '30-minutes', '1-hour', '1-day'];
+const cronModes = ['none', '10-seconds', '1-minute', '5-minutes', '15-minutes', '30-minutes', '1-hour', '1-day'];
 const selectedCronMode = ref<string | undefined>('none');
 
 const monitoringChanging = ref(false);

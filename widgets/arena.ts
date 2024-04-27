@@ -20,8 +20,24 @@ const widget: WidgetDefinition<State> = {
   ],
   snippets: [
     {
-        name: 'Load Game',
+        name: 'Load AO-Effect Arena',
         data:  arena,
+    },
+    {
+        name: 'Load Token',
+        data: '.load-blueprint token',
+    },
+    {
+        name: 'Players',
+        data: 'Players',
+    },
+    {
+        name: 'Waiting',
+        data: 'Waiting',
+    },
+    {
+        name: 'Force Start',
+        data: 'Send({Target = ao.id, Action = "ForceNow"})',
     },
   ],
 };

@@ -441,18 +441,11 @@ Handlers.add(
     "Force NOW",
     Handlers.utils.hasMatchingTag("Action", "ForceNow"),
     function (Msg)
-        -- make full reset
-        -- Waiting = {}
-        -- Players = {}
-        -- Winners = 0
-        -- Listeners = {}
-        -- GameMode = "Not-Started"
-        print( Colors.blue .. "Forcing waiting period to end in 5 sec" .. Colors.reset)
-        StateChangeTime = Now + 5000
+        print( Colors.blue .. "Forcing waiting period to end in 15 sec" .. Colors.reset)
+        StateChangeTime = Msg.Timestamp + 15000
         ao.send({ Target = ao.id, Action = "Tick" })
     end
 )
-
 
 -- Alerts users regarding the time remaining in each game state.
 Handlers.add(

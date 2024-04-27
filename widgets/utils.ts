@@ -25,7 +25,23 @@ const widget: WidgetDefinition<State> = {
   ],
   snippets: [
     {
-        name: 'Get Balance',
+      name: 'MY CODE',
+      data: `
+Handlers.add("CronMessage",
+  function (msg) if msg.Cron then return 1 end
+  return 0
+end,
+function(msg)
+  print("CronMessage")
+end
+)      
+`   },
+    {
+      name: 'Load CRED',
+      data: '.load-blueprint credUtils',
+    },
+    {
+        name: 'Balance',
         data: `Send({ Target = "${CRED}", Action = "Balance", Tags = { Target = ao.id } })`,
     },
     {
@@ -36,6 +52,10 @@ const widget: WidgetDefinition<State> = {
         name: 'Tick self',
         data: `Send({Target = ao.id, Action = "Tick"})`,
     },
+    {
+        name: 'Last Msg',
+        data: 'Inbox[#Inbox]',
+    }
   ],
 };
 

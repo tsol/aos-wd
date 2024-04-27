@@ -15,6 +15,11 @@ colors = {
   gray = "\27[90m"
 }
 
+function cmdGoTo(x, y)
+  return "Going to " .. x .. ", " .. y .. " (not implemented)"
+  -- implement here
+end
+
 function addLog(msg, text) -- Function definition commented for performance, can be used for debugging
   Logs[msg] = Logs[msg] or {}
   table.insert(Logs[msg], text)

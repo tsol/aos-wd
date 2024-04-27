@@ -1,18 +1,19 @@
 <template>
-  <div class="container">
+  <div class="container mb-4">
     <div class="col-1">
       <div class="d-flex flex-column align-center">
         <div>
         <div class="d-flex flex-row justify-space-between">
-          <span>Mode: {{ gameMode }}</span>
-          <span>Time Left: {{ timeRemainingInSeconds }} </span>
+          <span><b>Mode:</b> {{ gameMode }}</span>
+          <span class="ml-2"><b>Time Left:</b> {{ timeRemainingInSeconds }} </span>
         </div>
+        <div v-if="!renderer">No state received yet</div>
         <div ref="canvas" @click="onCanvasClick"></div>
       </div>
       </div>
     </div>
     <div class="col-2">
-      <div class="w-100 d-flex flex-column align-center">
+      <div v-if="renderer" class="w-100 d-flex flex-column align-center">
 
         <PlayerStat :players="players" />
 
@@ -61,8 +62,8 @@ const props = defineProps<{
   state?: State
 }>();
 
-const process = useProcess(props.pid);
 const processes = useProcesses();
+const process = useProcess(props.pid);
 
 const canvas = ref<HTMLDivElement | null>(null);
 const renderer = ref<ReturnType<typeof Renderer> | null>(null);
@@ -99,13 +100,11 @@ function onCanvasClick() {
   const m = renderer.value?.getMouseCell();
   if (!m) return;
 
-  console.log('onCanvasClick', m);
   process.command(`cmdGoTo(${m.x}, ${m.y})`);
   selectingTarget.value = false;
 }
 
 watch([() => props.state, () => canvas.value], () => {
-  console.log('botgame state changed');
   if (!canvas.value) return;
 
   if (renderer.value) {

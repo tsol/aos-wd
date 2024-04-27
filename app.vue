@@ -70,8 +70,9 @@ const persistStore = usePersistStore();
 const running = computed(() => {
 
   const runningPids = useProcesses().running.value?.map((p) => p.pid);
-  return persistStore.processes.filter((p) => runningPids?.includes(p.pid));
-
+  const sorted = persistStore.processes.filter((p) => runningPids?.includes(p.pid))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return sorted;
 });
 
 watch(currentPid, (pid) => {

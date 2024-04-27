@@ -196,27 +196,32 @@ export const useProcesses = () => {
   }
 
   async function connect(pidOrName: string, setName?: string) {
-    // let result = prompt('PID or NAME: ');
-    let pid = pidOrName
-    let name = setName;
 
-    if (pidOrName.length !== 43) {
+    try {
+      let pid = pidOrName
+      let name = setName;
 
-      let address = await (window as any).arweaveWallet.getActiveAddress();
-      const _pid = await findPid(pidOrName, address);
+      if (pidOrName.length !== 43) {
 
-      if (_pid?.length !== 43) {
-        useToast().error('Could not find Process!');
-        useToast().error(`Could not find Process! ${pidOrName}`);
-        return;
+        let address = await (window as any).arweaveWallet.getActiveAddress();
+        const _pid = await findPid(pidOrName, address);
+
+        if (_pid?.length !== 43) {
+          useToast().error('Could not find Process!');
+          useToast().error(`Could not find Process! ${pidOrName}`);
+          return;
+        }
+
+        pid = _pid;
       }
 
-      pid = _pid;
+      if (!name) name = pidOrName;
+
+      await startProcess(pid, name);
     }
-
-    if (!name) name = pidOrName;
-
-    await startProcess(pid, name);
+    catch (e: any) {
+      useToast().error('Error connecting to a process');
+    }
   }
 
   async function disconnect(pid: string) {
@@ -276,7 +281,7 @@ export const useProcesses = () => {
         setMonitoredFlag(pid, false);
       }
     }
-    
+
   }
 
 
