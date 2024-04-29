@@ -1,14 +1,15 @@
 import { type StoredSnippet } from "~/store/persist";
 
-type RunningSnippet = {
-  snippetId: string;
-  interval: NodeJS.Timeout | null;
-}
-
-const runningSnippets = ref<RunningSnippet[]>([]);
 
 export const useSnippetsTimer = (process: ReturnType<typeof useProcess>) => {
 
+  type RunningSnippet = {
+    snippetId: string;
+    interval: NodeJS.Timeout | null;
+  }
+  
+  const runningSnippets = ref<RunningSnippet[]>([]);
+  
   const snippets = useSnippets(process);
 
   function stopSnippetTimer(snippet: StoredSnippet) {
@@ -17,6 +18,7 @@ export const useSnippetsTimer = (process: ReturnType<typeof useProcess>) => {
     if (found?.interval) {
       clearInterval(found.interval);
       runningSnippets.value = runningSnippets.value.filter((s) => s.snippetId !== snippetId);
+      console.log('Stopped snippet:', snippetId);
     }
   }
 
@@ -34,14 +36,17 @@ export const useSnippetsTimer = (process: ReturnType<typeof useProcess>) => {
       foundSnippet.runInterval = milliseconds;
     }
 
-    if (!foundSnippet || !foundSnippet.runInterval || !(foundSnippet?.runInterval > 0))
+    if (!foundSnippet || !foundSnippet.runInterval || !(foundSnippet.runInterval > 0))
       return 'Invalid snippet';
+
+    console.log('Starting snippet:', snippetId);
 
     const interval = setInterval(() => {
 
       const findWidget = process.widgets.value.find((w) => w.name === snippet.widgetName);
       const findSnippet = findWidget?.snippets?.find((s) => s.name === snippet.name);
       if (findSnippet) {
+        console.log('Running snippet:', findSnippet.name);
         snippets.runSnippet(findSnippet);
         return;
       }

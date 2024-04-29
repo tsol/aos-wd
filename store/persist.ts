@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate';
 import { createWidget } from '~/widgets';
+import { useSnippetsTimer } from '~/composables/useSnippetsTimer';
 
 export type StoredSnippet = {
   name: string;
@@ -190,6 +191,7 @@ export const usePersistStore = defineStore('persist', {
       running.forEach(p => {
         // console.log('PERSIST: connecting to process', p.pid);
         useProcesses().connect(p.pid, p.name);
+
       });
 
     }

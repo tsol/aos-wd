@@ -8,7 +8,7 @@
       <v-divider class="ml-2 mr-2"></v-divider>
       <div class="text-caption bubble bubble-gray text-no-wrap">
         <ClickToClipboard :value="pid">
-          {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9 ) }}
+          {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9) }}
         </ClickToClipboard>
       </div>
       <v-divider class="ml-2 mr-2"></v-divider>
@@ -46,9 +46,7 @@
             <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
               :loading="snippetLoading[snippet.name]">
               {{ shortenCutMiddle(snippet.name, 30) }}
-              <SnippetFormDialog
-                :pid="pid"
-                :snippet="snippet" :widgetName="widget.name" :snippetsTimer="snippetsTimer"
+              <SnippetFormDialog :pid="pid" :snippet="snippet" :widgetName="widget.name" :snippetsTimer="snippetsTimer"
                 v-model="snippetMenu[snippetID(snippet)]" />
             </v-btn>
 
@@ -132,14 +130,28 @@ function listen(text: BrodcastMsg[]) {
   });
 }
 
+onMounted(() => {
+  console.log('** Mounting ' + props.pid + ' **');
+  process.addListener({ client: 'Parser', handler: listen });
+
+  process.widgets.value?.forEach(w => {
+    w.snippets?.forEach(s => {
+      if (s.runInterval)
+        snippetsTimer.startSnippetTimer(s);
+    });
+  });
+
+});
+
 onUnmounted(() => {
+  console.log('** Unmounting ' + props.pid + ' **');
   snippetsTimer.onUnmounted();
   process.removeListener(listen);
 });
 
 
 function createSnippet(widgetName: string) {
-  
+
   const widget = process.widgets.value.find((w) => w.name === widgetName);
   if (!widget) throw new Error(`No widget found for ${widgetName}`);
 
