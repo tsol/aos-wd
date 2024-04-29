@@ -1,6 +1,7 @@
 
 import { usePersistStore, type StoredSnippet, type StoredWidget } from "~/store/persist";
 
+
 export function useProcess<STATE>(pid: string) {
 
   const processes = useProcesses();
@@ -73,6 +74,7 @@ export function useProcess<STATE>(pid: string) {
     if (!w.snippets) return;
     w.snippets = w.snippets.filter(s => s.name !== snippetName);
   }
+
 
   return {
     name,

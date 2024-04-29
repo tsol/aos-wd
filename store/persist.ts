@@ -9,6 +9,7 @@ export type StoredSnippet = {
   pid?: string;
   tags?: Tag[];
   widgetName?: string;
+  runInterval?: number;
 }
 
 export type StoredWidget = {

@@ -34,6 +34,22 @@
             <VarsForm :pid="pid" :variables="variablesList" />
           </div>
           <div>
+
+            <v-select
+              style="min-width: 100px; flex-shrink: 0;"
+              :class="mdAndUp ? 'mb-4' : 'mr-4'"
+              v-model="selectedInterval"
+              :items="snippetIntervals"
+              label="Local timer"
+              density="compact"
+              hideDetails
+              variant="outlined"
+              @update:model-value="changeTimer($event)"
+            >
+            </v-select>
+
+          </div>
+          <div>
             <div class="d-flex justify-space-between">
             <v-btn
               @click="runSnippet(snippet)"
@@ -47,7 +63,6 @@
             <div class="d-flex">
               <v-select
                 style="min-width: 50px; flex-shrink: 0;"
- 
                 class="mr-2"
                 v-model="sendTo"
                 :items="listners"
@@ -85,13 +100,13 @@ import { extractTemplateVariables } from '~/lib/utils';
 
 import { debounce } from 'lodash';
 import { useDisplay } from 'vuetify';
-import { widget } from '~/widgets/botgame';
 
 const props = defineProps<{
   modelValue: boolean | undefined;
   pid: string;
   snippet: StoredSnippet;
   widgetName: string;
+  snippetsTimer: ReturnType<typeof useSnippetsTimer>;
 }>();
 
 
@@ -118,6 +133,19 @@ const sendTo = ref('');
 const listners = computed(() => {
   return process.getListenerNames()?.map( (l) => ({ value: l, title: l }) );
 });
+
+const snippetIntervals = [
+  { title: 'none', value: 0 },
+  { title: '10-seconds', value: 10000 },
+  { title: '30-seconds', value: 30000 },
+  { title: '1-minute', value: 60000 },
+  { title: '5-minutes', value: 300000 },
+  { title: '10-minutes', value: 600000 },
+  { title: '30-minutes', value: 1800000 },
+  { title: '1-hour', value: 3600000 },
+];
+
+const selectedInterval = ref(props.snippet.runInterval || 0);
 
 watch( listners, () => {
   if (! listners.value || !listners.value.length ) return;
@@ -147,6 +175,21 @@ watch(() => props.modelValue, (value) => {
 // watch(() => snippetMenu.value, (value) => {
 //   emit('update:modelValue', value);
 // });
+
+function changeTimer(interval: number) {
+  if (interval === 0 || !interval) {
+    props.snippetsTimer.stopSnippetTimer(props.snippet);
+    useToast().ok('Snippet timer stopped');
+  } else {
+    props.snippetsTimer.stopSnippetTimer(props.snippet);
+    const errMsg = props.snippetsTimer.startSnippetTimer(props.snippet, interval);
+    if (errMsg) {
+      useToast().error(errMsg);
+    } else {
+      useToast().ok('Snippet timer started');
+    }
+  }
+}
 
 function doRenameSnippet(name: string) {
   const oldSnip = { ... props.snippet };

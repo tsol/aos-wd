@@ -46,7 +46,9 @@
             <v-btn v-for="snippet in widget.snippets || []" :key="snippet.name" @click.stop="runSnippet(snippet)"
               :loading="snippetLoading[snippet.name]">
               {{ shortenCutMiddle(snippet.name, 30) }}
-              <SnippetFormDialog :pid="pid" :snippet="snippet" :widgetName="widget.name"
+              <SnippetFormDialog
+                :pid="pid"
+                :snippet="snippet" :widgetName="widget.name" :snippetsTimer="snippetsTimer"
                 v-model="snippetMenu[snippetID(snippet)]" />
             </v-btn>
 
@@ -103,10 +105,11 @@ const props = defineProps<{
 }>();
 
 const process = useProcess<any>(props.pid);
+const snippetsTimer = useSnippetsTimer(process);
+
 process.addListener({ client: 'Parser', handler: listen });
 
-const { snippetLoading, snippetMenu, runSnippet , snippetID } = useSnippets(process);
-
+const { snippetLoading, snippetMenu, runSnippet, snippetID } = useSnippets(process);
 
 // const processName = computed(() => {
 //   let res = '';
@@ -130,6 +133,7 @@ function listen(text: BrodcastMsg[]) {
 }
 
 onUnmounted(() => {
+  snippetsTimer.onUnmounted();
   process.removeListener(listen);
 });
 
