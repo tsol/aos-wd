@@ -56,6 +56,7 @@ ME = ao.id
 
 Handlers.remove("decideNextAction")
 Handlers.remove("Game-State-Timers")
+Handlers.remove("Message")
 
 
 HANDLER("OnPing", TAGS("Action", "Ping"),
@@ -642,6 +643,7 @@ function parseGameState(msg)
   end
 
   print(json.encode(LatestGameState))
+  decideNextAction()
 end
 
 function cmdPayForGrid()
@@ -702,17 +704,13 @@ HANDLER("UpdateGameState", TAGS("Action", "GameState"),
       addLog("parseGameState", err)
     end
 
-    SEND({ Target = ME, Action = "Tick" })
+    requestGameState()
   end
 )
 
 HANDLER("GetGameStateOnTick", TAGS("Action", "Tick"),
   function()
-    local status, err = pcall(decideNextAction)
-    if not status then
-      print(err)
-      addLog("decideNextAction", err)
-    end
+    print (Colors.gray .. "Tick" .. Colors.reset)
     requestGameState()
   end
 )
@@ -772,54 +770,23 @@ HANDLER("StartTick", TAGS("Action", "Payment-Received"),
   end
 )
 
-HANDLER("Message", TAGS("Type", "Message"),
+
+HANDLER("OnBalances",
   function (msg)
-
-    -- updateTimerAntiStale(msg)
-    -- pingAllFriendsExceptMe()
-    -- safe call them^
-
-    local status, err = pcall(updateTimerAntiStale, msg)
+    if msg.Tags.Type == "Message" and string.sub(msg.Data, 1, 1) == "{" then
+      return 1
+    end
+    return 0
+  end,
+  function (msg)
+    local status, err = pcall(parseBalances, msg)
     if not status then
       print(err)
-      addLog("updateTimerAntiStale", err)
+      addLog("parseBalances", err)
     end
-
-    local status, err = pcall(pingAllFriendsExceptMe)
-    if not status then
-      print(err)
-      addLog("pingAllFriendsExceptMe", err)
-    end
-
-    if string.sub(msg.Data, 1, 1) == "{" then
-      local status, err = pcall(parseBalances, msg)
-      if not status then
-        print(err)
-        addLog("parseBalances", err)
-      end
-      return
-    end
-
-    local x, y = string.match(msg.Data, "moved to (%d+),(%d+)")
-    if x and y then
-      x = tonumber(x)
-      y = tonumber(y)
-
-      print (Colors.blue .. "Player moved to: " .. x .. "," .. y .. Colors.reset)
-
-      if not LatestGameState then
-        print(Colors.red .. "No game state available to update player position." .. Colors.reset)
-        return
-      end
-
-      LatestGameState.Players[ME].x = x
-      LatestGameState.Players[ME].y = y
-      return
-    end
-
-    print(Colors.gray .. "Message: " .. msg .. Colors.reset)
-
   end
 )
+
+
 
 
