@@ -54,6 +54,26 @@ export const usePersistStore = defineStore('persist', {
     toggleTheme() {
       this.theme = this.theme === 'light' ? 'dark' : 'light';
     },
+    cloneProcess(srcPid: string, dstPid: string) {
+      const src = this.processes.find(p => p.pid === srcPid);
+      if (!src) return false;
+
+      const dst = this.processes.find(p => p.pid === dstPid);
+      if (!dst) return false;
+
+      const newProcess = { ...dst };
+      newProcess.widgets = JSON.parse(JSON.stringify(src.widgets));
+    
+      this.processes = this.processes.map(p => {
+        if (p.pid === dstPid) {
+          return newProcess;
+        }
+        return p;
+      });
+
+      return true;
+
+    },
     updateProcessDefaultWidgets(pid: string) {
       const process = this.processes.find(p => p.pid === pid);
       if (!process) throw new Error('process not found');

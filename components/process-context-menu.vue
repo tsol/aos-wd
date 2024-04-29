@@ -1,4 +1,6 @@
 <template>
+  <div>
+  <copy-layout-dialog v-model="copyDialog" :pid="props.pid" />
   <v-menu offset-y>
     <template v-slot:activator="{ props }">
       <slot v-bind="props">
@@ -15,8 +17,12 @@
       <v-list-item @click="doResetCursor">
         <v-list-item-title>Reset cursor (no fetch history)</v-list-item-title>     
       </v-list-item>
+      <v-list-item @click="copyDialog = true">
+        <v-list-item-title>Copy to another process</v-list-item-title>     
+      </v-list-item>
     </v-list>
   </v-menu>
+</div>
 </template>
 
 <script lang="ts" setup>
@@ -30,25 +36,25 @@ const props = defineProps<{
 }>();
 
 const ao = useProcesses();
-
-const dialogOpen = ref(false);
+const copyDialog = ref(false);
+const menuOpen = ref(false);
 
 function doDisconnect() {
   ao.disconnect(props.pid)
   persist.setCurrentPid(undefined);
-  dialogOpen.value = false;
+  menuOpen.value = false;
 }
 
 async function doForget() {
   await ao.disconnect(props.pid)
   persist.removeProcess(props.pid);
   persist.setCurrentPid(undefined);
-  dialogOpen.value = false;
+  menuOpen.value = false;
 }
 
 function doResetCursor() {
   persist.updateCursor(props.pid, undefined);
-  dialogOpen.value = false;
+  menuOpen.value = false;
 }
 
 </script>
