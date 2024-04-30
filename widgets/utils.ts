@@ -28,12 +28,10 @@ const widget: WidgetDefinition<State> = {
       name: 'MY CODE',
       data: `
 Handlers.add("CronMessage",
-  function (msg) if msg.Cron then return 1 end
-  return 0
-end,
-function(msg)
-  print("CronMessage")
-end
+  Handlers.list.hasMatchingTag("Action", "Cron"),
+  function(msg)
+    print("CronMessage")
+  end
 )      
 `   },
     {

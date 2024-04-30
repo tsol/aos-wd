@@ -20,6 +20,13 @@ export const useSnippetsTimer = (process: ReturnType<typeof useProcess>) => {
       runningSnippets.value = runningSnippets.value.filter((s) => s.snippetId !== snippetId);
       console.log('Stopped snippet:', snippetId);
     }
+
+    const findWidget = process.widgets.value.find((w) => w.name === snippet.widgetName);
+    const foundSnippet = findWidget?.snippets?.find((s) => s.name === snippet.name);
+    if (foundSnippet) {
+      foundSnippet.runInterval = 0;
+    }
+    
   }
 
   function startSnippetTimer(snippet: StoredSnippet, milliseconds?: number) {
