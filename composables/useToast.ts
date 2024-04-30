@@ -3,9 +3,10 @@ import { toast } from 'vuetify-sonner';
 const ok = (message: string) => {
 
   toast(message, {
-    duration: 5000,
+    duration: 3500,
     onAutoClose: () => {},
     onDismiss: () => {},
+    
     id: 'my-toast',
     important: true,
     cardProps: {
@@ -21,14 +22,14 @@ const ok = (message: string) => {
     prependIcon: 'mdi-check-circle',
     prependIconProps: {
       // v-icon props
-    }
+    },
   })
 
 };
 
 const error = (message: string) => {
   toast(message, {
-    duration: 5000,
+    duration: 3500,
     onAutoClose: () => {},
     onDismiss: () => {},
     id: 'my-toast',

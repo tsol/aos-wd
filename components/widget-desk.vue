@@ -11,10 +11,38 @@
           {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9) }}
         </ClickToClipboard>
       </div>
+      
+      <v-icon
+        title="ao.link"
+        size="small"
+        class="ml-2"
+        color="green"
+        @click="openUrl(`https://ao.link/entity/${pid}`)"
+        
+      >mdi-link-variant</v-icon>
+      
+      <v-icon
+        title="ar-io.dev"
+        size="small"
+        class="ml-1"
+        color="green"
+        @click="openUrl(`https://${pid}.ar-io.dev/`)"
+        
+      >mdi-emoticon-devil-outline</v-icon>
+
+     
+      <v-icon
+        title="arweave.app"
+        size="small"
+        class="ml-1"
+        color="green"
+        @click="openUrl(`https://arweave.app/tx/${pid}`)"
+      >mdi-weather-cloudy</v-icon>
+
       <v-divider class="ml-2 mr-2"></v-divider>
 
       <ProcessContextMenu :pid="pid" v-slot="pProps">
-        <v-icon v-bind="pProps" size="small" color="green" class="bubble my-float-left">mdi-dots-horizontal</v-icon>
+        <v-icon v-bind="pProps" size="small" color="green" class="bubble">mdi-dots-horizontal</v-icon>
       </ProcessContextMenu>
 
     </div>
@@ -88,6 +116,8 @@
 </style>
 
 <script lang="ts" setup>
+
+const openUrl = (url: string) => window.open(url, '_blank');
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
 import { parseLuaObject } from '~/lib/parser';

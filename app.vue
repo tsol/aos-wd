@@ -1,10 +1,11 @@
 <template>
+  <VSonner position="bottom-right" />
+
   <v-app :theme="persist.theme">
-    <VSonner position="top-center" />
-   
+
     <v-app-bar app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      
+
       <v-tabs v-model="currentPid">
         <v-tab v-for="proc in running" :key="proc.pid" :value="proc.pid">
           {{ shortenCutMiddle(proc.name, 10) }}
@@ -46,7 +47,7 @@
           </v-window-item>
         </v-window>
       </div>
- 
+
     </v-main>
   </v-app>
 </template>
