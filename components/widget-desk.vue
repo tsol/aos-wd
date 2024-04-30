@@ -26,7 +26,7 @@
         size="small"
         class="ml-1"
         color="green"
-        @click="openUrl(`https://${pid}.ar-io.dev/`)"
+        @click="openUrl(`https://ar-io.dev/${pid}`)"
         
       >mdi-emoticon-devil-outline</v-icon>
 
