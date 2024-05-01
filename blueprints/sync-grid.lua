@@ -43,6 +43,7 @@ Balances = Balances or {}
 Listeners = Listeners or {}
 
 -- Attack info
+CurrentAttacks = CurrentAttacks or 0
 LastPlayerAttacks = LastPlayerAttacks or {}
 
 GameStateJson = GameStateJson or {} -- speed up things
@@ -51,7 +52,8 @@ Turn = Turn or {
     count = 0,
     lastTurn = 0,
     submittedActions = {},
-    waitingFor = {}
+    waitingFor = {},
+    waitingCount = 0
 }
 
 Logs = {}
@@ -63,15 +65,15 @@ end
 
 function haveAllPlayersSubmittedActions()
     Turn.waitingFor = {}
-    local missingTurn = 0
+    Turn.waitingCount = 0
     for k,v in pairs(Players) do
         if not Turn.submittedActions[k] then
             Turn.waitingFor[k] = true
-            missingTurn = missingTurn + 1
+            Turn.waitingCount = Turn.waitingCount + 1
         end
     end
     
-    return missingTurn == 0
+    return Turn.waitingCount == 0
 end
 
 function addPlayerMoveAction(player, direction)
@@ -238,6 +240,7 @@ function move(msg)
     if (direction == "Stay") then
         print("Stayed...")
         print(Players[playerToMove])
+        Turn.submittedActions[playerToMove].move = nil
         Players[playerToMove].lastTurn = msg.Timestamp
         return
     end
@@ -522,7 +525,20 @@ Handlers.add(
         if Players[Msg.From] and Msg.Name then
             Players[Msg.From].name = Msg.Name
         end
+        
         addListener(Msg.From)
+        if Turn.waitingCount > 0 then
+
+            local timeTillForced = WaitTurnLimit - (Now - Turn.lastTurn)
+
+            Send({
+                Target = Msg.From,
+                Action = "Waiting",
+                Data = "Waiting for " .. tostring(Turn.waitingCount) .. " players to submit actions.",
+                Waiting = tostring(Turn.waitingCount),
+                Timeout = tostring(timeTillForced)
+            })
+        end
     end
 )
 
