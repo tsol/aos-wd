@@ -14,8 +14,10 @@ Handlers = Handlers or {
 
 -- Constants
 
-CRED = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 Variant = "0.1-sync"
+CRED = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+PaymentQty = 10
+
 MaximumPlayers = 35
 
 Width = 40
@@ -49,16 +51,27 @@ Turn = Turn or {
     count = 0,
     lastTurn = 0,
     submittedActions = {},
+    waitingFor = {}
 }
 
+Logs = {}
+
+function addLog(msg, text)
+  Logs[msg] = Logs[msg] or {}
+  table.insert(Logs[msg], text)
+end
+
 function haveAllPlayersSubmittedActions()
-    local count = 0
+    Turn.waitingFor = {}
+    local missingTurn = 0
     for k,v in pairs(Players) do
-        if Turn.submittedActions[k] then
-            count = count + 1
+        if not Turn.submittedActions[k] then
+            Turn.waitingFor[k] = true
+            missingTurn = missingTurn + 1
         end
     end
-    return count == #Players
+    
+    return missingTurn == 0
 end
 
 function addPlayerMoveAction(player, direction)
@@ -101,12 +114,12 @@ function processTurn()
     end
 
     -- perform moves
-    for player, action in pairs(shuffleActions()) do
-        if action.move then
+    for _, item in pairs(shuffleActions()) do
+        if item.action.move then
             move({
-                From = player,
+                From = item.player,
                 Tags = {
-                    Direction = action.move
+                    Direction = item.action.move
                 },
                 Timestamp = Now
             })
@@ -114,12 +127,12 @@ function processTurn()
     end
 
     -- perform attacks
-    for player, action in pairs(shuffleActions()) do
-        if action.attack then
+    for _, item in pairs(shuffleActions()) do
+        if item.action.attack then
             attack({
-                From = player,
+                From = item.player,
                 Tags = {
-                    AttackEnergy = action.attack
+                    AttackEnergy = item.action.attack
                 },
                 Timestamp = Now
             })
@@ -186,8 +199,6 @@ end
 
 -- Main loop cycle
 function onTick()
-
-    print("Tick.")
 
     if GameMode ~= "Playing" then return end  -- Only active during "Playing" state
 
@@ -310,21 +321,45 @@ function inRange(x1, y1, x2, y2, range)
     return x2 >= (x1 - range) and x2 <= (x1 + range) and y2 >= (y1 - range) and y2 <= (y1 + range)
 end
 
--- HANDLERS: Game state management for AO-Effect
+-- HANDLERS
+
 
 -- Handler for player movement
+function OnPlayerMove(msg)
+    Now = tonumber(msg.Timestamp)
+    addPlayerMoveAction(msg.From, msg.Tags.Direction)
+    onTick()
+end
+
 Handlers.add("PlayerMove",
     Handlers.utils.hasMatchingTag("Action", "PlayerMove"),
     function (msg)
-        addPlayerMoveAction(msg.From, msg.Tags.Direction)
+        Now = tonumber(msg.Timestamp)
+        local status, err = pcall(OnPlayerMove, msg)
+        if not status then
+          print(err)
+          addLog("OnPlayerMove", err)
+        end
+
     end
 )
 
 -- Handler for player attacks
+function OnPlayerAttack(msg)
+    Now = tonumber(msg.Timestamp)
+    addPlayerAttackAction(msg.From, tonumber(msg.Tags.AttackEnergy))
+    onTick()
+end
+
 Handlers.add("PlayerAttack",
     Handlers.utils.hasMatchingTag("Action", "PlayerAttack"),
     function (msg)
-        addPlayerAttackAction(msg.From, tonumber(msg.Tags.AttackEnergy))
+        Now = tonumber(msg.Timestamp)
+        local status, err = pcall(OnPlayerAttack, msg)
+        if not status then
+          print(err)
+          addLog("OnPlayerAttack", err)
+        end
     end
 )
 
@@ -381,7 +416,11 @@ Handlers.add(
     end,
     function(Msg)
         Now = tonumber(Msg.Timestamp)
-        onTick()
+        local status, err = pcall(onTick)
+        if not status then
+          print(err)
+          addLog("onTick", err)
+        end
     end
 )
 
