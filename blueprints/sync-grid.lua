@@ -151,14 +151,7 @@ function processTurn()
         end
     end
 
-
-    local json = require("json")
-
-    GameStateJson = json.encode({
-        GameMode = GameMode,
-        Players = Players,
-        Balances = filteredBalances,
-    })
+    encodeGameState()
 
     -- players are listeners since they requested GameState once
     -- send game state to listeners
@@ -177,6 +170,14 @@ function processTurn()
 
 end
 
+function encodeGameState()
+    local json = require("json")
+    GameStateJson = json.encode({
+        GameMode = GameMode,
+        Players = Players,
+        PlayerBalances = Balances
+    })
+end
 
 function sendGameStateToPlayer(player)
     Send({
@@ -447,11 +448,17 @@ Handlers.add(
     function(Msg)
         local q = tonumber(Msg.Quantity)
         
-        if #Players >= MaximumPlayers then
+        if tableLength(Players) >= MaximumPlayers then
             Send({
                 Target = Msg.From,
                 Action = "Game-Full",
                 Data = "Game is full."
+            })
+            Send({
+                Target = CRED,
+                Action = "Transfer",
+                Quantity = tostring(q),
+                Recipient = Msg.From
             })
             return
         end
@@ -480,7 +487,9 @@ Handlers.add(
             Data = "You are in the game."
         })
 
+        encodeGameState()
         sendGameStateToPlayer(Msg.Sender)
+        
         addListener(Msg.Sender)
         
     end
@@ -525,7 +534,7 @@ Handlers.add(
         if Players[Msg.From] and Msg.Name then
             Players[Msg.From].name = Msg.Name
         end
-        
+
         addListener(Msg.From)
         if Turn.waitingCount > 0 then
 
