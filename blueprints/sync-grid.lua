@@ -141,16 +141,6 @@ function processTurn()
         end
     end
 
-
-    local filteredBalances = {}
-
-    -- filter only playing players
-    for player, balance in pairs(Balances) do
-        if Players[player] then
-            filteredBalances[player] = balance
-        end
-    end
-
     encodeGameState()
 
     -- players are listeners since they requested GameState once
@@ -172,10 +162,20 @@ end
 
 function encodeGameState()
     local json = require("json")
+
+    local filteredBalances = {}
+
+    -- filter only playing players
+    for player, balance in pairs(Balances) do
+        if Players[player] then
+            filteredBalances[player] = balance
+        end
+    end
+
     GameStateJson = json.encode({
         GameMode = GameMode,
         Players = Players,
-        PlayerBalances = Balances
+        PlayerBalances = filteredBalances,
     })
 end
 
@@ -276,6 +276,11 @@ end
 function attack(msg)
     local player = msg.From
     local attackEnergy = tonumber(msg.Tags.AttackEnergy) < 0 and 0 or tonumber(msg.Tags.AttackEnergy)
+
+    if not Players[player] then
+        Send({Target = player, Action = "Attack-Failed", Reason = "Player not found."})
+        return
+    end
 
     -- get player coordinates
     local x = Players[player].x
@@ -489,7 +494,7 @@ Handlers.add(
 
         encodeGameState()
         sendGameStateToPlayer(Msg.Sender)
-        
+
         addListener(Msg.Sender)
         
     end

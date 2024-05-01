@@ -1,6 +1,7 @@
 -- Simple random bot for AO-Effect style game, which has it's own tokens
 
 Game = "{{gamePid}}"
+CredPid = "{{credPid}}" -- set same as game if your game has it's own token
 
 LatestGameState = LatestGameState or nil
 InAction = InAction or false -- Prevents the agent from taking multiple actions at once.
@@ -97,7 +98,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "AutoPay"),
   function (msg)
     print("Auto-paying confirmation fees.")
-    ao.send({ Target = Game, Action = "Transfer", Recipient = Game, Quantity = "1000"})
+    ao.send({ Target = CredPid, Action = "Transfer", Recipient = Game, Quantity = "1000"})
   end
 )
 
