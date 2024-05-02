@@ -219,14 +219,12 @@ function onTick()
 end
 
 local function isOccupied(x,y) 
-  local result = false
   for k,v in pairs(Players) do
     if v.x == x and v.y == y then
-        result = true
-        return
+        return true
     end
   end
-  return result
+  return false
 end
 
 -- Handles player movement
@@ -257,7 +255,7 @@ function move(msg)
         -- Player cant move to cell already occupied.
         if isOccupied(newX, newY) then
             Send({Target = playerToMove, Action = "Move-Failed", Reason = "Cell Occupied."})
-            return 
+            return
         end
 
         -- updates player coordinates while checking for grid boundaries
