@@ -117,7 +117,7 @@ function processTurn()
 
     -- perform moves
     for _, item in pairs(shuffleActions()) do
-        if item.action.move then
+        if Players[item.player] and item.action.move then
             move({
                 From = item.player,
                 Tags = {
@@ -130,7 +130,7 @@ function processTurn()
 
     -- perform attacks
     for _, item in pairs(shuffleActions()) do
-        if item.action.attack then
+        if Players[item.player] and item.action.attack then
             attack({
                 From = item.player,
                 Tags = {
@@ -145,9 +145,7 @@ function processTurn()
 
     -- players are listeners since they requested GameState once
     -- send game state to listeners
-    for listener, _ in pairs(Listeners) do
-        sendGameStateToPlayer(listener)
-    end
+    sendGameStateToListeners()
 
     Turn.submittedActions = {}
     Turn.count = Turn.count + 1
@@ -158,6 +156,12 @@ function processTurn()
         table.remove(LastPlayerAttacks, 1)
     end
 
+end
+
+function sendGameStateToListeners()
+    for listener, _ in pairs(Listeners) do
+        sendGameStateToPlayer(listener)
+    end
 end
 
 function encodeGameState()
@@ -241,7 +245,6 @@ function move(msg)
     if (direction == "Stay") then
         print("Stayed...")
         print(Players[playerToMove])
-        Turn.submittedActions[playerToMove].move = nil
         Players[playerToMove].lastTurn = msg.Timestamp
         return
     end
@@ -388,7 +391,9 @@ end
 -- @param eliminator: The player causing the elimination.
 function eliminatePlayer(eliminated, eliminator)
 
-    Balances[eliminator] = tostring(tonumber(Balances[eliminator] or 0) + 100)
+    Balances[eliminator] = tostring(
+        tonumber(Balances[eliminator] or 0) + tonumber(Balances[eliminated] or 0)
+    )
     
     Balances[eliminated] = "0"
     Players[eliminated] = nil
@@ -442,6 +447,59 @@ Handlers.add(
 )
 
 -- Handler for player deposits to participate in the next game.
+function tableLength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+end
+
+function OnTransfer(Msg)
+    local q = tonumber(Msg.Quantity) 
+    if tableLength(Players) >= MaximumPlayers then
+        Send({
+            Target = Msg.From,
+            Action = "Game-Full",
+            Data = "Game is full."
+        })
+        Send({
+            Target = CRED,
+            Action = "Transfer",
+            Quantity = tostring(q),
+            Recipient = Msg.From
+        })
+        return
+    end
+
+    if not Balances[Msg.Sender] then
+        Balances[Msg.Sender] = "0"
+    end
+
+    local balance = tonumber(Balances[Msg.Sender])
+    Players[Msg.Sender] = playerInitState()
+    
+    balance = math.floor(balance + q)
+    Balances[Msg.Sender] = tostring(balance)
+
+    if balance <= 10 then
+        Players[Msg.Sender].health = 1
+    elseif balance >= 1000 then
+        Players[Msg.Sender].health = 100
+    else
+        Players[Msg.Sender].health = math.floor(scaleNumber(balance))
+    end
+
+    Send({
+        Target = Msg.Sender,
+        Action = "Payment-Received",
+        Data = "You are in the game."
+    })
+
+    addListener(Msg.Sender)
+    encodeGameState()
+    sendGameStateToListeners()
+    
+end
+
 Handlers.add(
     "Transfer",
     function(Msg)
@@ -451,52 +509,12 @@ Handlers.add(
             tonumber(Msg.Quantity) >= PaymentQty and "continue"
     end,
     function(Msg)
-        local q = tonumber(Msg.Quantity)
-        
-        if tableLength(Players) >= MaximumPlayers then
-            Send({
-                Target = Msg.From,
-                Action = "Game-Full",
-                Data = "Game is full."
-            })
-            Send({
-                Target = CRED,
-                Action = "Transfer",
-                Quantity = tostring(q),
-                Recipient = Msg.From
-            })
-            return
+        Now = tonumber(Msg.Timestamp)
+        local status, err = pcall(OnTransfer, Msg)
+        if not status then
+          print(err)
+          addLog("OnTransfer", err)
         end
-
-        if not Balances[Msg.Sender] then
-            Balances[Msg.Sender] = "0"
-        end
-
-        local balance = tonumber(Balances[Msg.Sender])
-        Players[Msg.Sender] = playerInitState()
-        
-        balance = math.floor(balance + q)
-        Balances[Msg.Sender] = tostring(balance)
-
-        if balance <= 10 then
-            Players[Msg.Sender].health = 1
-        elseif balance >= 1000 then
-            Players[Msg.Sender].health = 100
-        else
-            Players[Msg.Sender].health = math.floor(scaleNumber(balance))
-        end
-
-        Send({
-            Target = Msg.Sender,
-            Action = "Payment-Received",
-            Data = "You are in the game."
-        })
-
-        encodeGameState()
-        sendGameStateToPlayer(Msg.Sender)
-
-        addListener(Msg.Sender)
-        
     end
 )
 
