@@ -65,9 +65,63 @@ UI = {
     local pid = msg.From
     local page = msg.Tags.Path or '/'
     print (UI.page(pid, page))
+  end,
+
+  onRun = function (msg)
+    local json = require 'json'
+ 
+    local pid = msg.From
+    local command = msg.Tags.Data
+    local args = json.decode(msg.Tags.Args)
+    args.pid = pid
+
+    local html = UI_APP.PAGES[ UI_STATE[pid].path or '/' ]
+    if not html then
+      UI.log("UI.onRun", "page not found")
+      print ('<html><h1>404</h1></html>')
+      return
+    end
+ 
+    -- check that current page contains 'ui-run="${command}('
+    local contains = html:find('ui-run="' .. command .. '(')
+    if not contains then
+      UI.log("UI.onRun", "command not found")
+      print ('<html><h1>404 - command not found in page</h1></html>')
+      return
+    end
+
+    local fn = _G[command]
+    if not fn then
+      UI.log("UI.onRun", "function not found")
+      print ('<html><h1>404 - function not found in code</h1></html>')
+      return
+    end
+
+    local status, result = pcall(fn, args)
+    if not status then
+      UI.log("UI.onRun", result)
+      print ('<html><h1>500 - command run failed</h1></html>')
+      return
+    end
+
+    print (result)
+
   end
  
 }
+
+Handlers.add("UI_RUN",
+  Handlers.utils.hasMatchingTag("Action", "UI_RUN"),
+  function (msg)
+    UI.now = tonumber(msg.Timestamp)
+
+    local status, err = pcall(UI.onRun, msg)
+    if not status then
+      UI.log("UI_RUN", err)
+      print ('<html><h1>500 - run failed</h1></html>')
+    end
+  end
+)
 
 Handlers.add("UI_GET_PAGE",
   Handlers.utils.hasMatchingTag("Action", "UI_GET_PAGE"),
@@ -94,7 +148,7 @@ UI_APP = {
         <h1>UI Example</h1>
         <p>Enter your name:</p>
         <ui-input ui-id="name" ui-type="String" />
-        <ui-button label="Login" ui-valid="name" ui-action="cmdLogin($pid, $name)" />
+        <ui-button label="Login" ui-valid="name" ui-run="cmdLogin($name)" />
       ]]
     },
     {
@@ -114,14 +168,14 @@ UI_APP = {
   end,
 }
 
-function cmdLogin(pid, name)
-  UI.set(pid, { name = name })
-  return UI.page(pid, "/home") .. UI.state(pid)
+function cmdLogin(args)
+  UI.set(args.pid, { name = args.name })
+  return UI.page(args.pid, "/home") .. UI.state(args.pid)
 end
 
 
-function cmdLogout(pid)
-  UI.set(pid, { name = "" })
-  return UI.page(pid, "/")
+function cmdLogout(args)
+  UI.set(args.pid, { name = "" })
+  return UI.page(args.pid, "/")
 end
 
