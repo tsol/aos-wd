@@ -73,7 +73,7 @@ export const useProcesses = () => {
     return getRunning(pid)?.listeners.map(l => l.client);
   }
 
-  async function command(pid: string, text: string) {
+  async function command(pid: string, text: string, tags?: Tag[]) {
 
     const loadBlueprintExp = /\.load-blueprint\s+(\w*)/;
 
@@ -92,11 +92,12 @@ export const useProcesses = () => {
 
 
     try {
-      const result = await evaluate(pid, text);
-      // output.value = [ ...output.value, ...String(result).split('\n') ];
-      const msgs = String(result).split('\n').map((line) => ({ data: line, tags: [], type: 'evaluate' } as BrodcastMsg));
+      const result = await evaluate(pid, text, tags);
+
+      const msgs = [{ data: String(result), tags: [], type: 'evaluate' } as BrodcastMsg];
       broadcast(pid, msgs);
     } catch (e: any) {
+      console.error(e);
       useToast().error(e.message);
     }
 

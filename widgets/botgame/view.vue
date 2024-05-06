@@ -51,7 +51,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
-import { type State } from '../botgame';
+import { type State } from './botgame';
 import { Renderer } from './renderer';
 import { useProcess } from '~/composables/useProcess';
 
@@ -121,4 +121,4 @@ watch([() => props.state, () => canvas.value], () => {
 
 }, { immediate: true, deep: true });
 
-</script>
+</script>./botgame

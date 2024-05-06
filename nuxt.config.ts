@@ -25,6 +25,11 @@ export default defineNuxtConfig({
     //...
   ],
   vite: {
+    resolve: {
+      alias: {
+        vue: 'vue/dist/vue.esm-bundler.js'
+      }
+    },
     plugins: [
       // string({
       //   include: '**/*.lua',
@@ -40,7 +45,7 @@ export default defineNuxtConfig({
           }
         },
       },
-      
+
     ],
 
     vue: {

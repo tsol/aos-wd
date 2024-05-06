@@ -27,10 +27,10 @@ export function useProcess<STATE>(pid: string) {
   });
 
 
-  function command(text: string, silent?: boolean) {
+  function command(text: string, silent?: boolean, tags?: Tag[]) {
     if (!silent)
       processes.broadcast(pid, [{ type: 'internal', data: text, tags: [] }], 'Console');
-    return processes.command(pid, text);
+    return processes.command(pid, text, tags);
   }
 
   function rundry(toPid: string, tags: Tag[], data = "") {
@@ -53,7 +53,10 @@ export function useProcess<STATE>(pid: string) {
   function setStateVariable(widget: string, key: string, value: any) {
     // console.log('setting state variable', key, value);
 
-    const newState = { ...state.value, [widget]: { [key]: value } };
+    const newState = { ...state.value, [widget]: {
+      ... ((state.value as any)[widget] || {}),
+      [key]: value }
+    };
     state.value = newState;
   }
 

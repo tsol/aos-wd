@@ -11,33 +11,16 @@
           {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9) }}
         </ClickToClipboard>
       </div>
-      
-      <v-icon
-        title="ao.link"
-        size="small"
-        class="ml-2"
-        color="green"
-        @click="openUrl(`https://ao.link/entity/${pid}`)"
-        
-      >mdi-link-variant</v-icon>
-      
-      <v-icon
-        title="ar-io.dev"
-        size="small"
-        class="ml-1"
-        color="green"
-        @click="openUrl(`https://ar-io.dev/${pid}`)"
-        
-      >mdi-emoticon-devil-outline</v-icon>
 
-     
-      <v-icon
-        title="arweave.app"
-        size="small"
-        class="ml-1"
-        color="green"
-        @click="openUrl(`https://arweave.app/tx/${pid}`)"
-      >mdi-weather-cloudy</v-icon>
+      <v-icon title="ao.link" size="small" class="ml-2" color="green"
+        @click="openUrl(`https://ao.link/entity/${pid}`)">mdi-link-variant</v-icon>
+
+      <v-icon title="ar-io.dev" size="small" class="ml-1" color="green"
+        @click="openUrl(`https://ar-io.dev/${pid}`)">mdi-emoticon-devil-outline</v-icon>
+
+
+      <v-icon title="arweave.app" size="small" class="ml-1" color="green"
+        @click="openUrl(`https://arweave.app/tx/${pid}`)">mdi-weather-cloudy</v-icon>
 
       <v-divider class="ml-2 mr-2"></v-divider>
 
@@ -66,6 +49,9 @@
             <v-icon size="small" color="red" class="bubble"
               @click="process.removeWidget(widget.name)">mdi-close</v-icon>
           </div>
+
+          <!-- <div>widget.name = {{ widget.name }}</div>
+          <div>state = {{ (process.state.value as any)?.[widget.name] }}</div> -->
 
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
             :state="(process.state.value as any)?.[widget.name]" />
@@ -207,28 +193,56 @@ function createSnippet(widgetName: string) {
 function parseProcess(output: string) {
 
   process.widgets.value.forEach((widget) => {
+
     const wd = getWidgetDefinition(widget.name);
+
     if (!wd) {
       console.error(`No widget definition found for ${widget.name}`);
       process.removeWidget(widget.name);
       return;
     }
 
-    wd.parsers.forEach((parser) => {
-      if (parser.mode === 'store') {
-        const object = parseLuaObject(output);
-        if (!object) return;
-        const variable = parser.variable as any;
-        const zodType = (wd.types as any)[variable];
-        if (!zodType) throw new Error(`No type found for ${variable}`);
-        const parsed = zodType.safeParse(object);
-        if (parsed.success) {
-          process.setStateVariable(wd.name, variable, parsed.data);
-        }
+    let data = output;
+
+    console.log('parsing_data:', data);
+
+    wd.parsers.filter((p) => p.mode === 'handler').forEach((parser) => {
+      if (parser.mode !== 'handler') return;
+
+      const handler = parser.handler;
+      const result = handler(process.state.value[widget.name], data);
+
+      if (result) {
+        console.log('prev_state:',process.state.value[wd.name]);
+        console.log('parse_handler.state:', result.state);
+        console.log('wd.name:', wd.name);
+
+        process.state.value[wd.name] = result.state;
+        data = result.reducedData;
+      }
+      return;
+    }
+    );
+
+    wd.parsers.filter((p) => p.mode === 'store').forEach((parser) => {
+
+      if (parser.mode !== 'store') return;
+
+      const object = parseLuaObject(data);
+      if (!object) return;
+
+      const variable = parser.variable as any;
+      const zodType = (wd.types as any)[variable];
+      if (!zodType) throw new Error(`No type found for ${variable}`);
+
+      const parsed = zodType.safeParse(object);
+      if (parsed.success) {
+        console.log('parse_store:', parsed.data);
+        console.log('wd.name:', wd.name, 'variable:', variable);
+        process.setStateVariable(wd.name, variable, parsed.data);
       }
 
     });
-
   });
 
 }

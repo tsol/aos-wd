@@ -12,7 +12,7 @@ export type ParseHandler<STATE> = {
   history: boolean;
 } & ( {
   mode: 'handler';
-  handler: (state: STATE, ...args: any[]) => STATE;
+  handler: (state: STATE, data: string) => { state: STATE, reducedData: string } | undefined;
 } | {
   mode: 'regex';
   regex: RegExp;

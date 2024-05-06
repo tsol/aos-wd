@@ -59,7 +59,7 @@ function listen(text: BrodcastMsg[]) {
 
     text.forEach((msg) => {
       if (process.process?.disableLive && msg.type === 'live') return;
-      const lines = msg.data.split(/\r?\n/);
+      const lines = msg.data?.split(/\r?\n/) || [];
       res.push(...lines);
     });
 

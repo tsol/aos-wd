@@ -2,8 +2,11 @@
 // this parses both LUA output of table and JSON
 // [] replaced by {}
 
-export function parseLuaObject(text: string) {
+export function parseLuaObject(text?: string) {
 
+  if (!text)
+    return undefined;
+  
   // first exctract code starting from the first '{' to the last '}'
 
   let start = text.indexOf('{');

@@ -73,3 +73,4 @@ const sortedPlayers = computed(() => {
 
 
 </script>
+./botgame
