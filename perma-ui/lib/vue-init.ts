@@ -1,13 +1,8 @@
-<template>
-  <div ref="appId"></div>
-</template>
-
-<script lang="ts" setup>
-import { createApp, ref, watch } from 'vue';
+import { createApp  } from 'vue';
 import { createVuetify } from 'vuetify';
+
 import 'vuetify/dist/vuetify.css';
 
-// Import all Vuetify 3 components
 import {
   VAlert,
   VApp,
@@ -83,54 +78,23 @@ import {
   VVirtualScroll,
 } from 'vuetify/components';
 
-import UiInput from './ui-input.vue';
-import UiButton from './ui-button.vue';
+import UiInput from '../components/ui-input.vue';
+import UiButton from '../components/ui-button.vue';
 
-import cloneDeep from 'lodash.clonedeep';
-
-const props = defineProps<{
-  pid: string;
+export interface InitVueParams {
   html: string;
-  state?: Record<string, any>;
-  loading?: boolean;
- }>();
+  stateRef: Ref<any>;
+  loadingRef: Ref<boolean>;
+  aoSendMsg: (tags: Tag[]) => void;
+}
 
-const process = useProcess<any>(props.pid);
-
-const appId = ref();
-
-let vueApp: any = undefined;
-
-onMounted(() => {
-  
-  const noonce = Math.random().toString();
-
-  const tags = [
-    { name: "Action", value: "UIGetPage" }, 
-    { name: "Path", value: "/" },
-    { name: "Noonce", value: noonce },
-  ];
-
-  process.command('GET_PAGE', false, tags);
-  process.setStateVariable('UI', '_noonce', noonce);
-
-});
-
-watch([() => props.html, () => props.state, appId], () => {
-
-  if (!props.html || !props.state || !appId.value) {
-    return;
-  }
-
-  if (vueApp) {
-    vueApp.unmount();
-  }
+export function initVue( params: InitVueParams ) {
 
   const html =
-     props.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
-      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :inputs-validity="inputsValidity" :process="process"');
+     params.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
+      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity" :process="process"');
 
-  vueApp = createApp({
+  const vueApp = createApp({
     components: {
       UiInput,
       UiButton,
@@ -210,10 +174,10 @@ watch([() => props.html, () => props.state, appId], () => {
     },
     data() {
       return { 
-        state: cloneDeep(toRaw(props.state)),
         inputsValidity: {},
-        process,
-        loading: toRef(props, 'loading'),
+        state: params.stateRef,
+        loading: params.loadingRef,
+        aoSendMsg: params.aoSendMsg,
       };
     },
     template: html,
@@ -221,8 +185,6 @@ watch([() => props.html, () => props.state, appId], () => {
 
   const vuetify = createVuetify();
   vueApp.use(vuetify);
+  return vueApp;
+}
 
-  vueApp.mount(appId.value);
-}, { immediate: true, deep: true});
-
-</script>

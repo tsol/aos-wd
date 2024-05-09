@@ -6,6 +6,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "build:ui": "vite build --outDir ./dist --minify",
+    "build:ui-old2": "vite build --outDir ./dist-ui --entry ./perma-ui/index.ts --minify",
+    "build:ui-old": "vue-cli-service build --target lib --formats umd-min --name ui ./perma-ui/index.ts",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -19,6 +22,7 @@
     "arweave-wallet-connector": "^1.0.2",
     "lodash.clonedeep": "^4.5.0",
     "lodash.debounce": "^4.0.8",
+    "lodash.replace": "^4.1.4",
     "luaparse": "^0.3.1",
     "nuxt": "^3.11.2",
     "p5": "^1.9.2",

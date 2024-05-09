@@ -28,20 +28,6 @@ import { computed, ref } from 'vue';
 import type { FormField } from './form.interface';
 import { INPUTS_MAP } from './inputs.interface';
 
-
-/*
-export type FormField<I extends keyof typeof INPUTS_MAP> = {
-  name: string;
-  input: I,
-  label?: string;
-  required?: boolean;
-  disabled?: boolean;
-  hidden?: boolean;
-  initialValue?: Zod.infer<typeof INPUTS_MAP[I]['zod']>;
-  col?: number;
-}
-*/
-
 const props = defineProps<{
   fields: FormField<keyof typeof INPUTS_MAP>[];
 }>();

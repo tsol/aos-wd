@@ -16,8 +16,7 @@ const widget: WidgetDefinition<State> = {
   },
   parsers: [
   ],
-  handlers: [
-  ],
+  
   snippets: [
     {
         name: 'Load AO-Effect Arena',

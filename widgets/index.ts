@@ -13,7 +13,6 @@ export function getWidgetDefinition(name: string) {
   return widgets.find(w => w.name === name);
 }
 
-
 export function createWidget(name: string): StoredWidget | null {
   const widget = getWidgetDefinition(name);
   if (!widget) return null;

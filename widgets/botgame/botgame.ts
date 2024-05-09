@@ -89,8 +89,7 @@ const widget: WidgetDefinition<State> = {
       variable: 'gameState'
     }
   ],
-  handlers: [
-  ],
+  
   snippets: [
     {
       name: 'Init BOT',

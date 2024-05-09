@@ -106,11 +106,12 @@
 const openUrl = (url: string) => window.open(url, '_blank');
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
-import { parseLuaObject } from '~/lib/parser';
+import {  parseProcess } from '~/lib/parser';
 import type { StoredSnippet, StoredWidget } from '~/store/persist';
 import { getWidgetDefinition } from '~/widgets/';
 import { shortenCutMiddle } from '~/lib/utils';
 import { useDisplay } from 'vuetify';
+import type { WidgetDefinition } from '~/models/widgets';
 
 const { mdAndUp } = useDisplay();
 
@@ -125,26 +126,13 @@ process.addListener({ client: 'Parser', handler: listen });
 
 const { snippetLoading, snippetMenu, runSnippet, snippetID } = useSnippets(process);
 
-// const processName = computed(() => {
-//   let res = '';
-//   if (props.pid === process.name.value || !process.name.value) res = props.pid;
-//   else res = `${props.pid} - ${process.name.value}`;
-//   return shortenCutMiddle(res, mdAndUp.value ? 40 : 15);
-// });
-
-
 const maxColumns = computed(() => {
   return Math.max(...process.widgets.value.map((widget) => {
     return widget.column || 1;
   }));
 });
 
-function listen(text: BrodcastMsg[]) {
-  if (!text.length) return;
-  text.forEach((msg) => {
-    parseProcess(msg.data);
-  });
-}
+
 
 onMounted(() => {
   console.log('** Mounting ' + props.pid + ' **');
@@ -190,62 +178,24 @@ function createSnippet(widgetName: string) {
 
 }
 
-function parseProcess(output: string) {
+function listen(text: BrodcastMsg[]) {
+  if (!text.length) return;
 
-  process.widgets.value.forEach((widget) => {
-
-    const wd = getWidgetDefinition(widget.name);
-
+  const widgetDefinitions = process.widgets.value.map((w) => {
+    const wd = getWidgetDefinition(w.name);
     if (!wd) {
-      console.error(`No widget definition found for ${widget.name}`);
-      process.removeWidget(widget.name);
-      return;
+      console.error(`No widget definition found for ${w.name}`);
+      process.removeWidget(w.name);
+      return undefined;
     }
+    return wd;
+  }).filter((wd) => wd) as unknown as WidgetDefinition<any>[];
 
-    let data = output;
-
-    console.log('parsing_data:', data);
-
-    wd.parsers.filter((p) => p.mode === 'handler').forEach((parser) => {
-      if (parser.mode !== 'handler') return;
-
-      const handler = parser.handler;
-      const result = handler(process.state.value[widget.name], data);
-
-      if (result) {
-        console.log('prev_state:',process.state.value[wd.name]);
-        console.log('parse_handler.state:', result.state);
-        console.log('wd.name:', wd.name);
-
-        process.state.value[wd.name] = result.state;
-        data = result.reducedData;
-      }
-      return;
-    }
-    );
-
-    wd.parsers.filter((p) => p.mode === 'store').forEach((parser) => {
-
-      if (parser.mode !== 'store') return;
-
-      const object = parseLuaObject(data);
-      if (!object) return;
-
-      const variable = parser.variable as any;
-      const zodType = (wd.types as any)[variable];
-      if (!zodType) throw new Error(`No type found for ${variable}`);
-
-      const parsed = zodType.safeParse(object);
-      if (parsed.success) {
-        console.log('parse_store:', parsed.data);
-        console.log('wd.name:', wd.name, 'variable:', variable);
-        process.setStateVariable(wd.name, variable, parsed.data);
-      }
-
-    });
+  text.forEach((msg) => {
+    parseProcess(widgetDefinitions, process.state, msg.data);
   });
-
 }
+
 
 function moveLeft(widget: StoredWidget) {
   widget.column = Math.max((widget.column || 1) - 1, 1);
@@ -290,4 +240,3 @@ function moveDown(widget: StoredWidget) {
 }
 
 </script>
-~/composables/useProcesses~/models/widgets~/widgets/utils~/widgets/arena

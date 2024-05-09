@@ -1,45 +1,40 @@
-<template>  
-  <div>
-    <!-- state is {{ state }} -->
-    <VueInsideVue :pid="pid" :html="state?.html || ''" :state="state?.ui" :loading="loading"/>
-    <div v-if="loading" class="text-center">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-    </div>
+<template>
+  <div ref="appId"></div>
+  <div v-if="loading" class="text-center">
+    <v-progress-circular indeterminate color="primary"></v-progress-circular>
   </div>
 </template>
 
 <script lang="ts" setup>
-import VueInsideVue from './vue-inside-vue.vue';
 
 import type { State } from './ui';
+import { useUI } from '~/perma-ui/lib/useUI';
 
 const props = defineProps<{
-  pid: string,
-  state?: State
+  pid: string;
+  state?: State;
 }>();
 
-const wasInitialized = ref(false);
+const process = useProcess(props.pid);
 
-const loading = computed(() =>{
-  if (!props.state) return true;
-  if (! props.state.html) return true;
-  
-  if (props.state.noonceSent && props.state.noonceRecieved !== props.state.noonceSent) {
-    return true;
+const appId = ref<HTMLDivElement | undefined>();
+
+const { init, loading } = useUI(
+  appId,
+  toRef(props.state),
+  (tags: Tag[]) => {
+
+    const dataTagIndex = tags.findIndex(t => t.name === 'Data');
+    const data = dataTagIndex !== -1 ? tags[dataTagIndex].value : '';
+    const withoutData = tags.filter((_, i) => i !== dataTagIndex);
+
+    process.command(data, false, withoutData);
   }
-  return false;
+);
 
+
+onMounted(() => {
+  init();
 });
-
-watch (() => props.state, () => {
-  if (props.state && !wasInitialized.value) {
-    wasInitialized.value = true;
-    props.state.ui = { '__type': 'UI_STATE' };
-    props.state.html = '';
-    props.state.noonceRecieved = undefined;
-    props.state.noonceSent = undefined;
-  }
-});
-
 
 </script>

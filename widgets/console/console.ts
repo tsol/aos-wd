@@ -13,8 +13,7 @@ const widget: WidgetDefinition<State> = {
   },
   parsers: [
   ],
-  handlers: [
-  ],
+  
   snippets: [
   ],
 };

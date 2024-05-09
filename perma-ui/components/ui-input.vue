@@ -12,9 +12,10 @@
 
 <script setup lang="ts">
 
-import type { State } from './ui';
-import InputByType from './input/by-type.vue';
+import type { State } from '../ui-base';
 import type { INPUTS_MAP } from './input/inputs.interface';
+
+import InputByType from './input/by-type.vue';
 
 const props = defineProps<{
   uiId: keyof State;
@@ -45,3 +46,4 @@ function validityChanged(isValid: boolean) {
 }
 
 </script>
+../lib/ui-base

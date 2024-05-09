@@ -21,8 +21,6 @@ const widget: WidgetDefinition<State> = {
   },
   parsers: [
   ],
-  handlers: [
-  ],
   snippets: [
     {
       name: 'MY CODE',

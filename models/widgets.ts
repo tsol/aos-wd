@@ -32,14 +32,14 @@ type ZodTypes<T> = {
   [P in keyof T]: z.ZodType<T[P]>;
 };
 
-export type WidgetDefinition<STATE> = {
-
-  component: any;
-
+export type BaseWidgetDefinition<STATE> = {
   name: string;
   types: ZodTypes<STATE>;
   parsers: ParseHandler<STATE>[];
-  handlers: LuaHandler[];
+}
+
+export type WidgetDefinition<STATE> = BaseWidgetDefinition<STATE> & {
+  component: any;
   snippets: Snippet[];
 }
 
