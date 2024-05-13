@@ -1,6 +1,10 @@
 import { loadBlueprint } from "~/lib/ao/commands/blueprints";
-import { evaluate } from "~/lib/ao/evaluate";
-import { live, textFromMsg, type Edge } from "~/lib/ao/live";
+import { evaluate } from "~/core/ao/evaluate";
+import { live } from "~/core/ao/live";
+
+import { textFromMsg } from "~/core/ao/helpers";
+import type { Edge } from "~/core/ao/ao.models";
+
 import { findPid, processesList } from "~/lib/ao/query";
 import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
@@ -8,8 +12,6 @@ import { ref } from 'vue';
 import { dryrun } from "@permaweb/aoconnect";
 import { shortenCutMiddle } from "~/lib/utils";
 import { startMonitor, stopMonitor } from "~/lib/ao/cron";
-
-console.log('useProcesses: init');
 
 export type Tag = { name: string, value: string };
 
@@ -92,10 +94,14 @@ export const useProcesses = () => {
 
     try {
       const result = await evaluate(pid, text, tags);
-      // if (result === undefined) {
-      //   broadcast(pid, [{ data: "undefined", type: 'evaluate' }]);
-      // }
-      const msgs = [{ data: String(result), type: 'evaluate' } as BrodcastMsg];
+
+      if (result.Output?.data?.prompt) {
+        usePrompt().value = result.Output?.data?.prompt;
+      }
+  
+      const output = result.Output?.data?.output || undefined;
+ 
+      const msgs = [{ data: String(output), type: 'evaluate' } as BrodcastMsg];
       broadcast(pid, msgs);
 
     } catch (e: any) {
@@ -107,7 +113,7 @@ export const useProcesses = () => {
 
   async function startProcess(pid: string, name?: string) {
 
-    console.log('starting live ', pid);
+    // console.log('starting live ', pid);
     let runningProcess = getRunning(pid);
 
     if (runningProcess) {

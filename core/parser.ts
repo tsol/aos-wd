@@ -1,5 +1,65 @@
-import type { BaseWidgetDefinition } from "~/models/widgets";
-import { textFromMsg, type Edge } from "./ao/live";
+import type { BaseWidgetDefinition } from "./core.models";
+
+import { type Edge } from "./ao/ao.models";
+import { textFromMsg } from "./ao/helpers";
+
+export function parseMessagesToState(
+  widgets: BaseWidgetDefinition<any>[],
+  state: Ref<any>,
+  textOutput?: string,
+  msg?: Edge,
+  myPid?: string,
+) {
+
+  let data = textOutput;
+  if ( ! data ) {
+    if (msg) {
+      data = textFromMsg(msg);
+    }
+  }
+
+  const msgs = msg?.node.Messages;
+
+  // console.log('parsing_data:', data?.slice(0, 30));
+
+  widgets.forEach((wd) => {
+    // console.log(' - wd.name:', wd.name);
+
+    const parsersByTag = wd.parsers.filter((p) => p.fromTag);
+
+    msgs?.forEach((msg) => {
+      parsersByTag.forEach((parser) => {
+
+        if (parser.targetMe) {
+          if (msg.Target !== myPid) return;
+        }
+
+        if (! Object.entries(parser.matchTags || {}).every(([key, value]) => {
+          const tag = msg.Tags?.find((t) => t.name === key);
+          return tag && tag.value === value;
+        })) return;
+
+
+        const tag = parser.fromTag === 'Data' ? { value: msg.Data } :
+          msg.Tags?.find((t) => t.name === parser.fromTag);
+
+        if (tag) {
+          runThroughParser(tag.value, wd, [parser], state);
+        }
+      }
+      );
+
+      if (data) {
+        const parsersByText = wd.parsers.filter((p) => !p.fromTag);
+        if (parsersByText.length === 0) return;
+        runThroughParser(data, wd, parsersByText, state);
+      }
+
+    });
+
+  });
+}
+
 
 // this parses both LUA output of table and JSON
 // [] replaced by {}
@@ -37,7 +97,7 @@ export function parseLuaObject(text?: string) {
     parsed = JSON.parse(processedString);
   }
   catch (e: any) {
-    console.error(e.message);
+    console.log(e.message);
   }
 
   // console.log('parsed:', parsed);
@@ -54,7 +114,8 @@ function runThroughParser(
 ) {
 
   let data = text;
-  console.log('Run-Through-Parser:', text.slice(0, 100));
+
+  console.log('Run-Through-Parser:', text);
 
   parsers.filter((p) => p.mode === 'handler').forEach((parser) => {
     if (parser.mode !== 'handler') return;
@@ -95,59 +156,3 @@ function runThroughParser(
   });
 }
 
-export function parseMessagesToState(
-  widgets: BaseWidgetDefinition<any>[],
-  state: Ref<any>,
-  textOutput?: string,
-  msg?: Edge,
-  myPid?: string,
-) {
-
-  let data = textOutput;
-  if ( ! data ) {
-    if (msg) {
-      data = textFromMsg(msg);
-    }
-  }
-
-  const msgs = msg?.node.Messages;
-
-  console.log('parsing_data:', data?.slice(0, 30));
-
-  widgets.forEach((wd) => {
-    // console.log(' - wd.name:', wd.name);
-
-    const parsersByTag = wd.parsers.filter((p) => p.fromTag);
-
-    msgs?.forEach((msg) => {
-      parsersByTag.forEach((parser) => {
-
-        if (parser.targetMe) {
-          if (msg.Target !== myPid) return;
-        }
-
-        if (! Object.entries(parser.matchTags || {}).every(([key, value]) => {
-          const tag = msg.Tags?.find((t) => t.name === key);
-          return tag && tag.value === value;
-        })) return;
-
-
-        const tag = parser.fromTag === 'Data' ? { value: msg.Data } :
-          msg.Tags?.find((t) => t.name === parser.fromTag);
-
-        if (tag) {
-          runThroughParser(tag.value, wd, [parser], state);
-        }
-      }
-      );
-
-      if (data) {
-        const parsersByText = wd.parsers.filter((p) => !p.fromTag);
-        if (parsersByText.length === 0) return;
-        runThroughParser(data, wd, parsersByText, state);
-      }
-
-    });
-
-  });
-}

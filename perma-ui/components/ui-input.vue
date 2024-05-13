@@ -39,7 +39,7 @@ const safeModelValue =  computed({
 });
 
 function validityChanged(isValid: boolean) {
-  console.log('validityChanged', isValid);
+  // console.log('validityChanged', isValid);
   if (! props.inputsValidity) {
     return;
   }

@@ -23,7 +23,7 @@ import { type BrodcastMsg } from '~/composables/useProcesses';
 import { useProcess } from '~/composables/useProcess';
 import { usePersistStore } from '~/store/persist';
 import { shortenCutMiddle } from '~/lib/utils';
-import { getPrintableMessage } from '~/lib/ao/live';
+import { getPrintableMessage } from '~/core/ao/helpers';
 
 const props = defineProps<{
   pid: string;
@@ -213,4 +213,4 @@ onUnmounted(() => {
 </script>
 
 
-~/composables/useProcesses
+~/composables/useProcesses~/core/ao/live

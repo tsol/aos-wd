@@ -10,9 +10,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { parseLuaObject } from '../../lib/parser';
 import type { State } from '../lib/ui-state-parser';
 import type { InitVueParams } from '../lib/vue-init';
+
+import { parseLuaObject } from '../../core/parser';
+
 import { VBtn } from 'vuetify/components';
 
 const props = defineProps<{
@@ -67,4 +69,4 @@ props.aoSendMsg(tags);
 
 
 </script>
-../lib/ui-base../lib/vue-inside-vue../lib/ui-state-parser
+../lib/ui-base../lib/vue-inside-vue../lib/ui-state-parser../../core/parser

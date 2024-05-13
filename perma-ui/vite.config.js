@@ -17,7 +17,8 @@ export default defineConfig({
     rollupOptions: {
       input: './index.ts',
     },
-    minify: 'terser'
+    minify: 'terser',
+    // sourcemap: true,
   },
   mode: 'production', 
   logLevel: 'warn', 

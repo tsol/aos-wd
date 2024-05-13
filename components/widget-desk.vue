@@ -104,10 +104,11 @@ import { type BrodcastMsg } from '~/composables/useProcesses';
 import type { StoredSnippet, StoredWidget } from '~/store/persist';
 import type { WidgetDefinition } from '~/models/widgets';
 
-import { parseMessagesToState } from '~/lib/parser';
+import { parseMessagesToState } from '~/core/parser';
 import { getWidgetDefinition } from '~/widgets/';
 import { shortenCutMiddle } from '~/lib/utils';
 import { useDisplay } from 'vuetify';
+import { useWallet } from '~/core/useWallet';
 
 const { mdAndUp } = useDisplay();
 
@@ -129,7 +130,7 @@ const maxColumns = computed(() => {
 });
 
 onMounted(() => {
-  console.log('** Mounting ' + props.pid + ' **');
+  // console.log('** Mounting ' + props.pid + ' **');
   process.addListener({ client: 'Parser', handler: listen });
 
   process.widgets.value?.forEach(w => {
@@ -142,7 +143,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  console.log('** Unmounting ' + props.pid + ' **');
+  // console.log('** Unmounting ' + props.pid + ' **');
   snippetsTimer.onUnmounted();
   process.removeListener(listen);
 });
@@ -183,7 +184,7 @@ function listen(msgs: BrodcastMsg[]) {
     return wd;
   }).filter((wd) => wd) as unknown as WidgetDefinition<any>[];
 
-  console.log('** Parser messages: **', msgs);
+  // console.log('** Parser messages: **', msgs);
 
   msgs.forEach((bmsg) => {
     if (bmsg.msg) {

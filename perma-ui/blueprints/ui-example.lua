@@ -22,10 +22,10 @@ UI_APP = {
     {
       path = '/home',
       html = [[
-        <h1>Welcome, {~name~}!</h1>
-        <p>What would you like to do with your {~fruit~}?</p>
+        <h1 class="mb-2">Welcome, {~name~}!</h1>
+        <p class="mb-2">What would you like to do with your {~fruit~}?</p>
         <ui-button ui-run="cmdLogout()">Logout</ui-button>
-        <ui-button ui-run="UI.page({ path = '/secret' })">Go to Secret Place</ui-button>
+        <ui-button class="ml-2" ui-run="UI.page({ path = '/secret' })">Go to Secret Place</ui-button>
       ]]
     },
     {
@@ -37,10 +37,17 @@ UI_APP = {
         return "/secret"
       end,
       html = [[
-        <h1>It is a secret place, {~name~}!</h1>
-        <p>Now you can finally eat your {~fruit~}!</p>
-        <ui-button ui-run="UI.page({ path = '/home' })">Go back</ui-button>
-        <ui-button ui-run="cmdLogout()">Logout</ui-button>
+        <v-card>
+          <v-card-title>Secret Place</v-card-title>
+          <v-card-text>
+            <p>It is a secret place, {~name~}!</p>
+            <p>Now you can finally eat your {~fruit~}!</p>
+          </v-card-text>
+          <v-card-actions>
+            <ui-button ui-run="UI.page({ path = '/home' })">Go back</ui-button>
+            <ui-button ui-run="cmdLogout()">Logout</ui-button>
+          </v-card-actions>
+        </v-card>
       ]]
     }
   },

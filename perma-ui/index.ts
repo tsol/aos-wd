@@ -1,19 +1,22 @@
 
-import type { Edge } from "~/lib/ao/live";
-import { parseMessagesToState } from "../lib/parser";
+import type { Edge } from "../core/ao/ao.models";
 import { type State, widget } from "./lib/ui-state-parser";
+import { parseMessagesToState } from "../core/parser";
+
 import { useAO } from "./lib/useAO";
-import { useAWW } from "./lib/useAWW";
+import { useWallet} from "../core/useWallet";
 import { useUI } from "./lib/useUI";
+
 import { ref, watch, computed } from "vue";
 
-
-const widgetsState = ref<{ 'UI': State }>({ UI: {
-  ui: { '__type': 'UI_STATE' },
-  html: '',
-  noonceRecieved: undefined,
-  noonceSent: undefined,
-}});
+const widgetsState = ref<{ 'UI': State }>({
+  UI: {
+    ui: { '__type': 'UI_STATE' },
+    html: '',
+    noonceRecieved: undefined,
+    noonceSent: undefined,
+  }
+});
 
 const state = computed({
   get: () => widgetsState.value.UI,
@@ -22,9 +25,12 @@ const state = computed({
 
 var PID = ''; getProcessPid().then(pid => PID = pid);
 
+const aww = useWallet(); 
+
 const appId = ref<HTMLDivElement | undefined>();
-const aww = useAWW();
+
 let ao: ReturnType<typeof useAO> | undefined = undefined;
+
 
 async function getProcessPid() {
 
@@ -49,6 +55,11 @@ watch( [aww.ourPID, appId], () => {
   
   console.log('init watch', aww.ourPID.value, appId.value);
 
+  if (!aww.ourPID.value) {
+    aww.arConnect();
+    return;
+  }
+
   if (!aww.ourPID.value || !appId.value) return;
 
   console.log('*** REINITIALIZING ***');
@@ -64,7 +75,7 @@ watch( [aww.ourPID, appId], () => {
     state,
     (tags: Tag[]) => {
   
-      console.log('Sending message:', tags);
+      // console.log('Sending message:', tags);
 
       const dataTagIndex = tags.findIndex(t => t.name === 'Data');
       const data = dataTagIndex !== -1 ? tags[dataTagIndex].value : '';
@@ -72,8 +83,8 @@ watch( [aww.ourPID, appId], () => {
 
       // ao?.evaluate(data, tagsWithoutData);
 
-      ao?.evaluate(data, tagsWithoutData).then((result) => {
-        console.log('evaluate result:', result);
+      ao?.evaluate(PID, data, tagsWithoutData).then((result) => {
+        // console.log('evaluate result:', result);
         parseMessagesToState([widget], widgetsState, undefined, {
           cursor: '',
           node: result 

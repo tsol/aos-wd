@@ -91,10 +91,22 @@ export interface InitVueParams {
 
 export function initVue( params: InitVueParams ) {
 
-  const html =
+  const html = `
+  <v-app theme="dark">
+  <v-main class="v-container">`
+    +
      params.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
-      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"');
+      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"')
+    + `
+  </v-main>
+  <div v-if="loading" class="text-center mt-4">
+    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+  </div>
+  </v-app>
+  `;
 
+
+  
   const vueApp = createApp({
     components: {
       UiInput,

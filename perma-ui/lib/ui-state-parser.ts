@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BaseWidgetDefinition } from '~/models/widgets';
+import type { BaseWidgetDefinition } from '../../core/core.models';
 
 type State = {
   ui: { '__type': 'UI_STATE' } & Record<string, any>;
@@ -50,13 +50,15 @@ function parseNoonceResponse(state: State, data?: string) {
   if (! match) return undefined;
 
   const noonce = match[1];
-  state.noonceRecieved = noonce;
 
-  if (state.noonceSent === noonce) {
+  if (state.noonceSent === noonce && state.noonceRecieved !== noonce) {
+
+    state.noonceRecieved = noonce;
+
     return parseHtmlResponse(state, data);
   }
 
-  console.log('Noonce mismatch:', state.noonceSent, noonce);
+  console.log('Noonce skip: sent=', state.noonceSent, 'prev_recv=', state.noonceRecieved, 'new=', noonce);
   
   return { state, reducedData: data.replace(/<!--noonce:.+?-->/, '') };
 }

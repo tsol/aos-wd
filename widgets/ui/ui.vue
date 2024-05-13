@@ -1,12 +1,10 @@
 <template>
   <div ref="appId"></div>
-  <div v-if="loading" class="text-center">
-    <v-progress-circular indeterminate color="primary"></v-progress-circular>
-  </div>
 </template>
 
 <script lang="ts" setup>
 
+import { useWallet } from '~/core/useWallet';
 import type { State } from './ui';
 import { useUI } from '~/perma-ui/lib/useUI';
 
@@ -20,7 +18,7 @@ const { ourPID } = useWallet();
 const process = useProcess(props.pid);
 const appId = ref<HTMLDivElement | undefined>();
 
-const { init, loading } = useUI(
+const { init } = useUI(
   appId,
   toRef(props, 'state'),
   (tags: Tag[]) => {
