@@ -1,5 +1,5 @@
 import type { WidgetDefinition } from '~/models/widgets';
-import * as Base from '../../perma-ui/lib/ui-state';
+import * as Base from '../../perma-ui/lib/ui-state-parser';
 
 import uiLibrary from '~/perma-ui/blueprints/ui-library.lua'
 import uiExample from '~/perma-ui/blueprints/ui-example.lua'

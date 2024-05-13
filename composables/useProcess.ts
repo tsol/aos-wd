@@ -20,6 +20,10 @@ export function useProcess<STATE>(pid: string) {
     }
   });
   
+  if (! state.value ) {
+    state.value = {} as STATE;
+  }
+
   const name = computed(() => process?.name || '');
 
   const widgets = computed(() => {
@@ -29,13 +33,13 @@ export function useProcess<STATE>(pid: string) {
 
   function command(text: string, silent?: boolean, tags?: Tag[]) {
     if (!silent)
-      processes.broadcast(pid, [{ type: 'internal', data: text, tags: [] }], 'Console');
+      processes.broadcast(pid, [{ type: 'internal', data: text }], 'Console');
     return processes.command(pid, text, tags);
   }
 
-  function rundry(toPid: string, tags: Tag[], data = "") {
-    processes.broadcast(pid, [{ type: 'dryrun', data, tags }], 'Console');
-    return processes.rundry(pid, toPid, tags, data);
+  function rundry(toPid: string, data = "") {
+    processes.broadcast(pid, [{ type: 'dryrun', data }], 'Console');
+    return processes.rundry(pid, toPid, data);
   }
 
   function addWidget(name: string) {

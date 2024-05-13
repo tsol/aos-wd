@@ -22,17 +22,18 @@ const widget: BaseWidgetDefinition<State> = {
     {
       mode: 'store',
       history: false,
-      variable: 'ui'
+      variable: 'ui',
+      matchTags: { 'Action': 'UI_RESPONSE' },
+      fromTag: 'Data',
+      targetMe: true,
     },
     {
       mode: 'handler',
       handler: parseNoonceResponse,
       history: false,
-    },
-    {
-      mode: 'handler',
-      handler: parseHtmlResponse,
-      history: false,
+      matchTags: { 'Action': 'UI_RESPONSE' },
+      fromTag: 'Data',
+      targetMe: true,
     },
   ],
 };
@@ -50,6 +51,13 @@ function parseNoonceResponse(state: State, data?: string) {
 
   const noonce = match[1];
   state.noonceRecieved = noonce;
+
+  if (state.noonceSent === noonce) {
+    return parseHtmlResponse(state, data);
+  }
+
+  console.log('Noonce mismatch:', state.noonceSent, noonce);
+  
   return { state, reducedData: data.replace(/<!--noonce:.+?-->/, '') };
 }
 

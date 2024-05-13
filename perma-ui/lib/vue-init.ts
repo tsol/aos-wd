@@ -2,6 +2,7 @@ import { createApp  } from 'vue';
 import { createVuetify } from 'vuetify';
 
 import 'vuetify/dist/vuetify.css';
+import 'vuetify/styles'
 
 import {
   VAlert,
@@ -9,8 +10,8 @@ import {
   VAutocomplete,
   VAvatar,
   VBadge,
-  VBreadcrumbs,
-  VBreadcrumbsItem,
+  // VBreadcrumbs,
+  // VBreadcrumbsItem,
   VBtn,
   VBtnToggle,
   VCard,
@@ -29,9 +30,9 @@ import {
   VDialog,
   VDivider,
   VExpansionPanel,
-  VFileInput,
-  VFooter,
-  VForm,
+  // VFileInput,
+  // VFooter,
+  // VForm,
   VIcon,
   VImg,
   VInput,
@@ -58,7 +59,7 @@ import {
   VResponsive,
   VRow,
   VSelect,
-  VSkeletonLoader,
+  // VSkeletonLoader,
   VSlider,
   VSnackbar,
   VSpacer,
@@ -75,7 +76,7 @@ import {
   VToolbar,
   VToolbarTitle,
   VTooltip,
-  VVirtualScroll,
+  // VVirtualScroll,
 } from 'vuetify/components';
 
 import UiInput from '../components/ui-input.vue';
@@ -92,7 +93,7 @@ export function initVue( params: InitVueParams ) {
 
   const html =
      params.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
-      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity" :process="process"');
+      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"');
 
   const vueApp = createApp({
     components: {
@@ -104,8 +105,8 @@ export function initVue( params: InitVueParams ) {
       VAutocomplete,
       VAvatar,
       VBadge,
-      VBreadcrumbs,
-      VBreadcrumbsItem,
+      // VBreadcrumbs,
+      // VBreadcrumbsItem,
       VBtn,
       VBtnToggle,
       VCard,
@@ -124,9 +125,9 @@ export function initVue( params: InitVueParams ) {
       VDialog,
       VDivider,
       VExpansionPanel,
-      VFileInput,
-      VFooter,
-      VForm,
+      // VFileInput,
+      // VFooter,
+      // VForm,
       VIcon,
       VImg,
       VInput,
@@ -153,7 +154,7 @@ export function initVue( params: InitVueParams ) {
       VResponsive,
       VRow,
       VSelect,
-      VSkeletonLoader,
+      // VSkeletonLoader,
       VSlider,
       VSnackbar,
       VSpacer,
@@ -170,7 +171,7 @@ export function initVue( params: InitVueParams ) {
       VToolbar,
       VToolbarTitle,
       VTooltip,
-      VVirtualScroll,
+      // VVirtualScroll,
     },
     data() {
       return { 

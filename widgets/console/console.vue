@@ -23,6 +23,7 @@ import { type BrodcastMsg } from '~/composables/useProcesses';
 import { useProcess } from '~/composables/useProcess';
 import { usePersistStore } from '~/store/persist';
 import { shortenCutMiddle } from '~/lib/utils';
+import { getPrintableMessage } from '~/lib/ao/live';
 
 const props = defineProps<{
   pid: string;
@@ -52,18 +53,23 @@ onMounted(() => {
   });
 });
 
-function listen(text: BrodcastMsg[]) {
+function listen(bmsgs: BrodcastMsg[]) {
   if (terminal.value) {
 
     const res = [] as string[];
 
-    text.forEach((msg) => {
+    bmsgs.forEach((msg) => {
       if (process.process?.disableLive && msg.type === 'live') return;
-      const lines = msg.data?.split(/\r?\n/) || [];
+      if (msg.type === 'live') {
+        const text = msg.msg ? getPrintableMessage(msg.msg) : '';
+        if (!text) return;
+      }
+      const lines = String(msg.data)?.split(/\r?\n/) || [];
       res.push(...lines);
     });
 
     const filtered = res.filter((msg) => {
+      if (msg.trim() === '') return false;
       if (!process.process?.regexFilter) return true;
       return msg.match(new RegExp(process.process?.regexFilter, 'i'));
     });
@@ -76,7 +82,7 @@ function listen(text: BrodcastMsg[]) {
       filtered.forEach((msg, i) => {
         computedProcesses.value.forEach((p) => {
           if (msg.includes(p.pid)) {
-            filtered[i] = 
+            filtered[i] =
               msg.replace(p.pid, p.name)
                 .replace(p.short, p.name);
           }
@@ -128,7 +134,7 @@ function createTerminal() {
   }
 
   terminal.value = new Terminal({
-    theme: persist.theme === 'light' ?{
+    theme: persist.theme === 'light' ? {
       background: '#FFF',
       foreground: '#191A19',
       selectionForeground: '#FFF',
@@ -137,7 +143,7 @@ function createTerminal() {
       cursor: 'black',
 
     } : {
-      background:'#2d2d2d',
+      background: '#2d2d2d',
       foreground: '#FFF',
       selectionForeground: '#444',
       selectionBackground: '#191A19',

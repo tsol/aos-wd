@@ -52,7 +52,7 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
     if (snippet.pid && snippet.tags) {
       snippetLoading[snippetID(snippet)] = true;
       const data = evaluateSnippetTemplate(snippet);
-      const res = await process.rundry(snippet.pid, snippet.tags, data);
+      const res = await process.rundry(snippet.pid, data);
       snippetLoading[snippetID(snippet)] = false;
       return res;
     }

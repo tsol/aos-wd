@@ -1,17 +1,19 @@
 <template>
-  <v-btn
-    v-bind="$attrs"
+  <VBtn
     @click="onClick"
     :disabled="uiLoading || !isValid"
   >
     <slot v-for="(_, name) in $slots" :name="name" :slot="name" />
-  </v-btn>
+  </VBtn>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 import { parseLuaObject } from '../../lib/parser';
-import type { State } from '../lib/ui-state';
+import type { State } from '../lib/ui-state-parser';
 import type { InitVueParams } from '../lib/vue-init';
+import { VBtn } from 'vuetify/components';
 
 const props = defineProps<{
   uiValid?: string;
@@ -65,4 +67,4 @@ props.aoSendMsg(tags);
 
 
 </script>
-../lib/ui-base../lib/vue-inside-vue
+../lib/ui-base../lib/vue-inside-vue../lib/ui-state-parser

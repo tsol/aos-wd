@@ -10,6 +10,9 @@ export type Snippet = {
 
 export type ParseHandler<STATE> = {
   history: boolean;
+  matchTags?: Record<string, string>; // if not defined will parse printed data
+  fromTag?: string;
+  targetMe?: boolean;
 } & ( {
   mode: 'handler';
   handler: (state: STATE, data: string) => { state: STATE, reducedData: string } | undefined;

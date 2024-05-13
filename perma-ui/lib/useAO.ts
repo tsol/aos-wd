@@ -1,78 +1,80 @@
-import { connect, createDataItemSigner } from '@permaweb/aoconnect'
+import { connect, createDataItemSigner, dryrun } from '@permaweb/aoconnect'
+import { live, type Edge } from '../../lib/ao/live';
+import { ref } from 'vue';
 
-let cursor: string | undefined = undefined;
+const cursor = ref<string | undefined>(undefined);
+
+// restore cursor from localStorage
+
+if (localStorage.getItem('cursor')) {
+  cursor.value = localStorage.getItem('cursor') as string;
+}
+
 let intervalTimer: any = null;
 
-export function useAO(pid: string, handler: (msg: string) => void ){
+export function useAO(pid: string, ourPid: string, handler: (msg: Edge) => void) {
+
+  async function rundry(data = "", tags: Tag[] = []) {
+
+    const evaluatedTags = tags.map((tag) => {
+      const newTag = { ...tag };
+      if (tag.value === 'ao.id')
+        newTag.value = ourPid;
+      return tag;
+    });
+
+    const result = await dryrun({
+      process: pid,
+      Owner: ourPid,
+      tags: evaluatedTags,
+      data,
+    });
+
+    if (result.Error) {
+      throw new Error(JSON.stringify(result.Error))
+    }
+
+    // const forMe = result.Messages
+    //   .filter((msg: any) => msg.Target === ownerPid);
+
+    return result;
+  }
+
+
 
   async function evaluate(data: string, tags = [{ name: 'Action', value: 'Eval' }]) {
 
-    console.log('evaluate_sending:', data, tags)
-    
     const messageId = await connect().message({
       process: pid,
       signer: createDataItemSigner(window.arweaveWallet),
       tags,
       data
     })
-  
+
     const result = await connect().result({
       message: messageId,
       process: pid
     })
-  
+
     if (result.Error) {
       throw new Error(JSON.stringify(result.Error))
     }
-    
-    const output = result.Output?.data?.output as string;
-    return output || undefined;
+
+    console.log('evaluate_result:', result);
+    return result;
   }
-  
 
-  async function liveUpdate(pid: string) {
-
-    let results = await connect().results({
-      process: pid,
-      sort: cursor ? "ASC" : "DESC",
-      from: cursor,
-      limit: 1000
-    });
-  
-    // console.log('results', results);
-    
-    let result: string[] = [];
-  
-    if (! results?.edges?.length) return null;
-  
-    const edges = cursor ? results.edges.reverse() : results.edges;
-    const lastNode = edges[ edges.length - 1 ];
-    
-    if (lastNode) {
-      if (cursor !== lastNode.cursor) {
-        cursor = lastNode.cursor
-      }
-    }
-  
-    edges.filter(
-      (x: any) => x.node.Output.print === true
-    ).forEach((xnode: any) => {
-      const data = xnode.node.Output.data;
-      result.push(data);  
-    })
-    
-
-    return result.length > 0 ? result : null;
-  }
-  
 
   function startLive() {
     if (intervalTimer) return;
     intervalTimer = setInterval(async () => {
-      const result = await liveUpdate(pid);
+      const result = await live(pid, cursor);
+      if (cursor.value) {
+        localStorage.setItem('cursor', cursor.value);
+      }
+
       if (result) {
-        console.log('liveUpdate:', result);
-        result.forEach((msg: string) => {
+        result.forEach((msg) => {
           handler(msg);
         })
       }
@@ -89,8 +91,9 @@ export function useAO(pid: string, handler: (msg: string) => void ){
   return {
     evaluate,
     startLive,
-    stopLive
+    stopLive,
+    rundry,
   };
-  
+
 
 }

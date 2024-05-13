@@ -12,16 +12,17 @@ import { useUI } from '~/perma-ui/lib/useUI';
 
 const props = defineProps<{
   pid: string;
-  state?: State;
+  state: State;
 }>();
 
-const process = useProcess(props.pid);
+const { ourPID } = useWallet();
 
+const process = useProcess(props.pid);
 const appId = ref<HTMLDivElement | undefined>();
 
 const { init, loading } = useUI(
   appId,
-  toRef(props.state),
+  toRef(props, 'state'),
   (tags: Tag[]) => {
 
     const dataTagIndex = tags.findIndex(t => t.name === 'Data');
@@ -32,9 +33,9 @@ const { init, loading } = useUI(
   }
 );
 
+watch( ourPID, () => {
+  if (ourPID.value) init();
+}, { immediate: true });
 
-onMounted(() => {
-  init();
-});
 
 </script>

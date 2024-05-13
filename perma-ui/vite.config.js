@@ -6,12 +6,19 @@ export default defineConfig({
   plugins: [
     vue(),
   ],
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.esm-bundler.js'
+    }
+  },
   build: {
     outDir: 'dist',
     assetsDir: '',
     rollupOptions: {
-      input: './index.html',
+      input: './index.ts',
     },
     minify: 'terser'
-  }
+  },
+  mode: 'production', 
+  logLevel: 'warn', 
 })

@@ -12,7 +12,7 @@ undefined = undefined or "undefined"
 
 -- UI Library (blueprint)
 
-UI_APP = {
+UI_APP = UI_APP or {
   PAGES = {
     {
       path = '/',
@@ -22,7 +22,7 @@ UI_APP = {
   InitState = function (pid) return {} end
 }
 
-UI_STATE = {}
+UI_STATE = UI_STATE or {}
 
 UI = {
 
@@ -174,11 +174,16 @@ UI = {
 
   end,
 
+  reply = function (data)
+    ao.send({ Target = UI.currentPid, Action = "UI_RESPONSE", Data = data })
+  end,
+
+
   -- Handlers --------------------
   onGetPage = function (msg)
     UI.sessionStart(msg)
     local path = msg.Tags.Path or '/'
-    print (UI.page({ path = path }))
+    UI.reply(UI.page({ path = path }))
     UI.sessionEnd()
   end,
 
@@ -189,7 +194,7 @@ UI = {
 
     if not pid then
       UI.log("UI.onRun", "pid not specified")
-      print (UI.renderError(404, "pid not specified"))
+      UI.reply (UI.renderError(404, "pid not specified"))
       UI.sessionEnd()
       return
     end
@@ -198,7 +203,7 @@ UI = {
 
     if not command then
       UI.log("UI.onRun", "command not specified")
-      print (UI.renderError(404, "command not specified"))
+      UI.reply (UI.renderError(404, "command not specified"))
       UI.sessionEnd()
       return
     end
@@ -210,7 +215,7 @@ UI = {
     local html = page and page.html
     if not html then
       UI.log("UI.onRun", "page not found")
-      print (UI.renderError(404, "page not found"))
+      UI.reply (UI.renderError(404, "page not found"))
       UI.sessionEnd()
       return
     end
@@ -219,7 +224,7 @@ UI = {
 
     if not contains then
       UI.log("UI.onRun", "command not found " .. command .. " in page " .. html )
-      print (UI.renderError(404, "command not found in page"))
+      UI.reply (UI.renderError(404, "command not found in page"))
       UI.sessionEnd()
       return
     end
@@ -230,7 +235,7 @@ UI = {
 
     if not fn then
       UI.log("UI.onRun", "function not found")
-      print (UI.renderError(404, "function not found in code"))
+      UI.reply (UI.renderError(404, "function not found in code"))
       UI.sessionEnd()
       return
     end
@@ -238,12 +243,12 @@ UI = {
     local status, result = pcall(fn, args)
     if not status then
       UI.log("UI.onRun", result)
-      print (UI.renderError(500, result))
+      UI.reply (UI.renderError(500, result))
       UI.sessionEnd()
       return
     end
 
-    print (result)
+    UI.reply (result)
     UI.sessionEnd()
   end,
 
@@ -258,7 +263,7 @@ Handlers.add("UIRun",
     local status, err = pcall(UI.onRun, msg)
     if not status then
       UI.log("UIRun", err)
-      print (UI.renderError(500, err))
+      UI.reply (UI.renderError(500, err))
     end
   end
 )
@@ -269,7 +274,7 @@ Handlers.add("UIGetPage",
     local status, err = pcall(UI.onGetPage, msg)
     if not status then
       UI.log("UIGetPage", err)
-      print (UI.renderError(500, err))
+      UI.reply (UI.renderError(500, err))
     end
   end
 )

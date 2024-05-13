@@ -1,6 +1,6 @@
 import { loadBlueprint } from "~/lib/ao/commands/blueprints";
 import { evaluate } from "~/lib/ao/evaluate";
-import { live } from "~/lib/ao/live";
+import { live, textFromMsg, type Edge } from "~/lib/ao/live";
 import { findPid, processesList } from "~/lib/ao/query";
 import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
@@ -14,7 +14,7 @@ console.log('useProcesses: init');
 export type Tag = { name: string, value: string };
 
 export type BrodcastMsg = {
-  tags: Tag[],
+  msg?: Edge,
   data: string,
   type: 'dryrun' | 'live' | 'evaluate' | 'internal'
   forClient?: string;
@@ -81,8 +81,7 @@ export const useProcesses = () => {
       const bpName = text.match(/\.load-blueprint\s+(\w*)/)?.[1];
       if (!bpName) throw new Error('No blueprint name provided');
       text = await loadBlueprint(bpName);
-      // output.value.push('loading ' + bpName + '...');
-      broadcast(pid, [{ data: 'loading ' + bpName + '...', tags: [], type: 'internal' }]);
+      broadcast(pid, [{ data: 'loading ' + bpName + '...', type: 'internal' }]);
     }
 
     if (pid?.length !== 43) {
@@ -93,9 +92,12 @@ export const useProcesses = () => {
 
     try {
       const result = await evaluate(pid, text, tags);
-
-      const msgs = [{ data: String(result), tags: [], type: 'evaluate' } as BrodcastMsg];
+      // if (result === undefined) {
+      //   broadcast(pid, [{ data: "undefined", type: 'evaluate' }]);
+      // }
+      const msgs = [{ data: String(result), type: 'evaluate' } as BrodcastMsg];
       broadcast(pid, msgs);
+
     } catch (e: any) {
       console.error(e);
       useToast().error(e.message);
@@ -127,11 +129,32 @@ export const useProcesses = () => {
         console.log('no pid');
         return;
       }
-      const msgs = await live(pid);
 
-      const bmsgs = msgs?.map((line) => ({ data: line, tags: [], type: 'live' } as BrodcastMsg));
+      const cursor = toRef(persist.getAllCursors[pid]);
+      const msgs = await live(pid, cursor);
+      persist.updateCursor(pid, cursor.value);
 
-      if (bmsgs?.length) broadcast(pid, bmsgs);
+      try {
+        const bmsgs = msgs?.map((msg) => {
+          const text = textFromMsg(msg);
+          const bm = {
+            data: text ? text.trim() : '',
+            msg: msg,
+            type: 'live'
+          } as BrodcastMsg;
+
+          return bm;
+        });
+
+        if (bmsgs?.length) broadcast(pid, bmsgs);
+
+      }
+      catch (e: any) {
+        console.log('---------------------------------------------');
+        console.error(e);
+        console.log('msgs:', msgs);
+      }
+
 
     }, 3000);
   }
@@ -152,7 +175,7 @@ export const useProcesses = () => {
     return undefined
   }
 
-  async function rundry(ownerPid: string, toPid: string, tags: Tag[], data = "") {
+  async function rundry(ownerPid: string, toPid: string, data = "", tags: Tag[] = []) {
 
     const evaluatedTags = tags.map((tag) => {
       const newTag = { ...tag };
@@ -169,9 +192,10 @@ export const useProcesses = () => {
         tags: evaluatedTags,
         data,
       });
+      
       const forMeLines = result.Messages
         .filter((msg: any) => msg.Target === ownerPid)
-        .map((msg: any) => ({ data: msg.Data, tags: msg.Tags, type: 'dryrun' } as BrodcastMsg));
+        .map((msg: any) => ({ data: msg.Data, msg, type: 'dryrun' } as BrodcastMsg));
 
       broadcast(ownerPid, forMeLines);
 

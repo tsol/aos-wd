@@ -11,8 +11,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 
-import type { State } from '../ui-base';
+import type { State } from '../lib/ui-state-parser';
 import type { INPUTS_MAP } from './input/inputs.interface';
 
 import InputByType from './input/by-type.vue';

@@ -18,7 +18,6 @@
       <v-icon title="ar-io.dev" size="small" class="ml-1" color="green"
         @click="openUrl(`https://ar-io.dev/${pid}`)">mdi-emoticon-devil-outline</v-icon>
 
-
       <v-icon title="arweave.app" size="small" class="ml-1" color="green"
         @click="openUrl(`https://arweave.app/tx/${pid}`)">mdi-weather-cloudy</v-icon>
 
@@ -32,7 +31,6 @@
 
     <v-row>
 
-      <!-- <v-col v-for="column in maxColumns" :key="column" :class="`v-col-md-${12 / maxColumns}`"> -->
       <v-col v-for="(column, index) in maxColumns" :key="column"
         :class="`v-col-md-${12 / maxColumns} ${index < maxColumns - 1 ? 'border-right' : ''}`">
 
@@ -49,9 +47,6 @@
             <v-icon size="small" color="red" class="bubble"
               @click="process.removeWidget(widget.name)">mdi-close</v-icon>
           </div>
-
-          <!-- <div>widget.name = {{ widget.name }}</div>
-          <div>state = {{ (process.state.value as any)?.[widget.name] }}</div> -->
 
           <Component :is="getWidgetDefinition(widget.name)?.component" :pid="pid"
             :state="(process.state.value as any)?.[widget.name]" />
@@ -106,12 +101,13 @@
 const openUrl = (url: string) => window.open(url, '_blank');
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
-import {  parseProcess } from '~/lib/parser';
 import type { StoredSnippet, StoredWidget } from '~/store/persist';
+import type { WidgetDefinition } from '~/models/widgets';
+
+import { parseMessagesToState } from '~/lib/parser';
 import { getWidgetDefinition } from '~/widgets/';
 import { shortenCutMiddle } from '~/lib/utils';
 import { useDisplay } from 'vuetify';
-import type { WidgetDefinition } from '~/models/widgets';
 
 const { mdAndUp } = useDisplay();
 
@@ -131,8 +127,6 @@ const maxColumns = computed(() => {
     return widget.column || 1;
   }));
 });
-
-
 
 onMounted(() => {
   console.log('** Mounting ' + props.pid + ' **');
@@ -172,14 +166,12 @@ function createSnippet(widgetName: string) {
     data: '-- New Snippet\r\nHandlers.list',
   };
 
-  // console.log('createSnippet', snippet);
-
   process.addSnippet(widgetName, snippet);
 
 }
 
-function listen(text: BrodcastMsg[]) {
-  if (!text.length) return;
+function listen(msgs: BrodcastMsg[]) {
+  if (!msgs.length) return;
 
   const widgetDefinitions = process.widgets.value.map((w) => {
     const wd = getWidgetDefinition(w.name);
@@ -191,8 +183,18 @@ function listen(text: BrodcastMsg[]) {
     return wd;
   }).filter((wd) => wd) as unknown as WidgetDefinition<any>[];
 
-  text.forEach((msg) => {
-    parseProcess(widgetDefinitions, process.state, msg.data);
+  console.log('** Parser messages: **', msgs);
+
+  msgs.forEach((bmsg) => {
+    if (bmsg.msg) {
+      parseMessagesToState(
+        widgetDefinitions,
+        process.state,
+        bmsg.data,
+        bmsg.msg,
+        useWallet().ourPID.value,
+      );
+    }
   });
 }
 

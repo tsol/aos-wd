@@ -92,6 +92,9 @@ export const usePersistStore = defineStore('persist', {
 
       process.widgets?.forEach(widget => {
         widget.snippets?.forEach(snippet => {
+          if (!process.state[widget.name]) {
+            process.state[widget.name] = {};
+          }
           snippet.widgetName = widget.name;
         });
       });
@@ -101,6 +104,8 @@ export const usePersistStore = defineStore('persist', {
       const process = this.processes.find(p => p.pid === pid);
       if (!process) return;
 
+      if (! process.state[name] ) { process.state[name] = {}; };
+ 
       process.widgets = process.widgets || [];
       const exists = process.widgets.find(widget => widget.name === name);
       if (exists) {
@@ -111,7 +116,7 @@ export const usePersistStore = defineStore('persist', {
         if (!w) {
           console.error('widget not found:', name);
           return;
-        }
+        }       
         process.widgets.unshift(w);
       }
 

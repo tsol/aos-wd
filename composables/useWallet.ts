@@ -2,25 +2,35 @@
 
 import { usePersistStore } from "~/store/persist";
 
-const connected = ref(false);
+const ourPID = ref<string>('');
 
 export const useWallet = () => {
 
   const arConnect = () => {
-    console.log('arConnect');
-    (window as any).arweaveWallet
+    getAWW()
       .connect(['SIGN_TRANSACTION', 'ACCESS_ADDRESS'])
-      .then(() => {
-        updateListOfProcesses();  
-        connected.value = true;
+      .then(async () => {
+        updateListOfProcesses();
+        ourPID.value = await getAWW().getActiveAddress();
       });
   };
 
   const arDisconnect = () => {
-    (window as any).arweaveWallet.disconnect().then(() => (connected.value = false));
+    getAWW().disconnect().then(() => (ourPID.value = ''));
   }
   
-  return { connected, arConnect, arDisconnect };
+  const connected = computed(() => !!ourPID.value);
+
+  return { connected, ourPID, arConnect, arDisconnect };
+}
+
+function getAWW() {
+  const aww =  (window as any).arweaveWallet;
+  if (!aww) {
+    alert('Install arweave');
+    throw new Error('arweaveWallet not found');
+  }
+  return aww;
 }
 
 async function updateListOfProcesses() {
@@ -36,12 +46,14 @@ async function updateListOfProcesses() {
 }
 
 const checkInitialConnection = async () => {
-  if ((window as any).arweaveWallet) {
+  if (getAWW()) {
     try {
       const permissions = await (window as any).arweaveWallet.getPermissions();
-      connected.value = permissions.includes('SIGN_TRANSACTION') && permissions.includes('ACCESS_ADDRESS');
-      if (connected.value) {
+      const connected = permissions.includes('SIGN_TRANSACTION') && permissions.includes('ACCESS_ADDRESS');
+      if (connected) {
         updateListOfProcesses();
+        ourPID.value = await getAWW().getActiveAddress();
+        console.log('Our Wallet PID:', ourPID.value);
       }
     } catch (error) {
       console.error('Error checking initial connection:', error);

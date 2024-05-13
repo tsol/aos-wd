@@ -1,10 +1,12 @@
 
-import { parseProcess } from "../lib/parser";
-import { type State, widget } from "./lib/ui-state";
+import type { Edge } from "~/lib/ao/live";
+import { parseMessagesToState } from "../lib/parser";
+import { type State, widget } from "./lib/ui-state-parser";
 import { useAO } from "./lib/useAO";
 import { useAWW } from "./lib/useAWW";
 import { useUI } from "./lib/useUI";
 import { ref, watch, computed } from "vue";
+
 
 const widgetsState = ref<{ 'UI': State }>({ UI: {
   ui: { '__type': 'UI_STATE' },
@@ -18,16 +20,30 @@ const state = computed({
   set: (value) => { widgetsState.value.UI = value; }
 });
 
-var PID = getProcessPid();
+var PID = ''; getProcessPid().then(pid => PID = pid);
 
 const appId = ref<HTMLDivElement | undefined>();
 const aww = useAWW();
 let ao: ReturnType<typeof useAO> | undefined = undefined;
 
-function getProcessPid() {
-  //return window.location.pathname.split('/').pop() || '';
-  return '6qxtA3JeLEqUYRrt8WjFGn2AOVySg9UpjzPORyws3pg';
+async function getProcessPid() {
+
+  let processId: string | null | undefined =
+    await fetch(window.location.href, { method: 'HEAD' })
+      .then(res => res.headers.get('x-arns-resolved-id'));
+
+  if (!processId) {
+    processId = window.location.pathname.split('/')[1]
+  }
+
+  if (! processId || processId.length !== 43) {
+    console.error('invalid pid:', processId);
+    processId = '6qxtA3JeLEqUYRrt8WjFGn2AOVySg9UpjzPORyws3pg';
+  }
+
+  return processId;
 }
+
 
 watch( [aww.ourPID, appId], () => {
   
@@ -39,7 +55,9 @@ watch( [aww.ourPID, appId], () => {
 
   if (ao) { ao.stopLive(); }
 
-  ao = useAO(PID, (msg: string) => parseProcess([widget], widgetsState, msg) );
+  ao = useAO(PID, aww.ourPID.value, 
+    (msg: Edge) => parseMessagesToState([widget], widgetsState, undefined, msg, aww.ourPID.value)
+  );
 
   const ui = useUI(
     appId,
@@ -52,7 +70,16 @@ watch( [aww.ourPID, appId], () => {
       const data = dataTagIndex !== -1 ? tags[dataTagIndex].value : '';
       const tagsWithoutData = tags.filter((_, i) => i !== dataTagIndex);
 
-      ao?.evaluate(data, tagsWithoutData);
+      // ao?.evaluate(data, tagsWithoutData);
+
+      ao?.evaluate(data, tagsWithoutData).then((result) => {
+        console.log('evaluate result:', result);
+        parseMessagesToState([widget], widgetsState, undefined, {
+          cursor: '',
+          node: result 
+        }, aww.ourPID.value)
+      });
+
     }
   );
 
