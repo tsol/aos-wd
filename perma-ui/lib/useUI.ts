@@ -31,6 +31,12 @@ export function useUI(
     return false;
   });
 
+  const pageStateRef = computed(() => {
+    const currentPagePath = state.value?.ui?.path;
+    if (!currentPagePath) return { 'no': currentPagePath };
+    return state.value.pagesState?.[currentPagePath] || { 'no1': currentPagePath };
+  });
+
 
   function init() {
 
@@ -70,6 +76,7 @@ export function useUI(
       vueApp = initVue({
         html,
         stateRef: state,
+        pageStateRef,
         loadingRef: loading,
         aoSendMsg,
       });

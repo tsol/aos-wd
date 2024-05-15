@@ -144,7 +144,7 @@ export const useProcesses = () => {
         const bmsgs = msgs?.map((msg) => {
           const text = textFromMsg(msg);
           const bm = {
-            data: text ? text.trim() : '',
+            data: typeof text === 'string' ? text.trim() : '',
             msg: msg,
             type: 'live'
           } as BrodcastMsg;

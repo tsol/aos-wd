@@ -85,6 +85,7 @@ import UiButton from '../components/ui-button.vue';
 export interface InitVueParams {
   html: string;
   stateRef: Ref<any>;
+  pageStateRef: Ref<any>;
   loadingRef: Ref<boolean>;
   aoSendMsg: (tags: Tag[]) => void;
 }
@@ -93,12 +94,12 @@ export function initVue( params: InitVueParams ) {
 
   const html = `
   <v-app theme="dark">
-  <v-main class="v-container">`
+  <div class="v-container">`
     +
      params.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
       .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"')
     + `
-  </v-main>
+  </div>
   <div v-if="loading" class="text-center mt-4">
     <v-progress-circular indeterminate color="primary"></v-progress-circular>
   </div>
@@ -189,6 +190,7 @@ export function initVue( params: InitVueParams ) {
       return { 
         inputsValidity: {},
         state: params.stateRef,
+        page: params.pageStateRef,
         loading: params.loadingRef,
         aoSendMsg: params.aoSendMsg,
       };

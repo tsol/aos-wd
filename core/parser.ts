@@ -12,7 +12,7 @@ export function parseMessagesToState(
 ) {
 
   let data = textOutput;
-  if ( ! data ) {
+  if (!data) {
     if (msg) {
       data = textFromMsg(msg);
     }
@@ -20,7 +20,7 @@ export function parseMessagesToState(
 
   const msgs = msg?.node.Messages;
 
-  // console.log('parsing_data:', data?.slice(0, 30));
+  // console.log('parsing_msgs:', msgs, 'data:', data);
 
   widgets.forEach((wd) => {
     // console.log(' - wd.name:', wd.name);
@@ -34,7 +34,7 @@ export function parseMessagesToState(
           if (msg.Target !== myPid) return;
         }
 
-        if (! Object.entries(parser.matchTags || {}).every(([key, value]) => {
+        if (!Object.entries(parser.matchTags || {}).every(([key, value]) => {
           const tag = msg.Tags?.find((t) => t.name === key);
           return tag && tag.value === value;
         })) return;
@@ -60,6 +60,20 @@ export function parseMessagesToState(
   });
 }
 
+export function parseObjects(text?: string) {
+  // first we split text by }\s*{ keeping the {} delimiters
+
+  if (!text) return undefined;
+
+  let breaks = text.replace(/}\s*{/g, '}|bReAk|{');
+  breaks = breaks.replace(/}\s*</g, '}|bReAk|<');
+  breaks = breaks.replace(/>\s*{/g, '>|bReAk|{');
+
+  const parts = breaks.split('|bReAk|').map((part) => part.replace(/^[^{]+/, '').replace(/[^}]+$/, ''));
+
+  return parts.map((part) => parseLuaObject(part));
+
+}
 
 // this parses both LUA output of table and JSON
 // [] replaced by {}
@@ -100,7 +114,7 @@ export function parseLuaObject(text?: string) {
     console.log(e.message);
   }
 
-  // console.log('parsed:', parsed);
+  console.log('parsed:', parsed);
 
   return parsed;
 }
@@ -128,7 +142,7 @@ function runThroughParser(
       // console.log('parse_handler.state:', result.state);
       // console.log('wd.name:', wd.name);
 
-      state.value[wd.name] = result.state;
+      state.value[wd.name] = { ... state.value[wd.name],  ... result.state };
       data = result.reducedData;
     }
     return;
@@ -139,19 +153,26 @@ function runThroughParser(
 
     if (parser.mode !== 'store') return;
 
-    const object = parseLuaObject(data);
-    if (!object) return;
+    const objects = parseObjects(data);
+    if (!objects || objects.length === 0) return;
 
-    const variable = parser.variable as any;
-    const zodType = (wd.types as any)[variable];
-    if (!zodType) throw new Error(`No type found for ${variable}`);
+    objects.forEach((object) => {
 
-    const parsed = zodType.safeParse(object);
-    if (parsed.success) {
-      // console.log('parse_store:', parsed.data);
-      // console.log('wd.name:', wd.name, 'variable:', variable);
-      state.value[wd.name][variable] = parsed.data;
-    }
+      const variable = parser.variable as any;
+      const zodType = (wd.types as any)[variable];
+      if (!zodType) throw new Error(`No type found for ${variable}`);
+
+      const parsed = zodType.safeParse(object);
+
+      if (parsed.success) {
+        // console.log('parse_store:', parsed.data);
+        // console.log('SUCCESS match:', wd.name, 'variable:', variable);
+        state.value[wd.name][variable] = parsed.data;
+      }
+
+
+    });
+
 
   });
 }

@@ -19,31 +19,31 @@ UI_APP = UI_APP or {
       html = '<h1>Hello World!</h1>'
     },
   },
-  InitState = function (pid) return {} end
+  InitState = function(pid) return {} end
 }
 
 UI_STATE = UI_STATE or {}
 
 UI = {
 
+  developerPid = nil,
+
   now = 0,
   logs = {},
   currentPid = nil,
   redirectCount = 0,
 
-  sessionEnd = function ()
-    -- UI.currentPid = nil -- production
-    UI.currentPid = ao.id -- dev to be able to run commands from the console
+  sessionEnd = function()
+    UI.currentPid = UI.developerPid
     UI.redirectCount = 0
   end,
 
-  log = function (msg, text)
+  log = function(msg, text)
     UI.logs[msg] = UI.logs[msg] or {}
     table.insert(UI.logs[msg], text)
   end,
 
-  set = function (state)
-
+  set = function(state)
     local pid = UI.currentPid
 
     if not pid then
@@ -60,15 +60,25 @@ UI = {
     end
 
     for k, v in pairs(state) do
-      if k ~= "pid" then 
-      UI_STATE[pid][k] = v
+      if k ~= "pid" then
+        UI_STATE[pid][k] = v
       end
     end
 
     return UI.state()
   end,
 
-  findPage = function (path)
+  currentPath = function()
+    local pid = UI.currentPid
+    if not pid then
+      UI.log("UI.currentPath", "pid not specified")
+      return
+    end
+
+    return UI_STATE[pid].path
+  end,
+
+  findPage = function(path)
     for _, page in ipairs(UI_APP.PAGES) do
       if page.path == path then
         return page
@@ -76,8 +86,16 @@ UI = {
     end
   end,
 
-  page = function (args)
-  
+  renderPage = function(page)
+    local html = page and page.html
+    local layoutFn = page.layout
+    if layoutFn then
+      html = layoutFn(page)
+    end
+    return html
+  end,
+
+  page = function(args)
     local path = args.path or '/'
     local pid = UI.currentPid
 
@@ -86,8 +104,12 @@ UI = {
       return UI.renderError(404, "pid not specified")
     end
 
-  
     local page = UI.findPage(path)
+    if not page then
+      UI.log("UI.page", "page not found: " .. path)
+      return UI.renderError(404, "page not found")
+    end
+
     if page.guard then
       local newPath = page.guard(pid)
 
@@ -99,16 +121,14 @@ UI = {
         end
         return UI.page({ path = newPath })
       end
-
     end
 
-    local html = page and page.html
-
+    local html = UI.renderPage(page)
     if not html then
       UI.log("UI.page", "page not found: " .. path)
       return UI.renderError(404, "page not found")
     end
-    
+
     UI.set({ path = path })
 
     for k, v in pairs(UI_STATE[pid] or {}) do
@@ -118,21 +138,46 @@ UI = {
     return UI.renderHtml(html)
   end,
 
-  state = function ()
+  state = function()
     local pid = UI.currentPid
     local res = UI_STATE[pid]
     if not pid then
       UI.log("UI.state", "pid not specified")
       res = { error = "pid not specified" }
     end
-    
+
     res['_type'] = 'UI_STATE'
 
     local json = require 'json'
     return json.encode(res)
   end,
 
-  renderHtml = function (html)
+  pageState = function(page)
+    if not page or not page.path or not page.state then
+      return ''
+    end
+
+    local res = { [page.path] = page.state }
+    res['_type'] = 'UI_PAGE_STATE'
+
+    local json = require 'json'
+    return json.encode(res)
+  end,
+
+  sendPageState = function(page)
+    local state = UI.pageState(page)
+    if not state then return end
+
+    for pid, _ in pairs(UI_STATE) do
+      if UI_STATE[pid].path == page.path then
+        UI.log("UI.sendPageState", "pid: " .. pid .. " state: " .. state )
+        ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state })
+      end
+    end
+
+  end,
+
+  renderHtml = function(html)
     local res = '<html>'
 
     local pid = UI.currentPid
@@ -144,15 +189,13 @@ UI = {
     res = res .. '<!--noonce:' .. noonce .. '-->'
     res = res .. html .. '</html>'
     return res
-
   end,
 
-  renderError = function (code, msg)
+  renderError = function(code, msg)
     return UI.renderHtml('<h1>' .. code .. '</h1><p>' .. msg .. '</p>')
   end,
 
-  sessionStart = function (msg)
-
+  sessionStart = function(msg)
     UI.now = tonumber(msg.Timestamp)
 
     local pid = msg.From
@@ -171,30 +214,31 @@ UI = {
       UI_STATE[pid] = UI_STATE[pid] or {}
       UI_STATE[pid]._noonce = noonce
     end
-
   end,
 
-  reply = function (data)
+  reply = function(data)
     ao.send({ Target = UI.currentPid, Action = "UI_RESPONSE", Data = data })
   end,
 
-
   -- Handlers --------------------
-  onGetPage = function (msg)
+  onGetPage = function(msg)
     UI.sessionStart(msg)
     local path = msg.Tags.Path or '/'
-    UI.reply(UI.page({ path = path }))
+    UI.reply(
+      UI.page({ path = path }) ..
+      UI.pageState(UI.findPage(path)) ..
+      UI.state()
+    )
     UI.sessionEnd()
   end,
 
-  onRun = function (msg)
-
+  onRun = function(msg)
     UI.sessionStart(msg)
     local pid = UI.currentPid
 
     if not pid then
       UI.log("UI.onRun", "pid not specified")
-      UI.reply (UI.renderError(404, "pid not specified"))
+      UI.reply(UI.renderError(404, "pid not specified"))
       UI.sessionEnd()
       return
     end
@@ -203,7 +247,7 @@ UI = {
 
     if not command then
       UI.log("UI.onRun", "command not specified")
-      UI.reply (UI.renderError(404, "command not specified"))
+      UI.reply(UI.renderError(404, "command not specified"))
       UI.sessionEnd()
       return
     end
@@ -211,20 +255,20 @@ UI = {
     local json = require 'json'
     local args = json.decode(msg.Tags.Args)
 
-    local page = UI.findPage( UI_STATE[pid].path or '/' )
-    local html = page and page.html
+    local page = UI.findPage(UI_STATE[pid].path or '/')
+    local html = UI.renderPage(page)
     if not html then
       UI.log("UI.onRun", "page not found")
-      UI.reply (UI.renderError(404, "page not found"))
+      UI.reply(UI.renderError(404, "page not found"))
       UI.sessionEnd()
       return
     end
- 
+
     local contains = html:find('ui%-run="' .. command .. '%(') ~= nil
 
     if not contains then
-      UI.log("UI.onRun", "command not found " .. command .. " in page " .. html )
-      UI.reply (UI.renderError(404, "command not found in page"))
+      UI.log("UI.onRun", "command not found " .. command .. " in page " .. html)
+      UI.reply(UI.renderError(404, "command not found in page"))
       UI.sessionEnd()
       return
     end
@@ -235,7 +279,7 @@ UI = {
 
     if not fn then
       UI.log("UI.onRun", "function not found")
-      UI.reply (UI.renderError(404, "function not found in code"))
+      UI.reply(UI.renderError(404, "function not found in code"))
       UI.sessionEnd()
       return
     end
@@ -243,39 +287,38 @@ UI = {
     local status, result = pcall(fn, args)
     if not status then
       UI.log("UI.onRun", result)
-      UI.reply (UI.renderError(500, result))
+      UI.reply(UI.renderError(500, result))
       UI.sessionEnd()
       return
     end
 
-    UI.reply (result)
+    UI.reply(result)
     UI.sessionEnd()
   end,
 
- 
+
 }
 
 UI.sessionEnd()
 
 Handlers.add("UIRun",
   Handlers.utils.hasMatchingTag("Action", "UIRun"),
-  function (msg)
+  function(msg)
     local status, err = pcall(UI.onRun, msg)
     if not status then
       UI.log("UIRun", err)
-      UI.reply (UI.renderError(500, err))
+      UI.reply(UI.renderError(500, err))
     end
   end
 )
 
 Handlers.add("UIGetPage",
   Handlers.utils.hasMatchingTag("Action", "UIGetPage"),
-  function (msg)
+  function(msg)
     local status, err = pcall(UI.onGetPage, msg)
     if not status then
       UI.log("UIGetPage", err)
-      UI.reply (UI.renderError(500, err))
+      UI.reply(UI.renderError(500, err))
     end
   end
 )
-

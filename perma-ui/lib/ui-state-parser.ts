@@ -2,18 +2,23 @@ import { z } from 'zod';
 import type { BaseWidgetDefinition } from '../../core/core.models';
 
 type State = {
-  ui: { '__type': 'UI_STATE' } & Record<string, any>;
+  ui: { '_type': 'UI_STATE' } & Record<string, any>;
+  pagesState: { '_type': 'UI_PAGE_STATE' } & Record<string, any>;
   html?: string;
   noonceSent?: string;
   noonceRecieved?: string;
 }
 
+
 const widget: BaseWidgetDefinition<State> = {
   name: 'UI',
   types: {
     ui: z.object({
-      '__type': z.literal('UI_STATE'),
-    }),
+      '_type': z.literal('UI_STATE'),
+    }).passthrough(),
+    pagesState: z.object({
+      '_type': z.literal('UI_PAGE_STATE'),
+    }).passthrough(),
     html: z.string().optional(),
     noonceSent: z.string().optional(),
     noonceRecieved: z.string().optional(),
@@ -23,6 +28,14 @@ const widget: BaseWidgetDefinition<State> = {
       mode: 'store',
       history: false,
       variable: 'ui',
+      matchTags: { 'Action': 'UI_RESPONSE' },
+      fromTag: 'Data',
+      targetMe: true,
+    },
+    {
+      mode: 'store',
+      history: false,
+      variable: 'pagesState',
       matchTags: { 'Action': 'UI_RESPONSE' },
       fromTag: 'Data',
       targetMe: true,
