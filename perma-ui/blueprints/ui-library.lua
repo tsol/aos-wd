@@ -43,8 +43,8 @@ UI = {
     table.insert(UI.logs[msg], text)
   end,
 
-  set = function(state)
-    local pid = UI.currentPid
+  set = function(state, pid)
+    pid = pid or UI.currentPid
 
     if not pid then
       UI.log("UI.set", "pid not specified")
