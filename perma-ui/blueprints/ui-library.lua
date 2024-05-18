@@ -170,7 +170,6 @@ UI = {
 
     for pid, _ in pairs(UI_STATE) do
       if UI_STATE[pid].path == page.path then
-        UI.log("UI.sendPageState", "pid: " .. pid .. " state: " .. state )
         ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state })
       end
     end
@@ -204,8 +203,9 @@ UI = {
     if pid and not UI_STATE[pid] then
       if UI_APP.InitState then
         UI_STATE[pid] = UI_APP.InitState(pid)
+        UI_STATE[pid].pid = pid
       else
-        UI_STATE[pid] = {}
+        UI_STATE[pid] = { pid = pid }
       end
     end
 
@@ -264,7 +264,7 @@ UI = {
       return
     end
 
-    local contains = html:find('ui%-run="' .. command .. '%(') ~= nil
+    local contains = html:find('ui%-run="' .. command) ~= nil
 
     if not contains then
       UI.log("UI.onRun", "command not found " .. command .. " in page " .. html)

@@ -1,8 +1,5 @@
 <template>
-  <VBtn
-    @click="onClick"
-    :disabled="uiLoading || !isValid"
-  >
+  <VBtn @click="onClick" :disabled="uiLoading || !isValid">
     <slot v-for="(_, name) in $slots" :name="name" :slot="name" />
   </VBtn>
 </template>
@@ -20,50 +17,70 @@ import { VBtn } from 'vuetify/components';
 const props = defineProps<{
   uiValid?: string;
   uiRun: string;
+  uiArgs?: Record<string, any>;
   uiLoading?: boolean;
 
   inputsValidity?: Record<string, boolean>
   aoSendMsg: InitVueParams['aoSendMsg'],
   state?: State['ui'],
-  
+
 }>();
 
 const myInputs = props.uiValid?.split(/[\s,]+/) || [];
 
 const isValid = computed(() => myInputs.every((input) => props.inputsValidity?.[input]));
 
+function parseSeparateArgs() {
+  const args = props.uiArgs || {};
+  const jsonedArgs = JSON.stringify(args);
+  const command = props.uiRun;
+  return { command, jsonedArgs };
+}
+
+function parseRunCommand() {
+  
+  const match = props.uiRun.match(/([^(]+)\((\{.+\})?\)/);
+  
+  if (!match) {
+    return parseSeparateArgs();
+  }
+
+  const command = match[1].trim();
+  const args = match[2]?.replace(/[']+/g, '"');
+
+  const cmdArgs = args ? args.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (_, name) => {
+    return JSON.stringify(props.state?.[name]);
+  }) : '';
+
+  const parsedArgs = parseLuaObject(cmdArgs) || {};
+  const jsonedArgs = JSON.stringify(parsedArgs);
+
+  return { command, jsonedArgs };
+
+}
+
+
 function onClick() {
   if (!isValid.value) return;
 
-const match = props.uiRun.match(/([^(]+)\((\{.+\})?\)/);
-if (!match) {
-  console.error('Invalid ui-run:', props.uiRun);
-  return;
-}
 
-const command = match[1].trim();
-const args = match[2]?.replace(/[']+/g, '"');
+  const { command, jsonedArgs } = parseRunCommand() || {};
 
-const cmdArgs = args ? args.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (_, name) => {
-  return JSON.stringify(props.state?.[name]);
-}) : '';
+  if (!command) return;
 
-const parsedArgs = parseLuaObject(cmdArgs) || {};
-const jsonedArgs = JSON.stringify(parsedArgs);
+  console.log('Running command:', command, 'Args:', jsonedArgs);
 
-console.log('Running command:', command, 'Args:', jsonedArgs);
+  // const noonce = Math.random().toString();
+  // { name: 'Noonce', value: noonce },
+  // process.setStateVariable('UI', 'noonceSent', noonce);
 
-// const noonce = Math.random().toString();
-// { name: 'Noonce', value: noonce },
-// process.setStateVariable('UI', 'noonceSent', noonce);
+  const tags: Tag[] = [
+    { name: 'Action', value: 'UIRun' },
+    { name: 'Data', value: command },
+    { name: 'Args', value: jsonedArgs || '' },
+  ];
 
-const tags: Tag[] = [
-  { name: 'Action', value: 'UIRun' },
-  { name: 'Data', value: command },
-  { name: 'Args', value: jsonedArgs },
-];
-
-props.aoSendMsg(tags);
+  props.aoSendMsg(tags);
 
 }
 
