@@ -147,6 +147,7 @@ UI = {
     end
 
     res['_type'] = 'UI_STATE'
+    res['pid'] = pid
 
     local json = require 'json'
     return json.encode(res)

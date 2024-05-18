@@ -34,8 +34,9 @@ UI_APP = {
       layout = roomLayout,
       environment = {
         {
-          title = "Castle",
-          icon = Houses.Castle,
+          title = "Hospital",
+          icon = Houses.Hospital,
+          path = "/hospital",
         },
         {
           title = "Fountain",
@@ -71,6 +72,22 @@ UI_APP = {
         ]]
     },
 
+    -- hospital
+    {
+      path = '/hospital',
+      layout = roomLayoutHospital,
+      environment = {
+        {
+          title = "Hospital",
+          icon = Houses.Hospital,
+        },
+      },
+      html = '',
+      title = "Hospital",
+      exits = {},
+      state = InitPageState()
+    },
+
   },
 
   InitState = function(pid)
@@ -94,3 +111,6 @@ UI_APP = {
     }
   end,
 }
+
+
+

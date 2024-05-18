@@ -96,8 +96,8 @@ export function initVue( params: InitVueParams ) {
   <v-app theme="dark">
   <div class="v-container">`
     +
-     params.html.replace(/<ui-input/g, '<ui-input :state="state" :inputs-validity="inputsValidity"')
-      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"')
+     params.html.replace(/<ui-input/g, '<ui-input :state="state.ui" :inputs-validity="inputsValidity"')
+      .replace(/<ui-button/g, '<ui-button :ui-loading="loading" :state="state.ui" :ao-send-msg="aoSendMsg" :inputs-validity="inputsValidity"')
     + `
   </div>
   <div v-if="loading" class="text-center mt-4">

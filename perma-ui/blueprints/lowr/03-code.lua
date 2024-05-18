@@ -15,6 +15,7 @@ function InitPageState()
     people = {},
     fight = false,
     spawnMonstersLevel = 0,
+    maxMonsters = 3,
     messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with his Sucker", t = 1234567890 }
     maxMessages = 20,
   }
@@ -54,8 +55,6 @@ function spawnMonster(level, roomPage)
   local monster = monstersOfLevel[math.random(1, #monstersOfLevel)]
 
   UI.set({
-    pid = pid,
-
     name = monster.name,
     fruit = monster.weapon,
     path = roomPage.path,
@@ -84,37 +83,41 @@ function spawnMonster(level, roomPage)
 end
 
 function killPerson(pid, killedByPid)
+  local wasMonster = UI_STATE[pid].isMonster
+  local expGain = wasMonster and UI_STATE[pid].exp or 25
+  local goldGain = UI_STATE[pid].gold
+
+  if killedByPid then
+    UI.set({
+      gold = (UI_STATE[killedByPid].gold or 0) + goldGain,
+      exp = (UI_STATE[killedByPid].exp or 0) + expGain,
+    }, killedByPid)
+  end
+
   local page = UI.findPage(UI_STATE[pid].path)
 
   if page then
-    removePersonFromRoom(page, pid)
-
     if killedByPid then
-      addRoomMessage(page, string.format("%s was killed by %s", UI_STATE[pid].name, UI_STATE[killedByPid].name))
+      addRoomMessage(page,
+        string.format("%s was killed by %s who gained %d exp and %d 🪙",
+          UI_STATE[pid].name,
+          UI_STATE[killedByPid].name,
+          expGain,
+          goldGain
+        ))
     end
-  end
 
-  local wasMonster = UI_STATE[pid].isMonster
-
-  if killedByPid then
-    local expGain = wasMonster and UI_STATE[pid].exp or 0
-
-    UI.set({
-      gold = (UI_STATE[killedByPid].gold or 0) + (UI_STATE[pid].gold or 0),
-      exp = (UI_STATE[killedByPid].exp or 0) + expGain,
-    }, killedByPid)
+    removePersonFromRoom(page, pid)
   end
 
   if wasMonster then
     -- completely remove from state
     UI_STATE[pid] = nil
   else
-    -- move player to central square (TODO: hospital)
-
-    UI.set({ hp = 1, gold = 0 }, pid)
-
-    local cityCenter = UI.findPage('/1000-1000-1000')
-    putPersonToRoom(cityCenter, pid)
+    UI.set({
+      hp = 0,
+      gold = 0,
+    }, pid)
   end
 end
 
@@ -126,29 +129,26 @@ function isRoomInFight(page)
   local fight = false
 
   for _, personInRoom in ipairs(page.state.people) do
+    local targetInRoom = findPersonInRoom(page, personInRoom.actionTargetPid)
 
-    local me = personInRoom.self
-    local target = personInRoom.roundCommandTarget
+    if not targetInRoom then
+      personInRoom.actionTargetPid = nil
+      personInRoom.action = nil
 
-    if target then
-
-      local targetInRoom = findPersonInRoom(page, target.pid)
-
-      if not targetInRoom then
-        personInRoom.roundCommandTarget = nil
-        personInRoom.roundCommand = nil
-
-        addRoomMessage(page, string.format("%s ran away from %s", target.name, me.name))
-      else
-        fight = true
+      -- find who was target
+      local target = UI_STATE[personInRoom.actionTargetPid]
+      if target then
+        addRoomMessage(page, string.format("%s ran away from %s", target.name, personInRoom.name))
       end
+    else
+      fight = true
     end
   end
 
   return fight
 end
 
-function performAttacks(page)
+function performRoomActions(page)
   local shuffledPeople = {}
 
   for _, personInRoom in ipairs(page.state.people) do
@@ -164,37 +164,76 @@ function performAttacks(page)
   for i = 1, #shuffledPeople do
     local personInRoom = shuffledPeople[i]
 
-    if personInRoom.roundCommand == 'attack' then
-      attack(personInRoom.pid, personInRoom.roundCommandTarget)
-    end
+    local person = UI_STATE[personInRoom.pid]
+    if not person then return error("Person not found") end
 
-    if personInRoom.roundCommand == 'run' then
-      local direction = personInRoom.roundCommandDirection
-      if direction then
-        personGo(direction, personInRoom.pid)
+    if (person.hp > 0) then
+      if personInRoom.action == 'attack' then
+        attack(personInRoom.pid, personInRoom.actionTargetPid)
       end
 
-      -- local page = UI.findPage(UI_STATE[personInRoom.pid].path)
-      -- if page then
-      --   removePersonFromRoom(page, personInRoom.pid, direction)
-      --   putPersonToRoom(page, personInRoom.pid, direction)
-      -- end
+      if personInRoom.action == 'run' then
+        local direction = personInRoom.actionDirection
+        if direction then
+          personGo(direction, personInRoom.pid)
+        end
+      end
     end
   end
 end
 
 function haveAllPeopleSubmittedRoundActions(page)
   for _, personInRoom in ipairs(page.state.people) do
-    if not personInRoom.roundCommand then return false end
+    if not personInRoom.action and not personInRoom.isMonster then return false end
   end
   return true
 end
 
-function setMonstersRoundCommand(page)
+function isMonsterScared(personInRoom)
+  local lowHelth = personInRoom.isMonster and personInRoom.hp < personInRoom.maxHp / 3
+  local oneInFour = math.random(4) == 1
+  return lowHelth and oneInFour
+end
+
+function selectRandomExit(page)
+  local exits = {}
+  for dir, path in pairs(page.exits) do
+    table.insert(exits, dir)
+  end
+
+  return exits[math.random(#exits)]
+end
+
+function findAnotherVictimInRoomFor(pid, page)
+  for _, personInRoom in ipairs(page.state.people) do
+    if personInRoom.pid ~= pid then
+      return personInRoom.pid
+    end
+  end
+  return nil
+end
+
+function monsterIsAggressive(personInRoom)
+  -- 50%
+  return math.random(2) == 1
+end
+
+function setMonstersAction(page)
   for _, personInRoom in ipairs(page.state.people) do
     if personInRoom.isMonster then
-      if personInRoom.roundCommandTarget then
-        personInRoom.roundCommand = 'attack'
+      if isMonsterScared(personInRoom) then
+        personInRoom.action = 'run'
+        personInRoom.actionDirection = selectRandomExit(page)
+      else
+        if personInRoom.actionTargetPid then
+          personInRoom.action = 'attack'
+        else
+          local targetPid = findAnotherVictimInRoomFor(personInRoom.pid, page)
+          if targetPid and monsterIsAggressive(personInRoom) then
+            personInRoom.action = 'attack'
+            personInRoom.actionTargetPid = targetPid
+          end
+        end
       end
     end
   end
@@ -204,12 +243,12 @@ function roomUpdateState(page)
   -- perform attacks (TODO: later sort by speed)
   -- for now perform random shuffle
 
-  setMonstersRoundCommand(page)
+  setMonstersAction(page)
 
   local fight = isRoomInFight(page)
 
   if fight and haveAllPeopleSubmittedRoundActions(page) then
-    performAttacks(page)
+    performRoomActions(page)
   end
 
   fight = isRoomInFight(page)
@@ -225,7 +264,24 @@ function roomUpdateState(page)
     return
   end
 
+  -- update people entries
+
+  for i, person in ipairs(page.state.people) do
+    page.state.people[i] = updateRoomPersonEntry(person)
+  end
+
+
   UI.sendPageState(page)
+end
+
+function updateRoomPersonEntry(personEntry)
+  local newEntry = createRoomPersonEntry(personEntry.pid)
+
+  for k, v in pairs(newEntry) do
+    personEntry[k] = v
+  end
+
+  return personEntry
 end
 
 function attack(attackerPid, targetPid)
@@ -237,22 +293,36 @@ function attack(attackerPid, targetPid)
     return ''
   end
 
-  -- local damage = attacker.str + attacker.weapon.str - target.armor.defence - target.defence
-  -- damage = math.max(0, damage - math.random(0, math.floor(damage * 0.2)))
   local halfAttackerStr = (attacker.str + attacker.weapon.str) / 2
-  local targetDefence = target.armor.defence + target.defence
+  local targetDefence = target.defence
 
-  local damage = math.max(0, math.floor(halfAttackerStr) + math.random(halfAttackerStr) - targetDefence)
+  if target.armor and target.armor.defence > 0 then
+    targetDefence = targetDefence + target.armor.defence / 2 + math.random(math.max(target.armor.defence / 2, 2))
+  end
+
+  local damage = math.max(0, math.floor(halfAttackerStr + math.random(halfAttackerStr) - targetDefence))
+
+  local targetAlreadyDead = target.hp <= 0
 
   local page = UI.findPage(attacker.path)
-  if page then
-    if damage > 0 then
-      addRoomMessage(page,
-        string.format("%s attacked %s by %d hp with his %s", attacker.name, target.name, damage, attacker.weapon.name))
-    else
-      addRoomMessage(page, string.format("%s missed %s", attacker.name, target.name))
-      return ''
-    end
+
+  if not page then
+    UI.log("attack", "Page not found: " .. attacker.path)
+    return ''
+  end
+
+  if targetAlreadyDead then
+    addRoomMessage(page,
+      string.format("%s attacked %s's corpse with his %s", attacker.name, target.name, attacker.weapon.name))
+    return ''
+  end
+
+  if damage > 0 then
+    addRoomMessage(page,
+      string.format("%s attacked %s by %d hp with his %s", attacker.name, target.name, damage, attacker.weapon.name))
+  else
+    addRoomMessage(page, string.format("%s missed %s", attacker.name, target.name))
+    return ''
   end
 
   UI.set({ hp = target.hp - damage }, targetPid)
@@ -321,22 +391,22 @@ function roomLayoutPeople(page)
   -- this is dynamic component. page here is page state recieved by vue
   -- also state - is the players state
   -- once someone enters the room - this will automatically update
+
+  local target = '((page.people || []).find((p) => p.pid === person.actionTargetPid))?'
+
   if page.state.fight then
-    return [[
+    return string.format([[
       <div v-for="person in (page.people || [])" :key="person.pid" class="d-flex">
         <div>
-          <ui-button v-if="person.pid !== ']] ..
-    UI.currentPid ..
-    [['" class="mr-2" variant="outlined" ui-run="cmdAttack" :ui-args="{ target: person.pid }">⚔️</ui-button>
+          <ui-button v-if="person.pid !== state.ui.pid" class="mr-2" variant="outlined" ui-run="cmdAttack" :ui-args="{ target: person.pid }">⚔️</ui-button>
         </div>
-        <div v-if="person.roundCommandTarget">{{ person.name }} is here fighting {{ person.roundCommandTargetName }}</div>
+        <div v-if="person.actionTargetPid">{{ person.name }} [{{ person.hp }}/{{ person.maxHp }}] is here fighting {{ %s.name }}</div>
         <div v-else>{{ person.name }} is here staring at the fight</div>
       </div>
       <div class="mt-4">
-        Your current fight descision: {{ (page.people.find(p => p.pid === ']] ..
-    UI.currentPid .. [[') || {})?.roundCommand || '-' }}
+        Your current fight descision: {{ ((page.people || []).find(p => p.pid === state.ui.pid) || {})?.action || '-' }}
       </div>
-    ]]
+    ]], target)
   end
 
   return [[
@@ -404,6 +474,40 @@ function roomLayout(page)
   return res
 end
 
+function roomLayoutHospital(pid)
+  local state = UI_STATE[pid]
+
+  local hpToHeal = state.maxHp - state.hp
+  local cost = hpToHeal * state.str * 10
+
+  local verdict = "You look fine to us, they tell you."
+  if state.hp < state.maxHp then
+    verdict = string.format("We can fix you. It will cost you %d gold.", cost)
+  end
+
+  local healButton = ""
+  if state.hp < state.maxHp then
+    healButton = [[
+      <ui-button ui-run="cmdHeal() class="mr-2">Heal</ui-button>
+    ]]
+  end
+
+  local goToCentralSquare = [[
+    <ui-button ui-run="UI.page({ path = '/1000-1000-1000' })">Leave</ui-button>
+  ]]
+
+  return string.format([[
+    <h1>Hospital</h1>
+    <p class="mb-4">
+      You find yourself in the hospital. Young attractive nurses are walking around.
+    </p>
+    <p class="mb-4">%s</p>
+    <div class="d-flex">%s %s</div>
+  ]], verdict, healButton, goToCentralSquare)
+
+end
+
+
 function createRoom(parentPagePath, direction, title, description)
   -- calculate new coordinates
   local diff = DIRECTIONS[direction]
@@ -467,6 +571,24 @@ function removePersonFromRoom(page, pid, toDirection)
   return wasUpdate
 end
 
+function createRoomPersonEntry(pid)
+  local state = UI_STATE[pid]
+  if not state then
+    error("Person state not found");
+    return {}
+  end
+  return {
+    pid = pid,
+    name = state.name,
+    fruit = state.fruit,
+    weapon = state.weapon,
+    armor = state.armor,
+    hp = state.hp,
+    maxHp = state.maxHp,
+    isMonster = state.isMonster,
+  }
+end
+
 function putPersonToRoom(page, pid, fromDirection)
   if not page.state.people then page.state.people = {} end
 
@@ -475,11 +597,7 @@ function putPersonToRoom(page, pid, fromDirection)
     if person.pid == pid then return false end
   end
 
-  -- find state in UI_STATE[pid] - { name, fruit }
-  local state = UI_STATE[pid]
-  if not state then return error("No state for pid") end
-
-  local person = { pid = pid, name = state.name, fruit = state.fruit }
+  local person = createRoomPersonEntry(pid)
 
   table.insert(page.state.people, person)
 
@@ -490,20 +608,20 @@ function putPersonToRoom(page, pid, fromDirection)
   return true
 end
 
-function clearRoundCommands(page, pid)
+function clearActions(page, pid)
   local peopleEntry = findPersonInRoom(page, pid)
-  if not peopleEntry then return error("User not found in room") end
+  if not peopleEntry then return end
 
-  peopleEntry.roundCommand = nil
-  peopleEntry.roundCommandDirection = nil
-  peopleEntry.roundCommandTarget = nil
+  peopleEntry.action = nil
+  peopleEntry.actionDirection = nil
+  peopleEntry.actionTargetPid = nil
 end
 
 function personGo(direction, pid)
   local page = UI.findPage(UI_STATE[pid].path)
   if not page then return error("Person room not found") end
 
-  clearRoundCommands(page, pid)
+  clearActions(page, pid)
 
   local exit = page.exits[direction]
 
@@ -511,11 +629,6 @@ function personGo(direction, pid)
 
   local newPage = UI.findPage(exit)
   if not newPage then return error("Dst room not found") end
-
-  if page.state.fight then
-    roundActionRun(pid, direction)
-    return exit
-  end
 
   removePersonFromRoom(page, pid, direction)
   putPersonToRoom(newPage, pid, OPOSITES[direction])
@@ -538,7 +651,16 @@ function pageOnPersonEnter(page, pid, fromDirection)
     if not page.state.fight then
       local level = page.state.spawnMonstersLevel
       if level > 0 then
-        spawnMonster(level, page)
+        local monstersInRoom = 0
+        for _, person in ipairs(page.state.people) do
+          if person.isMonster then
+            monstersInRoom = monstersInRoom + 1
+          end
+        end
+
+        if monstersInRoom < page.state.maxMonsters or 3 then
+          spawnMonster(level, page)
+        end
       end
     end
   end
@@ -576,10 +698,9 @@ function roundActionAttack(attackerPid, targetPid)
   local peopleEntry = findPersonInRoom(page, attackerPid)
   if not peopleEntry then return error("Target not found in room") end
 
-  peopleEntry.roundCommandTarget = targetPid
-  peopleEntry.roundCommandTargetName = UI_STATE[targetPid].name
-  peopleEntry.roundCommand = 'attack'
-  peopleEntry.roundCommandDirection = nil
+  peopleEntry.actionTargetPid = targetPid
+  peopleEntry.action = 'attack'
+  peopleEntry.actionDirection = nil
 end
 
 function roundActionRun(pid, direction)
@@ -587,17 +708,39 @@ function roundActionRun(pid, direction)
   if not page then return error("User room not found") end
 
   local peopleEntry = findPersonInRoom(page, pid)
-  if not peopleEntry then return error("User not found in room") end
+  if not peopleEntry then return error("Run: User not found in room") end
 
-  peopleEntry.roundCommand = 'run'
-  peopleEntry.roundCommandDirection = direction
-  peopleEntry.roundCommandTarget = nil
-  peopleEntry.roundCommandTargetName = nil
+  peopleEntry.action = 'run'
+  peopleEntry.actionDirection = direction
+  peopleEntry.actionTargetPid = nil
 end
 
 -- FROM HTML COMMANDS ---
 
+
+function isPlayerDead()
+  return UI_STATE[UI.currentPid].hp <= 0
+end
+
+function deadPlayerRedirect()
+  UI.set({
+    hp = 1,
+    gold = 0,
+  });
+
+  local spawnRoom = UI.findPage('/1000-1000-1000')
+  local state = UI_STATE[UI.currentPid]
+
+  putPersonToRoom(spawnRoom, UI.currentPid)
+
+  addRoomMessage(spawnRoom, string.format("%s has been ressurected by the gods", state.name))
+
+  return UI.page({ path = '/1000-1000-1000' }) .. UI.state() .. UI.pageState(spawnRoom)
+end
+
 function cmdBuild(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
   local direction = args.dir
 
   UI.set({
@@ -611,6 +754,8 @@ function cmdBuild(args)
 end
 
 function cmdConfirmBuild(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
   local title = args.title
   local description = args.desc
   local parentPath = UI_STATE[UI.currentPid].prevPath
@@ -627,19 +772,23 @@ function cmdConfirmBuild(args)
 end
 
 function cmdAttack(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
   local targetPid = args.target
 
   if not targetPid then return error("No target") end
 
   roundActionAttack(UI.currentPid, targetPid)
 
-  local page = UI.findPage(UI_STATE[UI.currentPid].path)
+  local page = UI.findPage(UI.currentPath())
 
   roomUpdateState(page)
   return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
 end
 
 function cmdGo(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
   local direction = args.dir
 
   local exit = personGo(direction, UI.currentPid)
