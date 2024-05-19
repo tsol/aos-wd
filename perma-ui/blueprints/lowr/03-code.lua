@@ -164,11 +164,9 @@ function performRoomActions(page)
   end
 
   for i = 1, #shuffledPeople do
-    local personInRoom = shuffledPeople[i]
+    local personInRoom = findPersonInRoom(page, shuffledPeople[i].pid)
 
-    local person = UI_STATE[personInRoom.pid]
-
-    if (person and person.hp > 0) then
+    if (personInRoom and personInRoom.hp > 0) then
 
       if personInRoom.action == 'attack' then
         attack(personInRoom.pid, personInRoom.actionTargetPid)
@@ -287,6 +285,7 @@ function updateRoomPersonEntry(personEntry)
 end
 
 function attack(attackerPid, targetPid)
+
   local attacker = UI_STATE[attackerPid]
   local target = UI_STATE[targetPid]
 
@@ -301,17 +300,17 @@ function attack(attackerPid, targetPid)
   if target.armor and target.armor.defence > 0 then
     -- if target evades:
     if target.action == 'evade' then
-      targetDefence = targetDefence + target.armor.defence / 2 + math.random(math.max(target.armor.defence / 2, 2))
+      targetDefence = target.defence + target.armor.defence / 2 + math.random(math.max(target.armor.defence / 2, 2))
     else
-      local halfTotalDefence = (target.armor.defence + targetDefence) / 2
+      local halfTotalDefence = (target.armor.defence + target.defence) / 2
       targetDefence = halfTotalDefence + math.max(halfTotalDefence / 2, 2)
     end
   end
 
   local damage = math.max(0, math.floor(halfAttackerStr + math.random(halfAttackerStr) - targetDefence))
 
-  UI.log("attack", string.format("Attacker: %s, Target: %s, AttackerStr: %d + %d, TargetDefence: %d + %d, Damage: %d",
-    attacker.name, target.name, attacker.str, attacker.weapon.str, target.defence, target.armor.defence, damage))
+  -- UI.log("attack", string.format("Attacker: %s, Target: %s, AttackerStr: %d + %d, TargetDefence: %d + %d, Damage: %d",
+  --   attacker.name, target.name, attacker.str, attacker.weapon.str, target.defence, target.armor.defence, damage))
 
   local targetAlreadyDead = target.hp <= 0
 
@@ -342,7 +341,7 @@ function attack(attackerPid, targetPid)
   end
 
   UI.set({ hp = target.hp - damage }, targetPid)
-
+  
   if target.hp <= 0 then
     killPerson(targetPid, attackerPid)
     return ''
@@ -406,9 +405,6 @@ function roomLayoutNavigation(page)
 end
 
 -- page = { "people": [ { "pid": "KjpdUofQA4FSBgMV7CsdcqV4CNZMz-AZayNHcirjEnY", "fruit": "Cherry", "name": "yaya" } ] }
-
-
-
 
 function roomLayoutPeople(page)
   -- this is dynamic component. page here is page state recieved by vue
@@ -691,6 +687,8 @@ function putPersonToRoom(page, pid, fromDirection)
 
   table.insert(page.state.people, person)
 
+  person.path = page.path
+
   pageOnPersonEnter(page, pid, fromDirection)
 
   UI.sendPageState(page)
@@ -931,6 +929,14 @@ function cmdGo(args)
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local direction = args.dir
+
+  local page = UI.findPage(UI.currentPath())
+
+  if page.state.fight then
+    roundActionRun(UI.currentPid, direction)
+    roomUpdateState(page)
+    return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
+  end
 
   local exit = personGo(direction, UI.currentPid)
   local newPage = UI.findPage(exit)
