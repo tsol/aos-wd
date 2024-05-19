@@ -43,8 +43,6 @@ createRoom('/1000-996-1000', 'n', 'Forest 5', [[
 
 UI.findPage('/1000-995-1000').state.spawnMonstersLevel = 5
 
-
-
 createRoom('/1000-1000-1000', 's', 'South Square', [[
   <p class="mb-4">
     You find yourself on the city south square.

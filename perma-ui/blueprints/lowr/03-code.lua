@@ -129,19 +129,21 @@ function isRoomInFight(page)
   local fight = false
 
   for _, personInRoom in ipairs(page.state.people) do
-    local targetInRoom = findPersonInRoom(page, personInRoom.actionTargetPid)
+    if personInRoom.action == 'attack' then
+      local targetInRoom = findPersonInRoom(page, personInRoom.actionTargetPid)
 
-    if not targetInRoom then
-      personInRoom.actionTargetPid = nil
-      personInRoom.action = nil
+      if not targetInRoom then
+        personInRoom.actionTargetPid = nil
+        personInRoom.action = nil
 
-      -- find who was target
-      local target = UI_STATE[personInRoom.actionTargetPid]
-      if target then
-        addRoomMessage(page, string.format("%s ran away from %s", target.name, personInRoom.name))
+        -- find who was target
+        local target = UI_STATE[personInRoom.actionTargetPid]
+        if target then
+          addRoomMessage(page, string.format("%s ran away from %s", target.name, personInRoom.name))
+        end
+      else
+        fight = true
       end
-    else
-      fight = true
     end
   end
 
@@ -165,9 +167,9 @@ function performRoomActions(page)
     local personInRoom = shuffledPeople[i]
 
     local person = UI_STATE[personInRoom.pid]
-    if not person then return error("Person not found") end
 
-    if (person.hp > 0) then
+    if (person and person.hp > 0) then
+
       if personInRoom.action == 'attack' then
         attack(personInRoom.pid, personInRoom.actionTargetPid)
       end
@@ -178,6 +180,7 @@ function performRoomActions(page)
           personGo(direction, personInRoom.pid)
         end
       end
+
     end
   end
 end
@@ -270,7 +273,6 @@ function roomUpdateState(page)
     page.state.people[i] = updateRoomPersonEntry(person)
   end
 
-
   UI.sendPageState(page)
 end
 
@@ -297,10 +299,19 @@ function attack(attackerPid, targetPid)
   local targetDefence = target.defence
 
   if target.armor and target.armor.defence > 0 then
-    targetDefence = targetDefence + target.armor.defence / 2 + math.random(math.max(target.armor.defence / 2, 2))
+    -- if target evades:
+    if target.action == 'evade' then
+      targetDefence = targetDefence + target.armor.defence / 2 + math.random(math.max(target.armor.defence / 2, 2))
+    else
+      local halfTotalDefence = (target.armor.defence + targetDefence) / 2
+      targetDefence = halfTotalDefence + math.max(halfTotalDefence / 2, 2)
+    end
   end
 
   local damage = math.max(0, math.floor(halfAttackerStr + math.random(halfAttackerStr) - targetDefence))
+
+  UI.log("attack", string.format("Attacker: %s, Target: %s, AttackerStr: %d + %d, TargetDefence: %d + %d, Damage: %d",
+    attacker.name, target.name, attacker.str, attacker.weapon.str, target.defence, target.armor.defence, damage))
 
   local targetAlreadyDead = target.hp <= 0
 
@@ -315,6 +326,11 @@ function attack(attackerPid, targetPid)
     addRoomMessage(page,
       string.format("%s attacked %s's corpse with his %s", attacker.name, target.name, attacker.weapon.name))
     return ''
+  end
+
+  if target.action == 'evade' then
+    addRoomMessage(page,
+      string.format("%s tried to evade %s's attack", target.name, attacker.name))
   end
 
   if damage > 0 then
@@ -341,6 +357,10 @@ function attack(attackerPid, targetPid)
 end
 
 function roomLayoutNavigation(page)
+  if page.customNavigation then
+    return page.customNavigation
+  end
+
   function btn(dir, title, empty)
     local variant = empty and 'outlined' or 'flat'
     local cmd = empty and 'cmdBuild' or 'cmdGo'
@@ -387,6 +407,9 @@ end
 
 -- page = { "people": [ { "pid": "KjpdUofQA4FSBgMV7CsdcqV4CNZMz-AZayNHcirjEnY", "fruit": "Cherry", "name": "yaya" } ] }
 
+
+
+
 function roomLayoutPeople(page)
   -- this is dynamic component. page here is page state recieved by vue
   -- also state - is the players state
@@ -394,26 +417,88 @@ function roomLayoutPeople(page)
 
   local target = '((page.people || []).find((p) => p.pid === person.actionTargetPid))?'
 
-  if page.state.fight then
-    return string.format([[
-      <div v-for="person in (page.people || [])" :key="person.pid" class="d-flex">
-        <div>
-          <ui-button v-if="person.pid !== state.ui.pid" class="mr-2" variant="outlined" ui-run="cmdAttack" :ui-args="{ target: person.pid }">⚔️</ui-button>
-        </div>
-        <div v-if="person.actionTargetPid">{{ person.name }} [{{ person.hp }}/{{ person.maxHp }}] is here fighting {{ %s.name }}</div>
-        <div v-else>{{ person.name }} is here staring at the fight</div>
-      </div>
-      <div class="mt-4">
-        Your current fight descision: {{ ((page.people || []).find(p => p.pid === state.ui.pid) || {})?.action || '-' }}
-      </div>
-    ]], target)
+  function personName(fightMode)
+    local inlineHitpoints = ''
+
+    if fightMode then
+      inlineHitpoints = [[ [{{ person.hp }}/{{ person.maxHp }}] ]]
+    end
+
+    return string.format(
+      [[
+        <v-tooltip location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
+              {{ person.name }} %s
+            </span>
+          </template>
+          <div class="ma-5">
+          <table>
+          <tr>
+              <td colspan="2"><b>{{ person.name }}</b></td>
+          </tr>
+          <tr><td colspan="2" style="height: 1em"></td></tr>
+          <tr>
+              <td>Level / Exp:</td>
+              <td style="text-align: right;">{{ person.level }} / {{ person.exp }}</td>
+          </tr>
+          <tr>
+              <td>Gold:</td>
+              <td style="text-align: right;">{{ person.gold }}</td>
+          </tr>
+          <tr>
+              <td>Hitpoints:</td>
+              <td style="text-align: right;">{{ person.hp }} / {{ person.maxHp }}</td>
+          </tr>
+          <tr>
+              <td>Weapon:</td>
+              <td style="text-align: right;">{{ person.weapon.name }} [ + {{ person.weapon.str }} ]</td>
+          </tr>
+          <tr>
+              <td>Armor:</td>
+              <td style="text-align: right;">{{ person.armor.name }} [ + {{ person.armor.defence }} ]</td>
+          </tr>
+          </table>
+          </div>
+        </v-tooltip>
+      ]], inlineHitpoints)
   end
 
-  return [[
-      <div v-for="person in (page.people || [])" :key="person.pid">
-        {{ person.name }} is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+  local personLine = string.format([[
+    <div>
+      <span>%s is here </span>
+      <span v-if="person.actionTargetPid">fighting {{ %s.name }}, </span>
+      <span v-else>staring at the fight, </span>
+      <span v-if="! person.action">deciding what to do</span>
+      <span v-else-if="person.action === 'attack'">going to attack</span>
+      <span v-else-if="person.action === 'run'">running away</span>
+      <span v-else-if="person.action === 'evade'">trying to evade</span>
+    </div>
+  ]], personName(page.state.fight), target)
+
+  if page.state.fight then
+    return string.format([[
+      <div v-for="person in (page.people || []).filter((p) => p.pid === state.ui.pid)" :key="person.pid" class="d-flex align-center">
+        <div>
+          <ui-button class="mr-2" variant="outlined" ui-run="cmdEvade" :ui-args="{ target: person.pid }">🛡️</ui-button>
+        </div>
+        %s
       </div>
-    ]]
+      <div class="mb-2"></div>
+      <div v-for="person in (page.people || []).filter((p) => p.pid !== state.ui.pid)" :key="person.pid" class="d-flex align-center">
+        <div>
+          <ui-button class="mr-2" variant="outlined" ui-run="cmdAttack" :ui-args="{ target: person.pid }">⚔️</ui-button>
+        </div>
+        %s
+      </div>
+    ]], personLine, personLine)
+  end
+
+  return string.format([[
+      <div v-for="person in (page.people || [])" :key="person.pid">
+        %s is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+      </div>
+    ]], personName())
 end
 
 function roomLayoutMessages(page)
@@ -437,19 +522,19 @@ function roomLayoutEnvironment(page)
     res = res .. string.format([[
         <v-tooltip text="%s" location="bottom">
           <template v-slot:activator="{ props }">
-            <span v-bind="props">%s</span>
+            <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
           </template>
         </v-tooltip>
-    ]], env.title, env.icon)
+    ]], env.title, env.path, env.icon)
   end
 
   return res
 end
 
-function roomLayout(page)
+function roomLayout(page, html)
   local res = '<h1>' .. page.title .. '</h1>'
 
-  res = res .. page.html
+  res = res .. (html or page.html or '')
 
   res = res .. roomLayoutEnvironment(page)
 
@@ -474,11 +559,11 @@ function roomLayout(page)
   return res
 end
 
-function roomLayoutHospital(pid)
-  local state = UI_STATE[pid]
+function roomLayoutHospital(page)
+  local state = UI_STATE[UI.currentPid]
 
   local hpToHeal = state.maxHp - state.hp
-  local cost = hpToHeal * state.str * 10
+  local cost = hpToHeal * state.level * 10
 
   local verdict = "You look fine to us, they tell you."
   if state.hp < state.maxHp then
@@ -488,25 +573,27 @@ function roomLayoutHospital(pid)
   local healButton = ""
   if state.hp < state.maxHp then
     healButton = [[
-      <ui-button ui-run="cmdHeal() class="mr-2">Heal</ui-button>
+      <ui-button ui-run="cmdHeal" class="mr-2">Heal</ui-button>
     ]]
   end
 
   local goToCentralSquare = [[
-    <ui-button ui-run="UI.page({ path = '/1000-1000-1000' })">Leave</ui-button>
+    <ui-button ui-run="cmdGo({ dir = '/1000-1000-1000' })">Leave</ui-button>
   ]]
 
-  return string.format([[
-    <h1>Hospital</h1>
+  local navigation = string.format([[<div class="d-flex">%s %s</div>]], healButton, goToCentralSquare)
+
+  local html = string.format([[
     <p class="mb-4">
       You find yourself in the hospital. Young attractive nurses are walking around.
     </p>
     <p class="mb-4">%s</p>
-    <div class="d-flex">%s %s</div>
-  ]], verdict, healButton, goToCentralSquare)
+  ]], verdict)
 
+  page.customNavigation = navigation
+
+  return roomLayout(page, html)
 end
-
 
 function createRoom(parentPagePath, direction, title, description)
   -- calculate new coordinates
@@ -574,7 +661,7 @@ end
 function createRoomPersonEntry(pid)
   local state = UI_STATE[pid]
   if not state then
-    error("Person state not found");
+    error( "Person state not found " .. pid)
     return {}
   end
   return {
@@ -586,6 +673,9 @@ function createRoomPersonEntry(pid)
     hp = state.hp,
     maxHp = state.maxHp,
     isMonster = state.isMonster,
+    level = state.level,
+    exp = state.exp,
+    gold = state.gold,
   }
 end
 
@@ -623,7 +713,11 @@ function personGo(direction, pid)
 
   clearActions(page, pid)
 
-  local exit = page.exits[direction]
+  local exit = not direction:match('^/') and page.exits[direction]
+  if not exit then
+    exit = direction
+    direction = nil
+  end
 
   if not exit then return error("No exit in that direction") end
 
@@ -631,10 +725,9 @@ function personGo(direction, pid)
   if not newPage then return error("Dst room not found") end
 
   removePersonFromRoom(page, pid, direction)
-  putPersonToRoom(newPage, pid, OPOSITES[direction])
-
-  -- update room state
   roomUpdateState(page)
+
+  putPersonToRoom(newPage, pid, direction and OPOSITES[direction])
   roomUpdateState(newPage)
 
   return exit
@@ -703,6 +796,18 @@ function roundActionAttack(attackerPid, targetPid)
   peopleEntry.actionDirection = nil
 end
 
+function roundActionEvade(pid)
+  local page = UI.findPage(UI_STATE[pid].path)
+  if not page then return error("User room not found") end
+
+  local peopleEntry = findPersonInRoom(page, pid)
+  if not peopleEntry then return error("Evade: User not found in room") end
+
+  peopleEntry.action = 'evade'
+  peopleEntry.actionDirection = nil
+  peopleEntry.actionTargetPid = nil
+end
+
 function roundActionRun(pid, direction)
   local page = UI.findPage(UI_STATE[pid].path)
   if not page then return error("User room not found") end
@@ -717,6 +822,31 @@ end
 
 -- FROM HTML COMMANDS ---
 
+function cmdHeal()
+  local state = UI_STATE[UI.currentPid]
+  local page = UI.findPage(state.path)
+
+  local hpToHeal = state.maxHp - state.hp
+  local costPerPoint = state.level * 10
+
+  local pointsCanBeHealed = math.min(hpToHeal, math.floor(state.gold / costPerPoint))
+  local cost = pointsCanBeHealed * costPerPoint
+
+  if pointsCanBeHealed <= 0 then
+    addRoomMessage(page, string.format("%s tried to heal, but didn't have enough gold", state.name))
+    return UI.page({ path = state.path }) .. UI.state() .. UI.pageState(page)
+  end
+
+  UI.set({
+    hp = state.hp + pointsCanBeHealed,
+    gold = state.gold - cost,
+  })
+
+  addRoomMessage(page, string.format("%s healed %d hp for %d gold", state.name, pointsCanBeHealed, cost))
+  roomUpdateState(page)
+
+  return UI.page({ path = state.path }) .. UI.state() .. UI.pageState(page)
+end
 
 function isPlayerDead()
   return UI_STATE[UI.currentPid].hp <= 0
@@ -779,6 +909,17 @@ function cmdAttack(args)
   if not targetPid then return error("No target") end
 
   roundActionAttack(UI.currentPid, targetPid)
+
+  local page = UI.findPage(UI.currentPath())
+
+  roomUpdateState(page)
+  return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
+end
+
+function cmdEvade(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
+  roundActionEvade(UI.currentPid)
 
   local page = UI.findPage(UI.currentPath())
 

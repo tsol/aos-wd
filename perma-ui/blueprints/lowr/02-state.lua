@@ -68,20 +68,18 @@ UI_APP = {
           <ui-input ui-id="roomEditDescription" ui-type="String" ui-required label="Location description" />
 
           <ui-button color="primary" ui-valid="roomEditTitle, roomEditDescription" ui-run="cmdConfirmBuild({ title = $roomEditTitle, desc = $roomEditDescription })">Build</ui-button>
-          <ui-button class="ml-2" ui-run="UI.page({ path = '{~prevPath~}' })">Go back</ui-button>
-        ]]
+          <ui-button class="ml-2" ui-run="cmdGo({ dir = '{~prevPath~}' })">Go back</ui-button>
+        ]],
+        title = "Build new space",
+        exits = {},
+        state = InitPageState()
     },
 
     -- hospital
     {
       path = '/hospital',
       layout = roomLayoutHospital,
-      environment = {
-        {
-          title = "Hospital",
-          icon = Houses.Hospital,
-        },
-      },
+      environment = {},
       html = '',
       title = "Hospital",
       exits = {},
@@ -94,16 +92,16 @@ UI_APP = {
     return {
       name = "",
       fruit = "",
-
-      roundCommandTarget = nil,
-      roundCommand = nil, -- attack / run / specialAttack / heal
   
+      level = 1,
+      exp = 0,
+
       maxHp = 10,
       hp = 10,
       gold = 0,
 
       str = 10,
-      defence = 10,
+      defence = 3,
 
       armor = { name = "Nothing", price = 0, defence = 0 },
       weapon = { name = "Fists", price = 0, str = 0 },
