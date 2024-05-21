@@ -16,7 +16,7 @@ function InitPageState()
     fight = false,
     spawnMonstersLevel = 0,
     maxMonsters = 3,
-    messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with his Sucker", t = 1234567890 }
+    messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with their Sucker", t = 1234567890 }
     maxMessages = 20,
   }
 end
@@ -76,7 +76,7 @@ end
 function killPerson(pid, killedByPid)
   local wasMonster = UI_STATE[pid].isMonster
   local expGain = wasMonster and UI_STATE[pid].exp or 25
-  local goldGain = UI_STATE[pid].gold
+  local goldGain = math.floor(UI_STATE[pid].gold * 0.9)
 
   if killedByPid then
     UI.set({
@@ -107,7 +107,7 @@ function killPerson(pid, killedByPid)
   else
     UI.set({
       hp = 0,
-      gold = 0,
+      gold = UI_STATE[pid].gold - goldGain,
     }, pid)
   end
 end
@@ -120,18 +120,11 @@ function isRoomInFight(page)
   local fight = false
 
   for _, personInRoom in ipairs(page.state.people) do
-    if personInRoom.action == 'attack' then
+    if personInRoom.action == 'attack' or personInRoom.actionTargetPid then
       local targetInRoom = findPersonInRoom(page, personInRoom.actionTargetPid)
-
       if not targetInRoom then
         personInRoom.actionTargetPid = nil
         personInRoom.action = nil
-
-        -- find who was target
-        local target = UI_STATE[personInRoom.actionTargetPid]
-        if target then
-          addRoomMessage(page, string.format("%s ran away from %s", target.name, personInRoom.name))
-        end
       else
         fight = true
       end
@@ -170,6 +163,7 @@ function performRoomActions(page)
           end
         end
       end
+
       personInRoom.action = nil
     end
   end
@@ -256,6 +250,14 @@ function roomUpdateState(page)
 
   if page.state.fight and not fight then
     addRoomMessage(page, "Fight ended")
+    -- clear all actions and targets for people in room
+
+    for _, personInRoom in ipairs(page.state.people) do
+      personInRoom.action = nil
+      personInRoom.actionDirection = nil
+      personInRoom.actionTargetPid = nil
+    end
+
     page.state.fight = fight
   end
 
@@ -299,9 +301,15 @@ function attack(attackerPid, targetPid)
     return ''
   end
 
+
   if targetAlreadyDead then
     addRoomMessage(page,
-      string.format("%s attacked %s's corpse with his %s", attacker.name, target.name, attacker.weapon.name))
+      string.format("%s attacked %s's corpse with their %s", attacker.name, target.name, attacker.weapon.name))
+    return ''
+  end
+
+  if target.room ~= attacker.room then
+    addRoomMessage(page, string.format("%s has gone and %s looks upset", target.name, attacker.name))
     return ''
   end
 
@@ -312,7 +320,7 @@ function attack(attackerPid, targetPid)
 
   if damage > 0 then
     addRoomMessage(page,
-      string.format("%s attacked %s by %d hp with his %s", attacker.name, target.name, damage, attacker.weapon.name))
+      string.format("%s attacked %s by %d hp with their %s", attacker.name, target.name, damage, attacker.weapon.name))
   else
     addRoomMessage(page, string.format("%s missed %s", attacker.name, target.name))
     return ''
@@ -346,12 +354,16 @@ function roomLayoutNavigation(page)
     return string.format([[
       <v-tooltip text="%s">
         <template v-slot:activator="{ props }">
-          <ui-button color="%s" variant="%s" v-bind="props" ui-run="%s({ dir = '%s' })">
+          <ui-button
+            :color="state.ui.actionDirection === '%s' ? 'primary' : '%s'"
+            variant="%s"
+            v-bind="props"
+            ui-run="%s({ dir = '%s' })">
           %s
           </ui-button>
         </template>
       </v-tooltip>
-      ]], title, color, variant, cmd, dir, dir)
+      ]], title, dir, color, variant, cmd, dir, dir)
   end
 
   local navButtons = {
@@ -403,7 +415,8 @@ function roomLayoutPeople(page)
         <v-tooltip location="top">
           <template v-slot:activator="{ props }">
             <span v-bind="props">
-              {{ person.name }} %s
+              <b>{{ person.name }}</b>
+              <span class="text-caption text-grey">%s</span>
             </span>
           </template>
           <div class="ma-5">
@@ -440,46 +453,61 @@ function roomLayoutPeople(page)
 
   local personLine = string.format([[
     <div>
-      <span>%s is here </span>
-      <span v-if="person.actionTargetPid">fighting {{ %s.name }}, </span>
-      <span v-else>staring at the fight, </span>
+      <span>%s</span>
+      <span> is here </span>
       <span v-if="! person.action">deciding what to do</span>
-      <span v-else-if="person.action === 'attack'">going to attack</span>
+      <span v-else-if="person.action === 'attack'">
+        going to attack
+        <span v-if="person.actionTargetPid">
+          <b :style="`color: ${ person.actionTargetPid === state.ui.pid ? 'red' : 'unset' }`">{{ %s.name }}</b>
+        </span>
+      </span>
       <span v-else-if="person.action === 'run'">running away</span>
       <span v-else-if="person.action === 'evade'">trying to evade</span>
-    </div>
+      </div>
   ]], personName(page.state.fight), target)
 
-  if page.state.fight then
-    return string.format([[
-      <div v-for="person in (page.people || []).filter((p) => p.pid === state.ui.pid)" :key="person.pid" class="d-flex align-center">
-        <div>
-          <ui-button class="mr-2" variant="outlined" ui-run="cmdEvade" :ui-args="{ target: person.pid }">🛡️</ui-button>
-        </div>
-        %s
-      </div>
-      <div class="mb-2"></div>
-      <div v-for="person in (page.people || []).filter((p) => p.pid !== state.ui.pid)" :key="person.pid" class="d-flex align-center">
-        <div>
-          <ui-button class="mr-2" variant="outlined" ui-run="cmdAttack" :ui-args="{ target: person.pid }">⚔️</ui-button>
-        </div>
-        %s
-      </div>
-    ]], personLine, personLine)
-  end
-
   return string.format([[
-      <div v-for="person in (page.people || [])" :key="person.pid">
-        %s is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+      <div v-if="page.fight">
+          <div v-for="person in (page.people || []).filter((p) => p.pid === state.ui.pid)" :key="person.pid" class="d-flex align-center">
+            <div>
+              <ui-button
+                class="mr-2"
+                :color="person.action === 'evade' ? 'primary' : undefined"
+                :variant="person.action === 'evade' ? 'flat' : 'outlined'"
+                ui-run="cmdEvade"
+                :ui-args="{ target: person.pid }"
+              >🛡️</ui-button>
+            </div>
+            %s
+          </div>
+          <div v-for="person in (page.people || []).filter((p) => p.pid !== state.ui.pid)" :key="person.pid" class="d-flex align-center">
+            <div>
+              <ui-button
+                class="mr-2 mt-1"
+                :color="state.ui.action === 'attack' && state.ui.actionTargetPid === person.pid ? 'primary' : undefined"
+                :variant="state.ui.action === 'attack' && state.ui.actionTargetPid === person.pid ? 'flat' : 'outlined'"
+                ui-run="cmdAttack"
+                :ui-args="{ target: person.pid }"
+              >⚔️</ui-button>
+            </div>
+            %s
+            <v-progress-circular v-if="!person.isMonster && !person.action" class="ml-2" indeterminate size="small" color="primary"></v-progress-circular>
+          </div>
       </div>
-    ]], personName())
+      <div v-else>
+          <div v-for="person in (page.people || [])" :key="person.pid">
+            %s is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+          </div>
+      </div>
+      ]], personLine, personLine, personName())
 end
 
 function roomLayoutMessages(page)
   return string.format([[
       <div
-        v-for="message in (page.messages || [])"
-        :key="message.t"
+        v-for="(message, index) in (page.messages || [])"
+        :key="`${message.t}-${index}-${message.text}`"
         :style="{ opacity: Math.max(0.1, 1 - (Number(%s) - Number(message.t)) / 1000000) }"
       >
         {{ message.text }}
@@ -694,6 +722,10 @@ function personGo(direction, pid)
   local newPage = UI.findPage(exit)
   if not newPage then return error("Dst room not found") end
 
+  if (page.state.fight) then
+    addRoomMessage(page, string.format("%s ran away towards %s", UI_STATE[pid].name, newPage.title or 'somewhere'))
+  end
+
   removePersonFromRoom(page, pid, direction)
   roomUpdateState(page)
 
@@ -804,6 +836,7 @@ function cmdHeal()
 
   if pointsCanBeHealed <= 0 then
     addRoomMessage(page, string.format("%s tried to heal, but didn't have enough gold", state.name))
+    roomUpdateState(page)
     return UI.page({ path = state.path }) .. UI.state() .. UI.pageState(page)
   end
 
@@ -825,17 +858,16 @@ end
 function deadPlayerRedirect()
   UI.set({
     hp = 1,
-    gold = 0,
   });
 
-  local spawnRoom = UI.findPage('/1000-1000-1000')
+  local spawnRoom = UI.findPage('/hospital')
   local state = UI_STATE[UI.currentPid]
 
   putPersonToRoom(spawnRoom, UI.currentPid)
-
   addRoomMessage(spawnRoom, string.format("%s has been ressurected by the gods", state.name))
+  roomUpdateState(spawnRoom)
 
-  return UI.page({ path = '/1000-1000-1000' }) .. UI.state() .. UI.pageState(spawnRoom)
+  return UI.page({ path = '/hospital' }) .. UI.state() .. UI.pageState(spawnRoom)
 end
 
 function cmdBuild(args)
@@ -883,6 +915,7 @@ function cmdAttack(args)
   local page = UI.findPage(UI.currentPath())
 
   roomUpdateState(page)
+
   return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
 end
 
@@ -894,6 +927,7 @@ function cmdEvade(args)
   local page = UI.findPage(UI.currentPath())
 
   roomUpdateState(page)
+
   return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
 end
 
@@ -910,7 +944,7 @@ function cmdGo(args)
     -- room could change
 
     local state = UI_STATE[UI.currentPid]
-    local newPage = UI.findPage(state.room  or state.path) -- room could be nil if player is dead
+    local newPage = UI.findPage(state.room or state.path)  -- room could be nil if player is dead
 
     return UI.pageState(newPage) .. UI.state() .. UI.page({ path = newPage.path })
   end

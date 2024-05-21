@@ -138,8 +138,8 @@ UI = {
     return UI.renderHtml(html)
   end,
 
-  state = function()
-    local pid = UI.currentPid
+  state = function(forPid)
+    local pid = forPid or UI.currentPid
     local res = UI_STATE[pid]
     if not pid then
       UI.log("UI.state", "pid not specified")
@@ -171,7 +171,7 @@ UI = {
 
     for pid, _ in pairs(UI_STATE) do
       if UI_STATE[pid].path == page.path then
-        ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state })
+        ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state .. UI.state(pid) })
       end
     end
 
