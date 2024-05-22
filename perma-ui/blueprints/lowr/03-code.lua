@@ -169,7 +169,10 @@ function performRoomActions(page)
         end
       end
 
-      personInRoom.action = nil
+      if not personInRoom.isMonster then
+        personInRoom.action = nil
+      end
+
     end
   end
 end
@@ -602,7 +605,7 @@ function roomLayoutHospital(page)
   return roomLayout(page, html)
 end
 
-function createRoom(parentPagePath, direction, title, description)
+function createRoom(parentPagePath, direction, title, description, state)
   -- calculate new coordinates
   local diff = DIRECTIONS[direction]
   if not diff then return error("Invalid direction") end
@@ -639,6 +642,14 @@ function createRoom(parentPagePath, direction, title, description)
 
   -- update parent exit
   parent.exits[direction] = path
+
+  -- merge state if defined
+
+  if state then
+    for k, v in pairs(state) do
+      page.state[k] = v
+    end
+  end
 
   return path
 end
@@ -753,7 +764,9 @@ function pageOnPersonEnter(page, pid, fromDirection)
 
     if not page.state.fight then
       local level = page.state.spawnMonstersLevel
+
       if level > 0 then
+
         local monstersInRoom = 0
         for _, person in ipairs(page.state.people) do
           if person.isMonster then
@@ -761,7 +774,9 @@ function pageOnPersonEnter(page, pid, fromDirection)
           end
         end
 
-        if monstersInRoom < page.state.maxMonsters or 3 then
+        UI.log("pageOnPersonEnter", "Monsters in room: " .. monstersInRoom .. "max:" .. (page.state.maxMonsters or 0))
+
+        if monstersInRoom < tonumber(page.state.maxMonsters or 0) then
           spawnMonster(level, page)
         end
       end

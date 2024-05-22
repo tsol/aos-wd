@@ -144,7 +144,7 @@ Bosses = {
 
 Monsters = {
   { level = 1, name = "Large Mosquito", str = 2, exp = 2, hp = 3, gold = 46, weapon = "Blood Sucker" },
-  { level = 1, name = "Large Green Rat", str = 3, exp = 1, hp = 4, gold = 32, weapon = "Sharp Teeth" },
+  { level = 1, name = "Large Rat", str = 3, exp = 1, hp = 4, gold = 32, weapon = "Sharp Teeth" },
   { level = 1, name = "Rude boy", str = 3, exp = 3, hp = 7, gold = 7, weapon = "Cudgel" },
   { level = 1, name = "Old Man", str = 5, exp = 4, hp = 13, gold = 73, weapon = "Cane" },
   { level = 1, name = "Small Thief", str = 6, exp = 2, hp = 9, gold = 56, weapon = "Small Dagger" },
@@ -153,6 +153,8 @@ Monsters = {
   { level = 1, name = "Small Bear", str = 9, exp = 6, hp = 7, gold = 154, weapon = "Claws" },
   { level = 1, name = "Wild Boar", str = 10, exp = 5, hp = 9, gold = 58, weapon = "Sharp Tusks" },
   { level = 1, name = "Bran the Fighter", str = 12, exp = 10, hp = 15, gold = 234, weapon = "Short Sword" },
+  { level = 1, name = "Drunken Sailor", str = 13, exp = 8, hp = 11, gold = 134, weapon = "Broken Bottle" },
+  { level = 1, name = "Crazy Old Bitch", str = 5, exp = 5, hp = 18, gold = 20, weapon = "Shoe" },
 
   { level = 2, name = "Fedrick the Limping Baboon", str = 8, exp = 6, hp = 23, gold = 97, weapon = "Scary Face" },
   { level = 2, name = "Membrain Man", str = 10, exp = 11, hp = 16, gold = 190, weapon = "Strange Ooze" },
