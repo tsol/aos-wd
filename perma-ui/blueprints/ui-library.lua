@@ -97,7 +97,8 @@ UI = {
 
   page = function(args)
     local path = args.path or '/'
-    local pid = UI.currentPid
+    local pid = args.pid or UI.currentPid
+    local force = args.force
 
     if not pid then
       UI.log("UI.page", "pid not specified")
@@ -135,7 +136,7 @@ UI = {
       html = html:gsub("{~" .. k .. "~}", v)
     end
 
-    return UI.renderHtml(html)
+    return UI.renderHtml(html, force)
   end,
 
   state = function(forPid)
@@ -177,13 +178,18 @@ UI = {
 
   end,
 
-  renderHtml = function(html)
+  renderHtml = function(html, force)
     local res = '<html>'
 
     local pid = UI.currentPid
     local noonce = ''
+
     if pid then
       noonce = UI_STATE[pid]._noonce or ''
+    end
+
+    if force then
+      noonce = 'force'
     end
 
     res = res .. '<!--noonce:' .. noonce .. '-->'
@@ -193,6 +199,32 @@ UI = {
 
   renderError = function(code, msg)
     return UI.renderHtml('<h1>' .. code .. '</h1><p>' .. msg .. '</p>')
+  end,
+
+  forceSendPageToPid = function(pid, path)
+
+    if not pid then
+      UI.log("UI.forceSendPage", "pid not specified")
+      return
+    end
+
+    if not path then
+      UI.log("UI.forceSendPage", "path not specified")
+      return
+    end
+
+    local page = UI.findPage(path)
+    if not page then
+      UI.log("UI.forceSendPage", "page not found: " .. path)
+      return
+    end
+
+    ao.send({ Target = pid, Action = "UI_RESPONSE",
+      Data =
+        UI.page({ path = path, pid = pid, force = true }) ..
+        UI.pageState(page) ..
+        UI.state(pid)
+    })
   end,
 
   sessionStart = function(msg)

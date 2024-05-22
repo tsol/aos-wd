@@ -64,6 +64,11 @@ function parseNoonceResponse(state: State, data?: string) {
 
   const noonce = match[1];
 
+  if (noonce === 'force') {
+    state.noonceSent = 'force';
+    state.noonceRecieved = undefined;
+  }
+
   if (state.noonceSent === noonce && state.noonceRecieved !== noonce) {
 
     state.noonceRecieved = noonce;

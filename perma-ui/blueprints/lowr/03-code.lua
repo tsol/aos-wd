@@ -159,7 +159,12 @@ function performRoomActions(page)
         if personInRoom.action == 'run' then
           local direction = personInRoom.actionDirection
           if direction then
-            personGo(direction, personInRoom.pid)
+            local newPath = personGo(direction, personInRoom.pid)
+    
+            if not personInRoom.isMonster and UI.currentPid ~= personInRoom.pid then
+              UI.forceSendPageToPid(personInRoom.pid, newPath)
+            end
+
           end
         end
       end
@@ -726,6 +731,9 @@ function personGo(direction, pid)
     addRoomMessage(page, string.format("%s ran away towards %s", UI_STATE[pid].name, newPage.title or 'somewhere'))
   end
 
+  local person = findPersonInRoom(page, pid)
+  if not person then return error("Person not found in room") end
+
   removePersonFromRoom(page, pid, direction)
   roomUpdateState(page)
 
@@ -837,7 +845,7 @@ function cmdHeal()
   if pointsCanBeHealed <= 0 then
     addRoomMessage(page, string.format("%s tried to heal, but didn't have enough gold", state.name))
     roomUpdateState(page)
-    return UI.page({ path = state.path }) .. UI.state() .. UI.pageState(page)
+    return UI.page({ path = state.path }) .. UI.pageState(page) .. UI.state()
   end
 
   UI.set({
@@ -848,7 +856,7 @@ function cmdHeal()
   addRoomMessage(page, string.format("%s healed %d hp for %d gold", state.name, pointsCanBeHealed, cost))
   roomUpdateState(page)
 
-  return UI.page({ path = state.path }) .. UI.state() .. UI.pageState(page)
+  return UI.page({ path = state.path }) .. UI.pageState(page) .. UI.state()
 end
 
 function isPlayerDead()
@@ -867,7 +875,7 @@ function deadPlayerRedirect()
   addRoomMessage(spawnRoom, string.format("%s has been ressurected by the gods", state.name))
   roomUpdateState(spawnRoom)
 
-  return UI.page({ path = '/hospital' }) .. UI.state() .. UI.pageState(spawnRoom)
+  return UI.page({ path = '/hospital' }) .. UI.pageState(spawnRoom) .. UI.state()
 end
 
 function cmdBuild(args)
@@ -916,7 +924,7 @@ function cmdAttack(args)
 
   roomUpdateState(page)
 
-  return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
+  return UI.page({ path = UI.currentPath() }) .. UI.pageState(page) .. UI.state()
 end
 
 function cmdEvade(args)
@@ -928,7 +936,7 @@ function cmdEvade(args)
 
   roomUpdateState(page)
 
-  return UI.pageState(page) .. UI.state() .. UI.page({ path = UI.currentPath() })
+  return UI.page({ path = UI.currentPath() }) .. UI.pageState(page) .. UI.state()
 end
 
 function cmdGo(args)
@@ -945,8 +953,9 @@ function cmdGo(args)
 
     local state = UI_STATE[UI.currentPid]
     local newPage = UI.findPage(state.room or state.path)  -- room could be nil if player is dead
+    if not newPage then return error("Room not found") end
 
-    return UI.pageState(newPage) .. UI.state() .. UI.page({ path = newPage.path })
+    return UI.page({ path = newPage.path }) .. UI.pageState(newPage) .. UI.state()
   end
 
   local exit = personGo(direction, UI.currentPid)
