@@ -96,14 +96,14 @@ UI_APP = {
       level = 1,
       exp = 0,
 
-      maxHp = 10,
-      hp = 10,
-      gold = 0,
+      maxHp = 15,
+      hp = 15,
+      gold = 100,
 
       str = 10,
-      defence = 3,
+      defence = 2,
 
-      armor = { name = "Nothing", price = 0, defence = 0 },
+      armor = { name = "T-shirt", price = 0, defence = 0 },
       weapon = { name = "Fists", price = 0, str = 0 },
 
     }

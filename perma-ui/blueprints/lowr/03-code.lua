@@ -1,5 +1,6 @@
 DIRECTIONS = { n = { 0, -1, 0 }, s = { 0, 1, 0 }, e = { 1, 0, 0 }, w = { -1, 0, 0 } }
 OPOSITES = { n = 's', s = 'n', e = 'w', w = 'e' }
+ROUND_TIMEOUT = 30 -- seconds
 
 Monsters = Monsters or {
   { level = 1, name = "Large Mosquito", str = 2, exp = 2, hp = 3, gold = 46, weapon = "Blood Sucker" },
@@ -14,6 +15,7 @@ function InitPageState()
   return {
     people = {},
     fight = false,
+    roundStartTime = nil,
     spawnMonstersLevel = 0,
     maxMonsters = 3,
     messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with their Sucker", t = 1234567890 }
@@ -177,11 +179,48 @@ function performRoomActions(page)
   end
 end
 
-function haveAllPeopleSubmittedRoundActions(page)
-  for _, personInRoom in ipairs(page.state.people) do
-    if not personInRoom.action and not personInRoom.isMonster then return false end
+function roomRoundTimeout(page)
+ 
+  if not page.state.fight then
+    return false
   end
+
+  if not page.state.roundStartTime then
+    page.state.roundStartTime = UI.now
+  end
+
+  if page.state.roundStartTime + ROUND_TIMEOUT * 1000 < UI.now then
+    return true
+  end
+
+  return false
+end
+
+function haveAllPeopleSubmittedRoundActions(page)
+
+  if roomRoundTimeout(page) then
+    return true
+  end
+
+  for _, personInRoom in ipairs(page.state.people) do
+    if not personInRoom.action and not personInRoom.isMonster then
+        return false
+      end
+  end
+
   return true
+end
+
+function checkAllRoomsForFightTimeout(msg)
+  UI.log("tm_check", UI.now)
+  for _, page in ipairs(UI_APP.PAGES) do
+    if page.state and page.state.fight then
+      if roomRoundTimeout(page) then
+        -- UI.log("tm_check", "Room timeout: " .. page.path)
+        roomUpdateState(page)
+      end
+    end
+  end
 end
 
 function isMonsterScared(personInRoom)
@@ -218,14 +257,17 @@ function setMonstersAction(page)
     if personInRoom.isMonster then
       if isMonsterScared(personInRoom) then
         personInRoom.action = 'run'
+        personInRoom.actionTm = UI.now
         personInRoom.actionDirection = selectRandomExit(page)
       else
         if personInRoom.actionTargetPid then
           personInRoom.action = 'attack'
+          personInRoom.actionTm = UI.now
         else
           local targetPid = findAnotherVictimInRoomFor(personInRoom.pid, page)
           if targetPid and monsterIsAggressive(personInRoom) then
             personInRoom.action = 'attack'
+            personInRoom.actionTm = UI.now
             personInRoom.actionTargetPid = targetPid
           end
         end
@@ -247,13 +289,15 @@ function roomUpdateState(page)
 
   if fight and haveAllPeopleSubmittedRoundActions(page) then
     performRoomActions(page)
+    page.state.roundStartTime = UI.now
   end
 
   fight = isRoomInFight(page)
 
   if not page.state.fight and fight then
     addRoomMessage(page, "Fight started")
-    page.state.fight = fight
+    page.state.fight = true
+    page.state.roundStartTime = UI.now
   end
 
   if page.state.fight and not fight then
@@ -266,7 +310,8 @@ function roomUpdateState(page)
       personInRoom.actionTargetPid = nil
     end
 
-    page.state.fight = fight
+    page.state.fight = false
+    page.state.roundStartTime = nil
   end
 
   UI.sendPageState(page)
@@ -502,13 +547,16 @@ function roomLayoutPeople(page)
             %s
             <v-progress-circular v-if="!person.isMonster && !person.action" class="ml-2" indeterminate size="small" color="primary"></v-progress-circular>
           </div>
+          <div class="mt-2">
+            <ui-timer class="text-caption" :timestampEnd="(page.roundStartTime || 0) + %d"></ui-timer>
+          </div>
       </div>
       <div v-else>
           <div v-for="person in (page.people || [])" :key="person.pid">
             %s is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
           </div>
       </div>
-      ]], personLine, personLine, personName())
+      ]], personLine, personLine, ROUND_TIMEOUT * 1000, personName())
 end
 
 function roomLayoutMessages(page)
@@ -774,8 +822,6 @@ function pageOnPersonEnter(page, pid, fromDirection)
           end
         end
 
-        UI.log("pageOnPersonEnter", "Monsters in room: " .. monstersInRoom .. "max:" .. (page.state.maxMonsters or 0))
-
         if monstersInRoom < tonumber(page.state.maxMonsters or 0) then
           spawnMonster(level, page)
         end
@@ -818,6 +864,7 @@ function roundActionAttack(attackerPid, targetPid)
 
   peopleEntry.actionTargetPid = targetPid
   peopleEntry.action = 'attack'
+  peopleEntry.actionTm = UI.now
   peopleEntry.actionDirection = nil
 end
 
@@ -830,6 +877,7 @@ function roundActionEvade(pid)
 
   peopleEntry.action = 'evade'
   peopleEntry.actionDirection = nil
+  peopleEntry.actionTm = UI.now
   peopleEntry.actionTargetPid = nil
 end
 
@@ -842,12 +890,14 @@ function roundActionRun(pid, direction)
 
   peopleEntry.action = 'run'
   peopleEntry.actionDirection = direction
+  peopleEntry.actionTm = UI.now
   peopleEntry.actionTargetPid = nil
 end
 
 -- FROM HTML COMMANDS ---
 
 function cmdHeal()
+ 
   local state = UI_STATE[UI.currentPid]
   local page = UI.findPage(state.path)
 
@@ -894,6 +944,7 @@ function deadPlayerRedirect()
 end
 
 function cmdBuild(args)
+ 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local direction = args.dir
@@ -909,6 +960,7 @@ function cmdBuild(args)
 end
 
 function cmdConfirmBuild(args)
+ 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local title = args.title
@@ -927,6 +979,7 @@ function cmdConfirmBuild(args)
 end
 
 function cmdAttack(args)
+ 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local targetPid = args.target
@@ -943,6 +996,7 @@ function cmdAttack(args)
 end
 
 function cmdEvade(args)
+ 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   roundActionEvade(UI.currentPid)
@@ -955,6 +1009,7 @@ function cmdEvade(args)
 end
 
 function cmdGo(args)
+
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local direction = args.dir
@@ -983,6 +1038,7 @@ function cmdGo(args)
 end
 
 function cmdLogin(args)
+
   UI.set({ name = args.name, fruit = args.fruit })
   local cityCenter = UI.findPage('/1000-1000-1000')
 
@@ -997,3 +1053,27 @@ function cmdLogout(args)
   UI.set({ name = "" })
   return UI.page({ path = "/" })
 end
+
+Handlers.add("CronMessage", Handlers.utils.hasMatchingTag("Cron", "Cron"),
+  function(msg)
+    UI.now = tonumber(msg.Timestamp)
+    local status, err = pcall(checkAllRoomsForFightTimeout, msg)
+    if not status then
+      UI.log("Cron", "Error: " .. err)
+    end
+  end
+)
+
+Handlers.add(
+    "AnyMessage",
+    function(msg)
+        return "continue"
+    end,
+    function(msg)
+      UI.now = tonumber(msg.Timestamp)
+      local status, err = pcall(checkAllRoomsForFightTimeout, msg)
+      if not status then
+        UI.log("AnyMessage", "Error: " .. err)
+      end
+    end
+)

@@ -11,7 +11,8 @@ import { ref, watch, computed } from "vue";
 
 const widgetsState = ref<{ 'UI': State }>({
   UI: {
-    ui: { '__type': 'UI_STATE' },
+    ui: { '_type': 'UI_STATE' },
+    pagesState: { '_type': 'UI_PAGE_STATE' },
     html: '',
     noonceRecieved: undefined,
     noonceSent: undefined,

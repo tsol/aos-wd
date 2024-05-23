@@ -81,6 +81,7 @@ import {
 
 import UiInput from '../components/ui-input.vue';
 import UiButton from '../components/ui-button.vue';
+import UiTimer from '../components/ui-timer.vue';
 
 export interface InitVueParams {
   html: string;
@@ -112,6 +113,7 @@ export function initVue( params: InitVueParams ) {
     components: {
       UiInput,
       UiButton,
+      UiTimer,
 
       VAlert,
       VApp,

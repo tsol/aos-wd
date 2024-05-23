@@ -16,12 +16,13 @@ import { VBtn } from 'vuetify/components';
 
 const props = defineProps<{
   uiValid?: string;
+  uiLoading?: boolean;
+  
   uiRun: string;
   uiArgs?: Record<string, any>;
-  uiLoading?: boolean;
+  aoSendMsg: InitVueParams['aoSendMsg'],
 
   inputsValidity?: Record<string, boolean>
-  aoSendMsg: InitVueParams['aoSendMsg'],
   state?: State['ui'],
 
 }>();

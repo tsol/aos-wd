@@ -142,8 +142,9 @@ UI = {
   state = function(forPid)
     local pid = forPid or UI.currentPid
     local res = UI_STATE[pid]
+
     if not pid then
-      UI.log("UI.state", "pid not specified")
+      UI.log("UI.state", "pid not specified: ")
       res = { error = "pid not specified" }
     end
 
@@ -171,7 +172,9 @@ UI = {
     if not state then return end
 
     for pid, _ in pairs(UI_STATE) do
-      if UI_STATE[pid].path == page.path then
+      -- check that pid length is 43 characters
+      local pidIsUser = string.len(pid) == 43
+      if pidIsUser and UI_STATE[pid].path == page.path then
         ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state .. UI.state(pid) })
       end
     end

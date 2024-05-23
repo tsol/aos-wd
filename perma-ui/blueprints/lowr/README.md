@@ -1,7 +1,53 @@
 
-
-
 # TODO
+
+1. end turn timer component (with exec?)
+
+2. fight round timeout
+
+3. weapons shop
+
+4. armour shop
+
+5. Level up (on fight end) (later maybe training center level up)
+
+6. Teleport forest last possition -> hospital and back
+
+7. Hitpoints recover timer for everyone (up to 90%)
+
+8. Flirt (charm stat + mob history)
+ - nurse
+ - barmaid
+ - bard
+
+9. Bar chat
+
+10. Stale players sleep
+
+11. Get a room in the inn
+
+19. Balance money
+20. Token / staking / minting ?
+21. Bank to transfer gold / tokens?
+
+22. Quests
+ - Engine
+ - Diablo style The Butcher (in the forest)
+ - Forest Events 
+   +/- charm
+   +/- exp
+   +/- gold
+   (weapon upgrade / armour upgrade)
+   heal
+   rename monster
+   build location permit
+   explore forest permit
+   
+
+
+=== RELEASE
+
+
 
 - spells / scrolls.
 
