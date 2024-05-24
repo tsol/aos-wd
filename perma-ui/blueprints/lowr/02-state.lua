@@ -39,10 +39,6 @@ UI_APP = {
           path = "/hospital",
         },
         {
-          title = "Fountain",
-          icon = Houses.Fountain,
-        },
-        {
           title = "Tree",
           icon = Nature.Tree,
         },

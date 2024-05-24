@@ -6,10 +6,17 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { runCommand } from './shared/runCommand';
+import type { InitVueParams } from '../lib/vue-init';
 
 const props = defineProps<{
   timestampEnd: number;
   reachedText?: string;
+
+  uiRun?: string;
+  uiArgs?: Record<string, any>;
+  aoSendMsg?: InitVueParams['aoSendMsg'],
+
 }>();
 
 const currentCount = ref(new Date().getTime());
@@ -49,7 +56,18 @@ let interval: NodeJS.Timeout;
 onMounted(() => {
   interval = setInterval(() => {
     // do not update the value if it is already past the end
-    if (currentCount.value > props.timestampEnd) {
+    if (currentCount.value > props.timestampEnd + 3000) {
+
+      if (props.uiRun && props.aoSendMsg) {
+        const params = {
+          uiRun: props.uiRun,
+          uiArgs: props.uiArgs,
+          aoSendMsg: props.aoSendMsg,
+        };
+        runCommand(params);
+      }
+
+      clearInterval(interval);
       return;
     }
     currentCount.value += 1000;

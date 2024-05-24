@@ -1,17 +1,13 @@
 
 # TODO
 
-1. end turn timer component (with exec?)
-
-2. fight round timeout
+6. Teleport forest last possition -> hospital and back
 
 3. weapons shop
 
 4. armour shop
 
 5. Level up (on fight end) (later maybe training center level up)
-
-6. Teleport forest last possition -> hospital and back
 
 7. Hitpoints recover timer for everyone (up to 90%)
 

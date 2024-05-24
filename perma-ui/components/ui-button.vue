@@ -10,14 +10,14 @@ import { computed } from 'vue';
 import type { State } from '../lib/ui-state-parser';
 import type { InitVueParams } from '../lib/vue-init';
 
-import { parseLuaObject } from '../../core/parser';
+import { runCommand } from './shared/runCommand';
 
 import { VBtn } from 'vuetify/components';
 
-const props = defineProps<{
+const cProps = defineProps<{
   uiValid?: string;
   uiLoading?: boolean;
-  
+
   uiRun: string;
   uiArgs?: Record<string, any>;
   aoSendMsg: InitVueParams['aoSendMsg'],
@@ -27,64 +27,13 @@ const props = defineProps<{
 
 }>();
 
-const myInputs = props.uiValid?.split(/[\s,]+/) || [];
-
-const isValid = computed(() => myInputs.every((input) => props.inputsValidity?.[input]));
-
-function parseSeparateArgs() {
-  const args = props.uiArgs || {};
-  const jsonedArgs = JSON.stringify(args);
-  const command = props.uiRun;
-  return { command, jsonedArgs };
-}
-
-function parseRunCommand() {
-  
-  const match = props.uiRun.match(/([^(]+)\((\{.+\})?\)/);
-  
-  if (!match) {
-    return parseSeparateArgs();
-  }
-
-  const command = match[1].trim();
-  const args = match[2]?.replace(/[']+/g, '"');
-
-  const cmdArgs = args ? args.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (_, name) => {
-    return JSON.stringify(props.state?.[name]);
-  }) : '';
-
-  const parsedArgs = parseLuaObject(cmdArgs) || {};
-  const jsonedArgs = JSON.stringify(parsedArgs);
-
-  return { command, jsonedArgs };
-
-}
-
+const myInputs = cProps.uiValid?.split(/[\s,]+/) || [];
+const isValid = computed(() => myInputs.every((input) => cProps.inputsValidity?.[input]));
 
 function onClick() {
   if (!isValid.value) return;
-
-
-  const { command, jsonedArgs } = parseRunCommand() || {};
-
-  if (!command) return;
-
-  console.log('Running command:', command, 'Args:', jsonedArgs);
-
-  // const noonce = Math.random().toString();
-  // { name: 'Noonce', value: noonce },
-  // process.setStateVariable('UI', 'noonceSent', noonce);
-
-  const tags: Tag[] = [
-    { name: 'Action', value: 'UIRun' },
-    { name: 'Data', value: command },
-    { name: 'Args', value: jsonedArgs || '' },
-  ];
-
-  props.aoSendMsg(tags);
-
+  runCommand(cProps);
 }
-
 
 </script>
 ../lib/ui-base../lib/vue-inside-vue../lib/ui-state-parser../../core/parser

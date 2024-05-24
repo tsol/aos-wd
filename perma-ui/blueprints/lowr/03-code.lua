@@ -548,7 +548,7 @@ function roomLayoutPeople(page)
             <v-progress-circular v-if="!person.isMonster && !person.action" class="ml-2" indeterminate size="small" color="primary"></v-progress-circular>
           </div>
           <div class="mt-2">
-            <ui-timer class="text-caption" :timestampEnd="(page.roundStartTime || 0) + %d"></ui-timer>
+            <ui-timer class="text-caption" :timestampEnd="(page.roundStartTime || 0) + %d" ui-run="cmdRoomState" ></ui-timer>
           </div>
       </div>
       <div v-else>
@@ -1053,6 +1053,13 @@ function cmdLogout(args)
   UI.set({ name = "" })
   return UI.page({ path = "/" })
 end
+
+function cmdRoomState()
+  local page = UI.findPage(UI.currentPath())
+  roomUpdateState(page)
+  return UI.page({ path = UI.currentPath() }) .. UI.pageState(page) .. UI.state()
+end
+
 
 Handlers.add("CronMessage", Handlers.utils.hasMatchingTag("Cron", "Cron"),
   function(msg)
