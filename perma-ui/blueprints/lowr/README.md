@@ -1,8 +1,6 @@
 
 # TODO
 
-5. Level up (on fight end) (later maybe training center level up)
-
 7. Hitpoints recover timer for everyone (up to 90%)
 
 8. Flirt (charm stat + mob history)

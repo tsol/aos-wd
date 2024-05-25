@@ -63,6 +63,74 @@ function spawnMonster(level, roomPage)
   roundActionAttack(pid, UI.currentPid)
 end
 
+--[[
+
+Bosses = {
+  { name = "Vitalkir", exp = 100, hp = 30, str = 15, weapon = "Ether Blade" },
+  { name = "Szatosh", exp = 400, hp = 40, str = 17, weapon = "Thundering Axe" },
+  { name = "Finton", exp = 1000, hp = 70, str = 35, weapon = "Storm's Edge" },
+  { name = "Etzerik", exp = 4000, hp = 120, str = 70, weapon = "Dragon's Fang" },
+  { name = "Sandtiger", exp = 10000, hp = 200, str = 100, weapon = "Serpent's Bite" },
+  { name = "Szerc", exp = 40000, hp = 400, str = 150, weapon = "Moonlight Slicer" },
+  { name = "Kurten", exp = 100000, hp = 600, str = 250, weapon = "Phoenix Blade" },
+  { name = "Alan", exp = 400000, hp = 800, str = 350, weapon = "Starlight Staff" },
+  { name = "Lorel", exp = 1000000, hp = 1200, str = 500, weapon = "Doombringer" },
+  { name = "Gandaalf", exp = 4000000, hp = 1800, str = 800, weapon = "Eternal Flame" },
+  { name = "Torquen", exp = 10000000, hp = 2500, str = 1200, weapon = "Soul Reaver" },
+  { name = "The White Rabbit", exp = 10000000, hp = 15000, str = 2000, weapon = "Bunny tail" }
+}
+]]--
+
+function getExpInfo(exp)
+  
+  local currentLevel = 1
+  local currentMaster = Bosses[1]
+  local nextMaster = Bosses[1]
+  local needExp = 0
+
+  -- using boss table
+  for index, boss in ipairs(Bosses) do
+    if exp >= boss.exp then
+      currentLevel = index + 1
+      currentMaster = boss
+    else
+      nextMaster = boss
+      needExp = boss.exp - exp
+      break
+    end
+  end
+
+  return {
+    level = currentLevel,
+    currentMaster = currentMaster,
+    nextMaster = nextMaster,
+    needExp = needExp,
+  }
+
+end
+
+function checkLevelUp(pid)
+  local player = UI_STATE[pid]
+
+  local expInfo = getExpInfo(player.exp)
+
+  if expInfo.level > player.level then
+
+    local newMaxHp = math.floor( (player.maxHp + expInfo.currentMaster.hp) / 2 )
+    local newStr = math.floor( (player.str + expInfo.currentMaster.str) / 2 )
+
+    UI.set({
+      level = expInfo.level,
+      maxHp = newMaxHp,
+      hp = newMaxHp,
+      str = newStr,
+      defence = player.defence + 1,
+    }, pid)
+
+    addRoomMessage(UI.findPage(player.room), string.format("✨🌀 %s leveled up to %d 🌀✨", player.name, player.level))
+  end
+end
+
 function killPerson(pid, killedByPid)
   local wasMonster = UI_STATE[pid].isMonster
   local expGain = wasMonster and UI_STATE[pid].exp or 25
@@ -73,6 +141,7 @@ function killPerson(pid, killedByPid)
       gold = (UI_STATE[killedByPid].gold or 0) + goldGain,
       exp = (UI_STATE[killedByPid].exp or 0) + expGain,
     }, killedByPid)
+    checkLevelUp(killedByPid)
   end
 
   local page = UI.findPage(UI_STATE[pid].room)
@@ -434,9 +503,6 @@ end
 -- page = { "people": [ { "pid": "KjpdUofQA4FSBgMV7CsdcqV4CNZMz-AZayNHcirjEnY", "fruit": "Cherry", "name": "yaya" } ] }
 
 function roomLayoutPeople(page)
-  -- this is dynamic component. page here is page state recieved by vue
-  -- also state - is the players state
-  -- once someone enters the room - this will automatically update
 
   local target = '((page.people || []).find((p) => p.pid === person.actionTargetPid))?'
 
@@ -473,6 +539,10 @@ function roomLayoutPeople(page)
           <tr>
               <td>Hitpoints:</td>
               <td style="text-align: right;">{{ person.hp }} / {{ person.maxHp }}</td>
+          </tr>
+          <tr v-if="!person.isMonster">
+              <td>Strength:</td>
+              <td style="text-align: right;">{{ person.str }}</td>
           </tr>
           <tr>
               <td>Weapon:</td>
@@ -672,34 +742,6 @@ function roomLayoutHospital(page, origHtml, pid)
   return roomLayout(page, html, pid)
 end
 
---[[
-
-ShopItems = {
-  { level = 0, type = 'armor', name = "Nothing", price = 0, defence = 0 },
-  { level = 1, type = 'armor', name = "Traveler's Robe", price = 200, defence = 1 },
-  { level = 2, type = 'armor', name = "Reinforced Coat", price = 1000, defence = 3 },
-  { level = 3, type = 'armor', name = "Leather Vest", price = 3000, defence = 10 },
-  { level = 0, type = 'weapon', name = "Fists", price = 0, str = 0 },
-  { level = 1, type = 'weapon', name = "Club", price = 200, str = 5 },
-  { level = 2, type = 'weapon', name = "Knife", price = 1000, str = 10 },
-  { level = 3, type = 'weapon', name = "Short Blade", price = 3000, str = 20 },
-}
-
-ShopItemTypes = {
-  armor = {
-    icon = Medival.Shield,
-    name = "Armor",
-    fields = { { field = "defence", title = "Defence" } }
-  },
-  weapon = {
-    icon = Medival.Dagger,
-    name = "Weapon",
-    fields = { { field = "str", title = "Strength" } }
-  }
-}
-
-  ]]--
-
 function renderShopParts(pid, itemType)
 
   -- filter item list according to its level vs user level
@@ -790,97 +832,6 @@ function renderShopParts(pid, itemType)
 end
 
 
-function cmdBuyItem(args)
-
-  local item = args.item
-  local pid = UI.currentPid
-  local player = UI_STATE[pid]
-  local page = UI.findPage(player.room)
-
-  local itemToBuy = nil
-  for _, shopItem in ipairs(ShopItems) do
-    if shopItem.name == item then
-      itemToBuy = shopItem
-      break
-    end
-  end
-
-  if not itemToBuy then
-    addRoomMessage(page, string.format("We dont have this here owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- if price is 0 - laugh at player
-  if itemToBuy.price == 0 then
-    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-
-  if player.gold < itemToBuy.price then
-    addRoomMessage(page, string.format("You dont have enough gold to buy %s, owner says to %s", itemToBuy.name, player.name))
-    return UI.fullResponse()
-  end
-
-  -- check if player already has item of this type
-  local hasItem = player[itemToBuy.type] and player[itemToBuy.type].price > 0
-  -- if has owner demands to sell it first
-
-  if hasItem then
-    addRoomMessage(page, string.format("You already have %s! Said owner to %s. Sell one first", itemToBuy.type, player.name))
-    return UI.fullResponse()
-  end
-
-  player[itemToBuy.type] = itemToBuy
-  player.gold = player.gold - itemToBuy.price
-
-  addRoomMessage(page, string.format("%s bought %s for %d 🪙", player.name, itemToBuy.name, itemToBuy.price))
-
-  return UI.fullResponse()
-end
-
-
-function cmdSellItem(args)
-
-  local item = args.item
-  local pid = UI.currentPid
-  local player = UI_STATE[pid]
-  local page = UI.findPage(player.room)
-
-  local itemToSell = nil
-  for _, shopItem in ipairs(ShopItems) do
-    if shopItem.name == item then
-      itemToSell = shopItem
-      break
-    end
-  end
-
-  if not itemToSell then
-    addRoomMessage(page, string.format("We dont buy such here owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- if price is 0 - laugh at player
-  if itemToSell.price == 0 then
-    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- check if player has this item
-  local hasItem = player[itemToSell.type] and player[itemToSell.type].name == itemToSell.name
-
-  if not hasItem then
-    addRoomMessage(page, string.format("You dont have %s to sell, says owner to %s", itemToSell.name, player.name))
-    return UI.fullResponse()
-  end
-
-  player[itemToSell.type] = ShopItemTypes[itemToSell.type].none
-  player.gold = player.gold + itemToSell.price
-
-  addRoomMessage(page, string.format("%s sold %s for %d 🪙", player.name, itemToSell.name, itemToSell.price))
-
-  return UI.fullResponse()
-end
 
 
 
@@ -1176,6 +1127,99 @@ function roundActionRun(pid, direction)
 end
 
 -- FROM HTML COMMANDS ---
+
+function cmdBuyItem(args)
+
+  local item = args.item
+  local pid = UI.currentPid
+  local player = UI_STATE[pid]
+  local page = UI.findPage(player.room)
+
+  local itemToBuy = nil
+  for _, shopItem in ipairs(ShopItems) do
+    if shopItem.name == item then
+      itemToBuy = shopItem
+      break
+    end
+  end
+
+  if not itemToBuy then
+    addRoomMessage(page, string.format("We dont have this here owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- if price is 0 - laugh at player
+  if itemToBuy.price == 0 then
+    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+
+  if player.gold < itemToBuy.price then
+    addRoomMessage(page, string.format("You dont have enough gold to buy %s, owner says to %s", itemToBuy.name, player.name))
+    return UI.fullResponse()
+  end
+
+  -- check if player already has item of this type
+  local hasItem = player[itemToBuy.type] and player[itemToBuy.type].price > 0
+  -- if has owner demands to sell it first
+
+  if hasItem then
+    addRoomMessage(page, string.format("You already have %s! Said owner to %s. Sell one first", itemToBuy.type, player.name))
+    return UI.fullResponse()
+  end
+
+  player[itemToBuy.type] = itemToBuy
+  player.gold = player.gold - itemToBuy.price
+
+  addRoomMessage(page, string.format("%s bought %s for %d 🪙", player.name, itemToBuy.name, itemToBuy.price))
+
+  return UI.fullResponse()
+end
+
+
+function cmdSellItem(args)
+
+  local item = args.item
+  local pid = UI.currentPid
+  local player = UI_STATE[pid]
+  local page = UI.findPage(player.room)
+
+  local itemToSell = nil
+  for _, shopItem in ipairs(ShopItems) do
+    if shopItem.name == item then
+      itemToSell = shopItem
+      break
+    end
+  end
+
+  if not itemToSell then
+    addRoomMessage(page, string.format("We dont buy such here owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- if price is 0 - laugh at player
+  if itemToSell.price == 0 then
+    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- check if player has this item
+  local hasItem = player[itemToSell.type] and player[itemToSell.type].name == itemToSell.name
+
+  if not hasItem then
+    addRoomMessage(page, string.format("You dont have %s to sell, says owner to %s", itemToSell.name, player.name))
+    return UI.fullResponse()
+  end
+
+  player[itemToSell.type] = ShopItemTypes[itemToSell.type].none
+  player.gold = player.gold + itemToSell.price
+
+  addRoomMessage(page, string.format("%s sold %s for %d 🪙", player.name, itemToSell.name, itemToSell.price))
+
+  return UI.fullResponse()
+end
+
 
 function cmdHeal()
   local state = UI_STATE[UI.currentPid]
