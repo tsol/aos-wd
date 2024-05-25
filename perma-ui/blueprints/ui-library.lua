@@ -86,11 +86,11 @@ UI = {
     end
   end,
 
-  renderPage = function(page)
+  renderPage = function(page, pid)
     local html = page and page.html
     local layoutFn = page.layout
     if layoutFn then
-      html = layoutFn(page)
+      html = layoutFn(page, html, pid)
     end
     return html
   end,
@@ -124,7 +124,7 @@ UI = {
       end
     end
 
-    local html = UI.renderPage(page)
+    local html = UI.renderPage(page, pid)
     if not html then
       UI.log("UI.page", "page not found: " .. path)
       return UI.renderError(404, "page not found")
@@ -292,7 +292,7 @@ UI = {
     local args = json.decode(msg.Tags.Args)
 
     local page = UI.findPage(UI_STATE[pid].path or '/')
-    local html = UI.renderPage(page)
+    local html = UI.renderPage(page, pid)
     if not html then
       UI.log("UI.onRun", "page not found")
       UI.reply(UI.renderError(404, "page not found"))

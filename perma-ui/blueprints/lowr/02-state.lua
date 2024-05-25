@@ -2,6 +2,51 @@
 UI_STATE = {}
 UI.logs = {}
 
+function InitPlayerState(pid)
+  return {
+    name = "",
+    fruit = "",
+
+    level = 1,
+    exp = 0,
+
+    maxHp = 15,
+    hp = 15,
+    gold = 100,
+
+    str = 10,
+    defence = 2,
+
+    armor = { name = "T-shirt", price = 0, defence = 0 },
+    weapon = { name = "Fists", price = 0, str = 0 },
+
+    breadcrumbs = { forest = nil, hospital = '/hospital' }, -- per terrain last visited room
+
+  }
+end
+
+function InitPageState(override)
+  local default = {
+    people = {},
+    fight = false,
+    roundStartTime = nil,
+    spawnMonstersLevel = 0,
+    maxMonsters = 3,
+    messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with their Sucker", t = 1234567890 }
+    maxMessages = 20,
+    terrain = nil,
+  }
+
+  if override then
+    for k, v in pairs(override) do
+      default[k] = v
+    end
+  end
+
+  return default
+end
+
+
 UI_APP = {
 
   PAGES = {
@@ -34,25 +79,18 @@ UI_APP = {
       layout = roomLayout,
       environment = {
         {
-          title = "Hospital",
-          icon = Houses.Hospital,
-          path = "/hospital",
-        },
-        {
-          title = "Tree",
-          icon = Nature.Tree,
+          title = "Fountain",
+          icon = Houses.Fountain,
+          path = "/fountain",
         },
       },
-      html = [[
-        <p class="mb-4">Welcome, {~name~}!</p>
-        <p class="mb-4">
+      html = [[        
           You find yourself on the city central square.
           The sun is shining, the birds are singing, and the people are walking around.
-        </p>
         ]],
       title = "Central Square",
       exits = {},
-      state = InitPageState()
+      state = InitPageState({ terrain = 'city' })
     },
 
     {
@@ -79,32 +117,11 @@ UI_APP = {
       html = '',
       title = "Hospital",
       exits = {},
-      state = InitPageState()
+      state = InitPageState({ terrain = 'hospital' })
     },
 
   },
+  InitState = InitPlayerState
 
-  InitState = function(pid)
-    return {
-      name = "",
-      fruit = "",
-  
-      level = 1,
-      exp = 0,
-
-      maxHp = 15,
-      hp = 15,
-      gold = 100,
-
-      str = 10,
-      defence = 2,
-
-      armor = { name = "T-shirt", price = 0, defence = 0 },
-      weapon = { name = "Fists", price = 0, str = 0 },
-
-    }
-  end,
 }
-
-
 

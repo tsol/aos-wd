@@ -86,6 +86,11 @@ Fruits = {
   Papaya = '🥭'
 }
 
+Terrain = {
+  city = Houses.Castle,
+  forest = Nature.Tree,
+  hospital = Houses.Hospital,
+}
 
 Armor = {
   { name = "Nothing", price = 0, defence = 0 },

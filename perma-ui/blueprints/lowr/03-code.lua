@@ -11,18 +11,6 @@ function error(msg)
   return ''
 end
 
-function InitPageState()
-  return {
-    people = {},
-    fight = false,
-    roundStartTime = nil,
-    spawnMonstersLevel = 0,
-    maxMonsters = 3,
-    messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with their Sucker", t = 1234567890 }
-    maxMessages = 20,
-  }
-end
-
 function addRoomMessage(page, text)
   if not page.state.messages then page.state.messages = {} end
 
@@ -162,11 +150,10 @@ function performRoomActions(page)
           local direction = personInRoom.actionDirection
           if direction then
             local newPath = personGo(direction, personInRoom.pid)
-    
+
             if not personInRoom.isMonster and UI.currentPid ~= personInRoom.pid then
               UI.forceSendPageToPid(personInRoom.pid, newPath)
             end
-
           end
         end
       end
@@ -174,13 +161,11 @@ function performRoomActions(page)
       if not personInRoom.isMonster then
         personInRoom.action = nil
       end
-
     end
   end
 end
 
 function roomRoundTimeout(page)
- 
   if not page.state.fight then
     return false
   end
@@ -197,15 +182,14 @@ function roomRoundTimeout(page)
 end
 
 function haveAllPeopleSubmittedRoundActions(page)
-
   if roomRoundTimeout(page) then
     return true
   end
 
   for _, personInRoom in ipairs(page.state.people) do
     if not personInRoom.action and not personInRoom.isMonster then
-        return false
-      end
+      return false
+    end
   end
 
   return true
@@ -571,30 +555,52 @@ function roomLayoutMessages(page)
     ]], UI.now)
 end
 
-function roomLayoutEnvironment(page)
-  if not page.environment then return '' end
-
+function roomLayoutEnvironment(page, pid)
   local res = ''
 
-  for _, env in ipairs(page.environment) do
-    res = res .. string.format([[
-        <v-tooltip text="%s" location="bottom">
-          <template v-slot:activator="{ props }">
-            <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
-          </template>
-        </v-tooltip>
-    ]], env.title, env.path, env.icon)
+  local currentTerrain = page.state.terrain
+  local playersBreadcrumbs = pid and UI_STATE[pid].breadcrumbs
+
+  if playersBreadcrumbs then
+    for terrain, path in pairs(playersBreadcrumbs) do
+      if terrain ~= currentTerrain then
+        local breadcrumbPage = path and UI.findPage(path)
+        if breadcrumbPage then
+          res = res .. string.format([[
+          <v-tooltip text="%s" location="bottom">
+            <template v-slot:activator="{ props }">
+              <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
+            </template>
+          </v-tooltip>
+        ]], breadcrumbPage.title, path, Terrain[terrain] or breadcrumbPage.title)
+        end
+      end
+    end
+  end
+
+  if page.environment then
+    for _, env in ipairs(page.environment) do
+      res = res .. string.format([[
+          <v-tooltip text="%s" location="bottom">
+            <template v-slot:activator="{ props }">
+              <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
+            </template>
+          </v-tooltip>
+      ]], env.title, env.path, env.icon or env.title)
+    end
   end
 
   return res
 end
 
-function roomLayout(page, html)
+function roomLayout(page, html, pid)
   local res = '<h1>' .. page.title .. '</h1>'
 
-  res = res .. (html or page.html or '')
+  res = res .. '<div class="mb-4">' .. (html or page.html or '') .. '</div>'
 
-  res = res .. roomLayoutEnvironment(page)
+  if not page.state.fight then
+    res = res .. roomLayoutEnvironment(page, pid)
+  end
 
   res = res .. string.format([[
     <v-divider class="my-4"></v-divider>
@@ -617,7 +623,7 @@ function roomLayout(page, html)
   return res
 end
 
-function roomLayoutHospital(page)
+function roomLayoutHospital(page, origHtml, pid)
   local state = UI_STATE[UI.currentPid]
 
   local hpToHeal = state.maxHp - state.hp
@@ -642,7 +648,7 @@ function roomLayoutHospital(page)
   local navigation = string.format([[<div class="d-flex">%s %s</div>]], healButton, goToCentralSquare)
 
   local html = string.format([[
-    <p class="mb-4">
+    <p>
       You find yourself in the hospital. Young attractive nurses are walking around.
     </p>
     <p class="mb-4">%s</p>
@@ -650,7 +656,7 @@ function roomLayoutHospital(page)
 
   page.customNavigation = navigation
 
-  return roomLayout(page, html)
+  return roomLayout(page, html, pid)
 end
 
 function createRoom(parentPagePath, direction, title, description, state)
@@ -753,6 +759,11 @@ function putPersonToRoom(page, pid, fromDirection)
   person.room = page.path
   person.path = page.path
 
+  -- update breadcrumbs
+  if page.state.terrain then
+    UI_STATE[pid].breadcrumbs[page.state.terrain] = page.path
+  end
+
   pageOnPersonEnter(page, pid, fromDirection)
 
   UI.sendPageState(page)
@@ -814,7 +825,6 @@ function pageOnPersonEnter(page, pid, fromDirection)
       local level = page.state.spawnMonstersLevel
 
       if level > 0 then
-
         local monstersInRoom = 0
         for _, person in ipairs(page.state.people) do
           if person.isMonster then
@@ -897,7 +907,6 @@ end
 -- FROM HTML COMMANDS ---
 
 function cmdHeal()
- 
   local state = UI_STATE[UI.currentPid]
   local page = UI.findPage(state.path)
 
@@ -944,7 +953,6 @@ function deadPlayerRedirect()
 end
 
 function cmdBuild(args)
- 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local direction = args.dir
@@ -960,7 +968,6 @@ function cmdBuild(args)
 end
 
 function cmdConfirmBuild(args)
- 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local title = args.title
@@ -979,7 +986,6 @@ function cmdConfirmBuild(args)
 end
 
 function cmdAttack(args)
- 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local targetPid = args.target
@@ -996,7 +1002,6 @@ function cmdAttack(args)
 end
 
 function cmdEvade(args)
- 
   if isPlayerDead() then return deadPlayerRedirect() end
 
   roundActionEvade(UI.currentPid)
@@ -1009,7 +1014,6 @@ function cmdEvade(args)
 end
 
 function cmdGo(args)
-
   if isPlayerDead() then return deadPlayerRedirect() end
 
   local direction = args.dir
@@ -1022,7 +1026,7 @@ function cmdGo(args)
     -- room could change
 
     local state = UI_STATE[UI.currentPid]
-    local newPage = UI.findPage(state.room or state.path)  -- room could be nil if player is dead
+    local newPage = UI.findPage(state.room or state.path) -- room could be nil if player is dead
     if not newPage then return error("Room not found") end
 
     return UI.page({ path = newPage.path }) .. UI.pageState(newPage) .. UI.state()
@@ -1038,7 +1042,6 @@ function cmdGo(args)
 end
 
 function cmdLogin(args)
-
   UI.set({ name = args.name, fruit = args.fruit })
   local cityCenter = UI.findPage('/1000-1000-1000')
 
@@ -1060,7 +1063,6 @@ function cmdRoomState()
   return UI.page({ path = UI.currentPath() }) .. UI.pageState(page) .. UI.state()
 end
 
-
 Handlers.add("CronMessage", Handlers.utils.hasMatchingTag("Cron", "Cron"),
   function(msg)
     UI.now = tonumber(msg.Timestamp)
@@ -1072,15 +1074,15 @@ Handlers.add("CronMessage", Handlers.utils.hasMatchingTag("Cron", "Cron"),
 )
 
 Handlers.add(
-    "AnyMessage",
-    function(msg)
-        return "continue"
-    end,
-    function(msg)
-      UI.now = tonumber(msg.Timestamp)
-      local status, err = pcall(checkAllRoomsForFightTimeout, msg)
-      if not status then
-        UI.log("AnyMessage", "Error: " .. err)
-      end
+  "AnyMessage",
+  function(msg)
+    return "continue"
+  end,
+  function(msg)
+    UI.now = tonumber(msg.Timestamp)
+    local status, err = pcall(checkAllRoomsForFightTimeout, msg)
+    if not status then
+      UI.log("AnyMessage", "Error: " .. err)
     end
+  end
 )
