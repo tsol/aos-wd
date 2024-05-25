@@ -17,8 +17,8 @@ function InitPlayerState(pid)
     str = 10,
     defence = 2,
 
-    armor = { name = "T-shirt", price = 0, defence = 0 },
-    weapon = { name = "Fists", price = 0, str = 0 },
+    armor = ShopItemTypes.armor.none,
+    weapon = ShopItemTypes.weapon.none,
 
     breadcrumbs = { forest = nil, hospital = '/hospital' }, -- per terrain last visited room
 
@@ -83,6 +83,16 @@ UI_APP = {
           icon = Houses.Fountain,
           path = "/fountain",
         },
+        {
+          title = "Weapon Shop",
+          icon = Medival.Dagger,
+          path = "/weapon-shop",
+        },
+        {
+          title = "Armor Shop",
+          icon = Medival.Shield,
+          path = "/armor-shop",
+        },
       },
       html = [[        
           You find yourself on the city central square.
@@ -118,6 +128,41 @@ UI_APP = {
       title = "Hospital",
       exits = {},
       state = InitPageState({ terrain = 'hospital' })
+    },
+
+    -- weapon shop
+    {
+      path = '/weapon-shop',
+      layout = roomLayoutWeaponShop,
+      environment = {},
+      html = '',
+      title = "Weapon Shop",
+      exits = {},
+      state = InitPageState({ terrain = 'city' })
+    },
+
+    -- armor shop
+    {
+      path = '/armor-shop',
+      layout = roomLayoutArmorShop,
+      environment = {},
+      html = [[
+
+      ]],
+      title = "Armor Shop",
+      exits = {},
+      state = InitPageState({ terrain = 'city' })
+    },
+
+    -- fountain
+    {
+      path = '/fountain',
+      layout = roomLayoutFountain,
+      environment = {},
+      html = '',
+      title = "Fountain",
+      exits = {},
+      state = InitPageState({ terrain = 'fountain' })
     },
 
   },

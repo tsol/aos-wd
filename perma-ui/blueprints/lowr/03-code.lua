@@ -569,13 +569,20 @@ function roomLayoutEnvironment(page, pid)
           res = res .. string.format([[
           <v-tooltip text="%s" location="bottom">
             <template v-slot:activator="{ props }">
-              <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
+              <ui-button
+                :style="{ fontSize: '40px' }"
+                variant="plain"
+                v-bind="props"
+                ui-run="cmdGo"
+                :ui-args="{ dir: '%s' }"
+              >%s</ui-button>
             </template>
           </v-tooltip>
         ]], breadcrumbPage.title, path, Terrain[terrain] or breadcrumbPage.title)
         end
       end
     end
+
   end
 
   if page.environment then
@@ -583,20 +590,26 @@ function roomLayoutEnvironment(page, pid)
       res = res .. string.format([[
           <v-tooltip text="%s" location="bottom">
             <template v-slot:activator="{ props }">
-              <ui-button variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
+              <ui-button :style="{ fontSize: '40px' }" variant="plain" v-bind="props" ui-run="cmdGo" :ui-args="{ dir: '%s' }">%s</ui-button>
             </template>
           </v-tooltip>
       ]], env.title, env.path, env.icon or env.title)
     end
   end
 
+
+  if res ~= '' then
+    res = '<div class="d-flex" style="height: 54px">' .. res .. '</div>'
+  end
+
   return res
+  
 end
 
 function roomLayout(page, html, pid)
   local res = '<h1>' .. page.title .. '</h1>'
 
-  res = res .. '<div class="mb-4">' .. (html or page.html or '') .. '</div>'
+  res = res .. '<div class="mb-4 mt-4">' .. (html or page.html or '') .. '</div>'
 
   if not page.state.fight then
     res = res .. roomLayoutEnvironment(page, pid)
@@ -657,6 +670,264 @@ function roomLayoutHospital(page, origHtml, pid)
   page.customNavigation = navigation
 
   return roomLayout(page, html, pid)
+end
+
+--[[
+
+ShopItems = {
+  { level = 0, type = 'armor', name = "Nothing", price = 0, defence = 0 },
+  { level = 1, type = 'armor', name = "Traveler's Robe", price = 200, defence = 1 },
+  { level = 2, type = 'armor', name = "Reinforced Coat", price = 1000, defence = 3 },
+  { level = 3, type = 'armor', name = "Leather Vest", price = 3000, defence = 10 },
+  { level = 0, type = 'weapon', name = "Fists", price = 0, str = 0 },
+  { level = 1, type = 'weapon', name = "Club", price = 200, str = 5 },
+  { level = 2, type = 'weapon', name = "Knife", price = 1000, str = 10 },
+  { level = 3, type = 'weapon', name = "Short Blade", price = 3000, str = 20 },
+}
+
+ShopItemTypes = {
+  armor = {
+    icon = Medival.Shield,
+    name = "Armor",
+    fields = { { field = "defence", title = "Defence" } }
+  },
+  weapon = {
+    icon = Medival.Dagger,
+    name = "Weapon",
+    fields = { { field = "str", title = "Strength" } }
+  }
+}
+
+  ]]--
+
+function renderShopParts(pid, itemType)
+
+  -- filter item list according to its level vs user level
+  local player = UI_STATE[pid]
+  local items = {}
+
+  for _, item in ipairs(ShopItems) do
+    if 
+      item.type == itemType and
+      item.price > 0 and
+      item.level >= player.level - 1 and
+      item.level <= player.level + 1
+    then
+      table.insert(items, item)
+    end
+  end
+
+  local numFields = 0
+
+  for _, field in ipairs(ShopItemTypes[itemType].fields) do
+    numFields = numFields + 1
+  end
+
+  -- table with name, fields and price
+
+  local table = [[
+    <table>
+      <tr>
+        <th class="px-2">Item</th>
+  ]]
+
+  for _, field in ipairs(ShopItemTypes[itemType].fields) do
+    table = table .. string.format('<th class="px-2">%s</th>', field.title)
+  end
+
+  table = table .. '<th class="px-2">Price 🪙</th></tr>'
+
+  for _, item in ipairs(items) do
+    table = table .. '<tr>'
+    table = table .. string.format('<td class="px-2">%s</td>', item.name)
+
+    for _, field in ipairs(ShopItemTypes[itemType].fields) do
+      table = table .. string.format('<td class="px-2">%d</td>', item[field.field])
+    end
+
+    table = table .. string.format('<td class="px-2">%d</td>', item.price)
+    table = table .. '</tr>'
+  end
+
+  table = table .. '</table>'
+
+  -- select item
+
+  local itemItems = ''
+  for _, item in ipairs(items) do
+    itemItems = itemItems .. string.format("'%s',", item.name)
+  end
+
+  local actions = string.format([[
+    <div>
+      <div>
+        <ui-input
+          ui-id="item"
+          ui-type="Select"
+          ui-required
+          label="Item"
+          :items="[%s]"
+        ></ui-input>
+      </div>
+      <div class="d-flex">
+      <ui-button
+        class="mr-2"
+        ui-run="cmdBuyItem({ item: $item })"
+        ui-valid="item"
+      >Buy</ui-button>
+      <ui-button
+        class="mr-2"
+        ui-run="cmdSellItem({ item: $item })"
+        ui-valid="item"
+      >Sell</ui-button>
+      <ui-button ui-run="cmdGo({ dir: '/1000-1000-1000' })">Leave</ui-button>
+      </div>
+    </div>
+  ]], itemItems)
+
+  return { table = table, actions = actions }
+
+end
+
+
+function cmdBuyItem(args)
+
+  local item = args.item
+  local pid = UI.currentPid
+  local player = UI_STATE[pid]
+  local page = UI.findPage(player.room)
+
+  local itemToBuy = nil
+  for _, shopItem in ipairs(ShopItems) do
+    if shopItem.name == item then
+      itemToBuy = shopItem
+      break
+    end
+  end
+
+  if not itemToBuy then
+    addRoomMessage(page, string.format("We dont have this here owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- if price is 0 - laugh at player
+  if itemToBuy.price == 0 then
+    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+
+  if player.gold < itemToBuy.price then
+    addRoomMessage(page, string.format("You dont have enough gold to buy %s, owner says to %s", itemToBuy.name, player.name))
+    return UI.fullResponse()
+  end
+
+  -- check if player already has item of this type
+  local hasItem = player[itemToBuy.type] and player[itemToBuy.type].price > 0
+  -- if has owner demands to sell it first
+
+  if hasItem then
+    addRoomMessage(page, string.format("You already have %s! Said owner to %s. Sell one first", itemToBuy.type, player.name))
+    return UI.fullResponse()
+  end
+
+  player[itemToBuy.type] = itemToBuy
+  player.gold = player.gold - itemToBuy.price
+
+  addRoomMessage(page, string.format("%s bought %s for %d 🪙", player.name, itemToBuy.name, itemToBuy.price))
+
+  return UI.fullResponse()
+end
+
+
+function cmdSellItem(args)
+
+  local item = args.item
+  local pid = UI.currentPid
+  local player = UI_STATE[pid]
+  local page = UI.findPage(player.room)
+
+  local itemToSell = nil
+  for _, shopItem in ipairs(ShopItems) do
+    if shopItem.name == item then
+      itemToSell = shopItem
+      break
+    end
+  end
+
+  if not itemToSell then
+    addRoomMessage(page, string.format("We dont buy such here owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- if price is 0 - laugh at player
+  if itemToSell.price == 0 then
+    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
+    return UI.fullResponse()
+  end
+
+  -- check if player has this item
+  local hasItem = player[itemToSell.type] and player[itemToSell.type].name == itemToSell.name
+
+  if not hasItem then
+    addRoomMessage(page, string.format("You dont have %s to sell, says owner to %s", itemToSell.name, player.name))
+    return UI.fullResponse()
+  end
+
+  player[itemToSell.type] = ShopItemTypes[itemToSell.type].none
+  player.gold = player.gold + itemToSell.price
+
+  addRoomMessage(page, string.format("%s sold %s for %d 🪙", player.name, itemToSell.name, itemToSell.price))
+
+  return UI.fullResponse()
+end
+
+
+
+function roomLayoutWeaponShop(page, origHtml, pid)
+
+  local shop = renderShopParts(pid, 'weapon')
+
+  page.customNavigation = shop.actions
+
+  local html = string.format([[
+    <p>
+      You are in the weapon shop. The smell of metal and oil fills the air.
+      Shops owner is here, looking at you with a smile of a maniac.
+      Here's what i have for you:
+    </p>
+    <div class="mt-2">%s</div>
+  ]], shop.table)
+
+  return roomLayout(page, html, pid)
+end
+
+--[[
+
+Armor = {
+  { name = "Nothing", price = 0, defence = 0 },
+  { name = "Traveler's Robe", price = 200, defence = 1 },
+  ..
+}
+]]--
+
+function roomLayoutArmorShop(page, origHtml, pid)
+
+  local shop = renderShopParts(pid, 'armor')
+
+  page.customNavigation = shop.actions
+
+  local html = string.format([[
+    <p>
+      You are in the armor shop. The smell of oil and leather fills the air.
+      THe owner is here, looking at you with a smile of a maniac.
+      Here's what i have for you:
+    </p>
+    <div class="mt-2">%s</div>
+  ]], shop.table)
+
+  return roomLayout(page, html, pid)
+
 end
 
 function createRoom(parentPagePath, direction, title, description, state)

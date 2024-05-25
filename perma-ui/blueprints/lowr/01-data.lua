@@ -20,8 +20,6 @@ Houses = {
   Castle = "🏰",
 
   Fountain = "⛲",
-  StatueOfLiberty = "🗽",
-  TokyoTower = "🗼",
   Stadium = "🏟️",
 }
 
@@ -38,6 +36,8 @@ Icons = {
   Fire = "🔥",
   Droplet = "💧",
   WindFace = "🌬️",
+  Pill = "💊",
+  Pharmacy = "⚕️",
 }
 
 Nature = {
@@ -86,49 +86,74 @@ Fruits = {
   Papaya = '🥭'
 }
 
+
+Medival = {
+  Knight = "⚔️",
+  Dagger = "🗡️",
+  Bow = "🏹",
+  Shield = "🛡️",
+  Horse = "🏇",
+  Archery = "🏹",
+  Axe = "🪓",
+  Mage = "🧙‍♂️",
+  WomanMage = "🧙‍♀️",
+}
+
+
 Terrain = {
   city = Houses.Castle,
   forest = Nature.Tree,
-  hospital = Houses.Hospital,
+  hospital = Icons.Pharmacy,
 }
 
-Armor = {
-  { name = "Nothing", price = 0, defence = 0 },
-  { name = "Traveler's Robe", price = 200, defence = 1 },
-  { name = "Reinforced Coat", price = 1000, defence = 3 },
-  { name = "Leather Vest", price = 3000, defence = 10 },
-  { name = "Bronze Plate", price = 10000, defence = 15 },
-  { name = "Iron Guard", price = 30000, defence = 25 },
-  { name = "Shadow Cloak", price = 100000, defence = 35 },
-  { name = "Rufus's Armor", price = 150000, defence = 50 },
-  { name = "Silver Mail", price = 200000, defence = 75 },
-  { name = "Diamond Plate", price = 400000, defence = 100 },
-  { name = "Full Plate Armor", price = 1000000, defence = 150 },
-  { name = "Blood Ward", price = 4000000, defence = 225 },
-  { name = "Arcane Shield", price = 10000000, defence = 300 },
-  { name = "Mythril Plate", price = 40000000, defence = 400 },
-  { name = "Golden Aegis", price = 100000000, defence = 600 },
-  { name = "Mythical Armor", price = 400000000, defence = 1000 }
+ShopItemTypes = {
+  armor = {
+    icon = Medival.Shield,
+    name = "Armor",
+    fields = { { field = "defence", title = "Defence" } },
+    none = { name = "Nothing", price = 0, defence = 0 }
+  },
+  weapon = {
+    icon = Medival.Dagger,
+    name = "Weapon",
+    fields = { { field = "str", title = "Strength" } },
+    none = { name = "Fists", price = 0, str = 0 }
+  }
 }
 
-
-Weapons = {
-  { name = "Fists", price = 0, str = 0 },
-  { name = "Club", price = 200, str = 5 },
-  { name = "Knife", price = 1000, str = 10 },
-  { name = "Short Blade", price = 3000, str = 20 },
-  { name = "Long Blade", price = 10000, str = 30 },
-  { name = "Battle Axe", price = 30000, str = 40 },
-  { name = "Skull Crusher", price = 100000, str = 60 },
-  { name = "Dual Blades", price = 150000, str = 80 },
-  { name = "War Axe", price = 200000, str = 120 },
-  { name = "Hero's Blade", price = 400000, str = 180 },
-  { name = "Wise's Edge", price = 1000000, str = 250 },
-  { name = "Spear of Riches", price = 4000000, str = 350 },
-  { name = "Crimson Shard", price = 10000000, str = 500 },
-  { name = "Fang of Shadows", price = 40000000, str = 800 },
-  { name = "Blood Blade", price = 100000000, str = 1200 },
-  { name = "Dooms Blade", price = 400000000, str = 1800 }
+ShopItems = {
+  { level = 0, type = 'armor', name = "Nothing", price = 0, defence = 0 },
+  { level = 1, type = 'armor', name = "Travelers Robe", price = 200, defence = 1 },
+  { level = 2, type = 'armor', name = "Reinforced Coat", price = 1000, defence = 3 },
+  { level = 3, type = 'armor', name = "Leather Vest", price = 3000, defence = 10 },
+  { level = 4, type = 'armor', name = "Bronze Plate", price = 10000, defence = 15 },
+  { level = 5, type = 'armor', name = "Iron Guard", price = 30000, defence = 25 },
+  { level = 6, type = 'armor', name = "Shadow Cloak", price = 100000, defence = 35 },
+  { level = 7, type = 'armor', name = "Armor of Knight", price = 150000, defence = 50 },
+  { level = 8, type = 'armor', name = "Silver Mail", price = 200000, defence = 75 },
+  { level = 9, type = 'armor', name = "Diamond Plate", price = 400000, defence = 100 },
+  { level = 10, type = 'armor', name = "Full Plate Armor", price = 1000000, defence = 150 },
+  { level = 11, type = 'armor', name = "Blood Ward", price = 4000000, defence = 225 },
+  { level = 12, type = 'armor', name = "Arcane Shield", price = 10000000, defence = 300 },
+  { level = 13, type = 'armor', name = "Mythril Plate", price = 40000000, defence = 400 },
+  { level = 14, type = 'armor', name = "Golden Aegis", price = 100000000, defence = 600 },
+  { level = 15, type = 'armor', name = "Mythical Armor", price = 400000000, defence = 1000 },
+  { level = 0, type = 'weapon', name = "Fists", price = 0, str = 0 },
+  { level = 1, type = 'weapon', name = "Club", price = 200, str = 5 },
+  { level = 2, type = 'weapon', name = "Knife", price = 1000, str = 10 },
+  { level = 3, type = 'weapon', name = "Short Blade", price = 3000, str = 20 },
+  { level = 4, type = 'weapon', name = "Long Blade", price = 10000, str = 30 },
+  { level = 5, type = 'weapon', name = "Battle Axe", price = 30000, str = 40 },
+  { level = 6, type = 'weapon', name = "Skull Crusher", price = 100000, str = 60 },
+  { level = 7, type = 'weapon', name = "Dual Blades", price = 150000, str = 80 },
+  { level = 8, type = 'weapon', name = "War Axe", price = 200000, str = 120 },
+  { level = 9, type = 'weapon', name = "Blade of Hero", price = 400000, str = 180 },
+  { level = 10, type = 'weapon', name = "Mace of Destruction", price = 1000000, str = 250 },
+  { level = 11, type = 'weapon', name = "Spear of Seth", price = 4000000, str = 350 },
+  { level = 12, type = 'weapon', name = "Crimson Shard", price = 10000000, str = 500 },
+  { level = 13, type = 'weapon', name = "Fang of Shadows", price = 40000000, str = 800 },
+  { level = 14, type = 'weapon', name = "Blood Blade", price = 100000000, str = 1200 },
+  { level = 15, type = 'weapon', name = "Dooms Blade", price = 400000000, str = 1800 }
 }
 
 Bosses = {

@@ -95,6 +95,13 @@ UI = {
     return html
   end,
 
+  fullResponse = function(path, pid)
+    local resPid = pid or UI.currentPid
+    local pidPath = UI_STATE[resPid].path
+    local newPage = UI.findPage(path or pidPath)
+    return UI.page({ path = path }) .. UI.pageState(newPage) .. UI.state(pid)
+  end,
+
   page = function(args)
     local path = args.path or '/'
     local pid = args.pid or UI.currentPid
@@ -178,6 +185,8 @@ UI = {
         ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state .. UI.state(pid) })
       end
     end
+
+    return true
 
   end,
 
