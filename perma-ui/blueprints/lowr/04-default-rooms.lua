@@ -24,7 +24,7 @@ C = createRoom(C, 'e', 'Historic District', [[
 createRoom(CentralHub, 'w', 'Residential District', [[
   
     The Residential District is a quiet area with beautiful homes and tree-lined streets. It's a peaceful neighborhood, with parks
-    and playgrounds where families gather. The north road leads further into the residential area, while the south road takes you back
+    and playgrounds where families gather. The west road leads further into the residential area, while the east road takes you back
     to the lively city center.
   
 ]], { terrain = 'city' })
@@ -268,3 +268,95 @@ C = createRoom(Forest11, 'e', 'Blazing Path', [[
 createRoom(C, 'e', 'Inferno Clearing', [[
     A clearing where the ground is consumed by flames. The heat is overwhelming, and the air is thick with smoke.
 ]], { terrain = 'forest', spawnMonstersLevel = 11, maxMonsters = 3 })
+
+createRoom(Forest11, 'w', 'Scorched Woods', [[
+    The woods are scorched and blackened. The trees are burnt to a crisp, and the ground is covered in hot embers.
+]], { terrain = 'forest', spawnMonstersLevel = 11, maxMonsters = 2 })
+
+createRoom(C, 'w', 'Blasted Hollow', [[
+    A hollow where the ground is blasted and the trees are shattered. The air is filled with the scent of burning rock.
+]], { terrain = 'forest', spawnMonstersLevel = 11, maxMonsters = 3 })
+
+-- Level 12
+Forest12 = createRoom(Forest11, 'n', 'Scorched Forest', [[
+    The forest is completely scorched. The trees are burnt to a crisp, and the ground is covered in hot embers.
+]], { terrain = 'forest', spawnMonstersLevel = 12, maxMonsters = 1 })
+
+C = createRoom(Forest12, 'e', 'Fiery Trail', [[
+    The trail is ablaze with fire. The heat is blistering, and the air is suffocating with thick smoke.
+]], { terrain = 'forest', spawnMonstersLevel = 12, maxMonsters = 2 })
+
+createRoom(C, 'e', 'Burning Glade', [[
+    A glade where the ground is on fire. The flames are fierce, and the heat is intense, making it difficult to breathe.
+]], { terrain = 'forest', spawnMonstersLevel = 12, maxMonsters = 3 })
+
+C = createRoom(Forest12, 'w', 'Ember Woods', [[
+    The woods are filled with glowing embers. The trees are still smoldering, and the ground is hot to the touch.
+]], { terrain = 'forest', spawnMonstersLevel = 12, maxMonsters = 2 })
+
+createRoom(C, 'w', 'Cinder Grove', [[
+    A grove where the ground is covered in cinders. The air is thick with ash, and the heat is nearly unbearable.
+]], { terrain = 'forest', spawnMonstersLevel = 12, maxMonsters = 3 })
+
+-- Level 13
+Forest13 = createRoom(Forest12, 'n', 'Blazing Forest', [[
+    The forest is a blazing inferno. The trees are engulfed in flames, and the ground is burning hot.
+]], { terrain = 'forest', spawnMonstersLevel = 13, maxMonsters = 1 })
+
+C = createRoom(Forest13, 'e', 'Searing Path', [[
+    The path is searing with intense heat. The air is filled with the crackling of burning wood and the smell of smoke.
+]], { terrain = 'forest', spawnMonstersLevel = 13, maxMonsters = 2 })
+
+createRoom(C, 'e', 'Inferno Glade', [[
+    A glade where the ground is ablaze. The flames are intense, and the heat is suffocating, making it hard to breathe.
+]], { terrain = 'forest', spawnMonstersLevel = 13, maxMonsters = 3 })
+
+C = createRoom(Forest13, 'w', 'Smoldering Woods', [[
+    The woods are smoldering with fire. The trees are half-burnt, and the ground is covered in hot ashes.
+]], { terrain = 'forest', spawnMonstersLevel = 13, maxMonsters = 2 })
+
+createRoom(C, 'w', 'Charcoal Hollow', [[
+    A hollow where the ground is blackened with charcoal. The air is thick with smoke, and the heat is overwhelming.
+]], { terrain = 'forest', spawnMonstersLevel = 13, maxMonsters = 3 })
+
+-- Level 14
+Forest14 = createRoom(Forest13, 'n', 'Incendiary Forest', [[
+    The forest is ablaze with incendiary flames. The trees are burning brightly, and the ground is scorching hot.
+]], { terrain = 'forest', spawnMonstersLevel = 14, maxMonsters = 1 })
+
+C = createRoom(Forest14, 'e', 'Lava Path', [[
+    The path is flowing with lava. The heat is extreme, and the air is filled with the smell of sulfur and burning rock.
+]], { terrain = 'forest', spawnMonstersLevel = 14, maxMonsters = 2 })
+
+createRoom(C, 'e', 'Molten Clearing', [[
+    A clearing where the ground is molten. The heat is unbearable, and the flames are fierce, making it difficult to stand.
+]], { terrain = 'forest', spawnMonstersLevel = 14, maxMonsters = 3 })
+
+C = createRoom(Forest14, 'w', 'Sulfur Woods', [[
+    The woods are filled with the smell of sulfur. The trees are burning, and the ground is covered in hot embers.
+]], { terrain = 'forest', spawnMonstersLevel = 14, maxMonsters = 2 })
+
+createRoom(C, 'w', 'Pyroclastic Hollow', [[
+    A hollow where the ground is covered in pyroclastic flows. The heat is extreme, and the air is thick with smoke and ash.
+]], { terrain = 'forest', spawnMonstersLevel = 14, maxMonsters = 3 })
+
+-- Level 15
+Forest15 = createRoom(Forest14, 'n', 'Inferno Depths', [[
+    The depths of the forest are a raging inferno. The trees are completely engulfed in flames, and the ground is a sea of fire.
+]], { terrain = 'forest', spawnMonstersLevel = 15, maxMonsters = 1 })
+
+C = createRoom(Forest15, 'e', 'Hellish Path', [[
+    The path is a hellish landscape of fire and brimstone. The heat is suffocating, and the air is filled with ash and smoke.
+]], { terrain = 'forest', spawnMonstersLevel = 15, maxMonsters = 2 })
+
+createRoom(C, 'e', 'Fiery Glade', [[
+    A glade where the ground is ablaze with intense flames. The heat is overwhelming, and the air is thick with smoke.
+]], { terrain = 'forest', spawnMonstersLevel = 15, maxMonsters = 3 })
+
+C = createRoom(Forest15, 'w', 'Burning Woods', [[
+    The woods are burning with intense fire. The trees are engulfed in flames, and the ground is scorching hot.
+]], { terrain = 'forest', spawnMonstersLevel = 15, maxMonsters = 2 })
+
+createRoom(C, 'w', 'Hellfire Hollow', [[
+    A hollow where the ground is a raging inferno. The heat is unbearable, and the air is filled with the smell of burning wood and sulfur.
+]], { terrain = 'forest', spawnMonstersLevel = 15, maxMonsters = 3 })

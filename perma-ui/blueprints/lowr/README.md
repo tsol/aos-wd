@@ -8,13 +8,14 @@
  - barmaid
  - bard
 
-9. Fountain chat
+x. Slow state. Kill stats and separate history for people interaction
+ (likes, flirt progress, kills stats)
 
 10. Stale players sleep
 
 11. Get a room in the inn
 
-19. Balance money
+19. Balance money?
 20. Token / staking / minting ?
 21. Bank to transfer gold / tokens?
 
@@ -31,11 +32,7 @@
    build location permit
    explore forest permit
    
-
-
 === RELEASE
-
-
 
 - spells / scrolls.
 

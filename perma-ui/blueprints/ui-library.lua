@@ -78,6 +78,16 @@ UI = {
     return UI_STATE[pid].path
   end,
 
+  currentPage = function(forPid)
+    local pid = forPid or UI.currentPid
+    if not pid then
+      UI.log("UI.currentPage", "pid not specified")
+      return
+    end
+
+    return UI.findPage(UI_STATE[pid].path)
+  end,
+
   findPage = function(path)
     for _, page in ipairs(UI_APP.PAGES) do
       if page.path == path then
@@ -174,14 +184,14 @@ UI = {
     return json.encode(res)
   end,
 
-  sendPageState = function(page)
+  sendPageState = function(page, exceptPid)
     local state = UI.pageState(page)
     if not state then return end
 
     for pid, _ in pairs(UI_STATE) do
       -- check that pid length is 43 characters
       local pidIsUser = string.len(pid) == 43
-      if pidIsUser and UI_STATE[pid].path == page.path then
+      if pid ~= exceptPid and pidIsUser and UI_STATE[pid].path == page.path then
         ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state .. UI.state(pid) })
       end
     end

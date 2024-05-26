@@ -61,7 +61,6 @@ export function parseMessagesToState(
 }
 
 export function parseObjects(text?: string) {
-  // first we split text by }\s*{ keeping the {} delimiters
 
   if (!text) return undefined;
 
@@ -73,6 +72,20 @@ export function parseObjects(text?: string) {
 
   return parts.map((part) => parseLuaObject(part));
 
+}
+
+function isLuaObject(text: string) {
+  return text.match(/[\w-]+\s*=\s*"?[\w\d-]+"?/s);
+}
+
+function luaToJson(text: string) {
+  return text
+    .replace(/=\s*function: 0x[0-9a-f]+/g, '="function"')
+    .replace(/([-_\w\d]+)\s*=\s*/g, '"$1": ')
+    .replace(/([-_\w\d]+)\s*:/g, '"$1":')
+    .replace(/:\[\]/g, ':{}')
+
+    .replace(/^\s*\{\s*\{(.+)\s*\}\s*\}\s*$/s, '[ { $1 } ]');
 }
 
 // this parses both LUA output of table and JSON
@@ -97,13 +110,11 @@ export function parseLuaObject(text?: string) {
   if (!text.match(/^\s*\{.+\}\s*$/s))
     return undefined;
 
-  let processedString = text
-    .replace(/=\s*function: 0x[0-9a-f]+/g, '="function"')
-    .replace(/([_-\w]+)\s*=\s*/g, '"$1": ')
-    .replace(/([_-\w]+)\s*:/g, '"$1":')
-    .replace(/:\[\]/g, ':{}');
+  let processedString = text.trim();
 
-  processedString = processedString.replace(/^\s*\{\s*\{(.+)\s*\}\s*\}\s*$/s, '[ { $1 } ]');
+  if (isLuaObject(text)) {
+    processedString = luaToJson(text);
+  }
 
   let parsed: any = undefined;
 

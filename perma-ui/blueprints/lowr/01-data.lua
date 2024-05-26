@@ -172,6 +172,25 @@ Bosses = {
 }
 
 
+FlirtSchema = {
+  { charm = 1, name = 'Wink', success = '%s winks at %s and %s blushes.', fail = '%s winks at %s and %s looks away.' },
+  { charm = 2, name = 'Smile', success = '%s smiles at %s and %s smiles back.', fail = '%s smiles at %s and %s looks away.' },
+  { charm = 3, name = 'Blow Kiss', success = '%s blows a kiss at %s and %s catches it.', fail = '%s blows a kiss at %s and %s dodges it.' },
+  { charm = 4, name = 'Flirt', success = '%s flirts with %s and %s flirts back.', fail = '%s flirts with %s and %s looks away.' },
+  { charm = 5, name = 'Hug', success = '%s hugs %s and %s hugs back.', fail = '%s hugs %s and %s pushes away.' },
+  { charm = 6, name = 'Kiss', success = '%s kisses %s and %s kisses back.', fail = '%s kisses %s and %s slaps.' },
+  { charm = 7, name = 'Make Out', success = '%s makes out with %s and %s makes out back.', fail = '%s makes out with %s and %s slaps.' },
+  { charm = 8, name = 'Proposal', success = '%s proposes to %s and %s accepts.', fail = '%s proposes to %s and %s rejects.' },
+  { charm = 9, name = 'Marriage', success = '%s marries %s and %s marries back.', fail = '%s marries %s and %s leaves.' },
+  { charm = 10, name = 'Divorce', success = '%s divorces %s and %s divorces back.', fail = '%s divorces %s and %s leaves.' },
+}
+
+Mobs = {
+  { level = 1, terrain="hospital", type = "good", gender="she", unique = 1, name = "Lilly the nurse", str = 8, exp = 10, hp = 12, gold = 34, weapon = "Stethoscope" },
+  { level = 1, terrain="inn", type = "good", gender="she", unique = 1, name = "Sara the Barmaid", str = 6, exp = 8, hp = 10, gold = 23, weapon = "Beer Mug" },
+  { level = 1, terrain="fountain", type = "good", gender = "he", unique = 1, name = "Seth the Bard", str = 12, exp = 9, hp = 11, gold = 27, weapon = "Lute" },
+}
+
 Monsters = {
   { level = 1, name = "Large Mosquito", str = 3, exp = 2, hp = 3, gold = 46, weapon = "Blood Sucker" },
   { level = 1, name = "Large Rat", str = 3, exp = 1, hp = 4, gold = 32, weapon = "Sharp Teeth" },
@@ -297,7 +316,11 @@ Monsters = {
   { level = 12, name = "The Mighty Shadow", str = 1633, exp = 51655, hp = 2332, gold = 176333, weapon = "Shadow Axe" },
   { level = 12, name = "Black Unicorn", str = 1899, exp = 41738, hp = 1587, gold = 336693, weapon = "Shredding Horn" },
   { level = 12, name = "Corinthian Giant", str = 2400, exp = 60333, hp = 2544, gold = 336643, weapon = "De-rooted Tree" },
-  { level = 12, name = "Mutated Black Widow", str = 2575, exp = 98993, hp = 1276, gold = 434370, weapon = "Venom Bite" }
+  { level = 12, name = "Mutated Black Widow", str = 2575, exp = 98993, hp = 1276, gold = 434370, weapon = "Venom Bite" },
+
+  -- level 13, 14
+
+  { level = 15, name = "The White Rabbit", str = 3000, exp = 10000000, hp = 15000, gold = 1000000, weapon = "Bunny tail" }
 
 }
 

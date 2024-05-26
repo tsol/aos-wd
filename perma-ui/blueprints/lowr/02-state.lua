@@ -8,6 +8,7 @@ function InitPlayerState(pid)
     fruit = "",
 
     level = 1,
+    charm = 1,
     exp = 0,
 
     maxHp = 15,
@@ -126,8 +127,12 @@ UI_APP = {
       environment = {},
       html = '',
       title = "Hospital",
-      exits = {},
-      state = InitPageState({ terrain = 'hospital' })
+      exits = { n = '/1000-1000-1000' },
+      state = InitPageState({
+        terrain = 'hospital',
+        noBreadcrumb = false,
+        maxMonsters = 1,
+      })
     },
 
     -- weapon shop
@@ -137,8 +142,12 @@ UI_APP = {
       environment = {},
       html = '',
       title = "Weapon Shop",
-      exits = {},
-      state = InitPageState({ terrain = 'city' })
+      exits = { n = '/1000-1000-1000' },
+      state = InitPageState({
+        terrain = 'weapons',
+        noBreadcrumb = true,
+        maxMonsters = 1,
+      })
     },
 
     -- armor shop
@@ -150,8 +159,12 @@ UI_APP = {
 
       ]],
       title = "Armor Shop",
-      exits = {},
-      state = InitPageState({ terrain = 'city' })
+      exits = { n = '/1000-1000-1000' },
+      state = InitPageState({
+        terrain = 'armor',
+        noBreadcrumb = true,
+        maxMonsters = 1,
+      })
     },
 
     -- fountain
@@ -161,8 +174,12 @@ UI_APP = {
       environment = {},
       html = '',
       title = "Fountain",
-      exits = {},
-      state = InitPageState({ terrain = 'fountain' })
+      exits = { n = '/1000-1000-1000' },
+      state = InitPageState({
+        terrain = 'fountain',
+        noBreadcrumb = true,
+        maxMonsters = 1,
+      })
     },
 
   },
