@@ -6,6 +6,8 @@ Monsters = Monsters or {
   { level = 1, name = "Large Mosquito", str = 2, exp = 2, hp = 3, gold = 46, weapon = "Blood Sucker" },
 }
 
+MEM = MEM or {}
+
 --[[
   FlirtSchema = {
   { charm = 1, name = 'Wink', success = '%s winks at %s and %s blushes.', fail = '%s winks at %s and %s looks away.' },
@@ -20,17 +22,35 @@ Monsters = Monsters or {
   { charm = 10, name = 'Divorce', success = '%s divorces %s and %s divorces back.', fail = '%s divorces %s and %s leaves.' },
 }
 
-
-Monsters = {
-  { level = "Hospital", type = "good", gender="she", unique = 1, name = "Lilly the nurse", str = 8, exp = 10, hp = 12, gold = 34, weapon = "Stethoscope" },
-  { level = "Inn", type = "good", gender="she", unique = 1, name = "Sara the Barmaid", str = 6, exp = 8, hp = 10, gold = 23, weapon = "Beer Mug" },
-  { level = "Fountain", type = "good", gender = "he", unique = 1, name = "Seth the Bard", str = 12, exp = 9, hp = 11, gold = 27, weapon = "Lute" },
 ]]
---
+   --
 
 function error(msg)
   UI.reply(UI.renderError(500, msg))
   return ''
+end
+
+function memInit(pid)
+  MEM[pid] = MEM[pid] or {
+    kills = 0
+  }
+end
+
+function memGet(pid, param)
+  memInit(pid)
+  if not param then
+    return MEM[pid]
+  end
+  return MEM[pid][param]
+end
+
+function memRemove(pid)
+  MEM[pid] = nil
+end
+
+function memAddKillCount(pid)
+  memInit(pid)
+  MEM[pid].kills = MEM[pid].kills + 1
 end
 
 function addRoomMessage(page, text)
@@ -46,9 +66,8 @@ function addRoomMessage(page, text)
 end
 
 function spawnMonster(level, roomPage, forceMonster)
-  
   local pid = forceMonster and forceMonster.pid or 'mob-' .. math.random(1000, 9999)
-  
+
   local monstersOfLevel = {}
   local monster = forceMonster or nil
 
@@ -93,10 +112,9 @@ function spawnMonster(level, roomPage, forceMonster)
 
   putPersonToRoom(roomPage, pid)
 
-  if isMonsterAgressive(UI_STATE[pid]) then
+  if monster.type ~= 'good' then
     roundActionAttack(pid, UI.currentPid)
   end
-
 end
 
 function getExpInfo(exp)
@@ -157,6 +175,7 @@ function killPerson(pid, killedByPid)
       exp = (UI_STATE[killedByPid].exp or 0) + expGain,
     }, killedByPid)
     checkLevelUp(killedByPid)
+    memAddKillCount(killedByPid)
   end
 
   local page = UI.findPage(UI_STATE[pid].room)
@@ -178,6 +197,7 @@ function killPerson(pid, killedByPid)
   if wasMonster then
     -- completely remove from state
     UI_STATE[pid] = nil
+    memRemove(pid)
   else
     UI.set({
       hp = 0,
@@ -292,9 +312,9 @@ function checkAllRoomsForFightTimeout(msg)
 end
 
 function isMonsterScared(personInRoom)
-  local lowHelth = personInRoom.isMonster and personInRoom.hp < personInRoom.maxHp / 3
+  local lowHealth = personInRoom.isMonster and personInRoom.hp < personInRoom.maxHp / 3
   local oneInFour = math.random(4) == 1
-  return lowHelth and oneInFour
+  return lowHealth and oneInFour
 end
 
 function selectRandomExit(page)
@@ -347,9 +367,6 @@ function setMonstersAction(page)
 end
 
 function roomUpdateState(page)
-  -- perform attacks (TODO: later sort by speed)
-  -- for now perform random shuffle
-
   if page.state.beingUpdated then return end
   page.state.beingUpdated = true
 
@@ -423,7 +440,6 @@ function attack(attackerPid, targetPid)
     UI.log("attack", "Page not found: " .. attacker.room)
     return ''
   end
-
 
   if targetAlreadyDead then
     addRoomMessage(page,
@@ -516,8 +532,6 @@ function roomLayoutNavigation(page)
     </div>
   ]], navButtons.n or '-', navButtons.w or '-', navButtons.e or '-', navButtons.s or '-')
 end
-
--- page = { "people": [ { "pid": "KjpdUofQA4FSBgMV7CsdcqV4CNZMz-AZayNHcirjEnY", "fruit": "Cherry", "name": "yaya" } ] }
 
 function roomLayoutPeople(page)
   local target = '((page.people || []).find((p) => p.pid === person.actionTargetPid))?'
@@ -720,275 +734,70 @@ function roomLayout(page, html, pid)
   return res
 end
 
-function roomLayoutHospital(page, origHtml, forPid)
-  local state = UI_STATE[UI.currentPid]
-  local pid = UI.currentPid
-
-  local hpToHeal = state.maxHp - state.hp
-  local cost = hpToHeal * state.level * 10
-
-  local verdict = "You look fine to us, they tell you."
-  if state.hp < state.maxHp then
-    verdict = string.format("We can fix you. It will cost you %d gold.", cost)
+function addPlace(parentTitle, pagePath, title, icon, layout, stateOverride)
+  local parent = nil
+  for _, page in ipairs(UI_APP.PAGES) do
+    if page.title == parentTitle then
+      parent = page
+      break
+    end
   end
 
-  local healButton = ""
-  if state.hp < state.maxHp then
-    healButton = [[
-      <ui-button ui-run="cmdHeal" class="mr-2">Heal</ui-button>
-    ]]
+  if not parent then return UI.log('addPlace', 'no parent: ' .. parentTitle) end
+
+  -- check that such place already exists
+  local found = UI.findPage(pagePath)
+  if found then return UI.log('addPlace', 'already exists: ' .. pagePath) end
+
+
+  local defaultState = {
+    terrain = pagePath,
+    breadcrumb = false,
+    maxMonsters = 1,
+  }
+
+  -- override default state if needed
+  if stateOverride then
+    for k, v in pairs(stateOverride) do
+      defaultState[k] = v
+    end
   end
 
-  local leaveButton = [[
-    <ui-button ui-run="cmdGo({ dir = 'n' })">Leave</ui-button>
-  ]]
+  local page = {
+    path = pagePath,
+    layout = layout,
+    environment = {},
+    html = '',
+    title = title,
+    exits = { n = parent.path },
+    state = InitPageState(defaultState)
+  }
 
-  local navigation = string.format([[<div class="d-flex">%s %s</div>]], healButton, leaveButton)
+  UI_APP.PAGES[#UI_APP.PAGES + 1] = page
 
-  local html = string.format([[
-    <p>
-      You find yourself in the hospital. Young attractive nurses are walking around.
-    </p>
-    <p class="mb-4">%s</p>
-  ]], verdict)
+  if stateOverride and stateOverride.breadcrumb then
+    return UI.log('addPlace', 'not adding to env, cause breadcrumb: ' .. pagePath)
+  end
 
-  page.customNavigation = navigation
+  -- check parent environment if it has such place already
+  if parent.environment then
+    for _, env in ipairs(parent.environment) do
+      if env.path == pagePath then return UI.log('addPlace', 'parent env already has: ' .. pagePath) end
+    end
+  end
 
-  return roomLayout(page, html, pid)
-end
+  local envForParentToAdd = {
+    title = title,
+    icon = icon,
+    path = pagePath,
+  }
 
-function roomLayoutFountain(page, origHtml, forPid)
-  local pid = UI.currentPid
-
-  local html = string.format([[
-    <div>
-      You find yourself near the fountain. Beloved place for citizens to relax.
-      The sign says: Swimming and drinking from the fountain is prohibited.
-    </div>
-    <div class="mt-4">
-      <ui-input ui-id="chat" label="Chat" ui-type="String" ui-required></ui-input>
-      <ui-button ui-run="cmdChat({ text = $chat })" ui-valid="chat">Say</ui-button>
-    </div>
-  ]])
-
-  page.customNavigation = [[
-    <div class="d-flex">
-    <ui-button class="mr-2" ui-run="cmdDrinkFountain">Drink</ui-button>
-    <ui-button class="mr-2" ui-run="cmdSwimFountain()">Swim</ui-button>
-    <ui-button ui-run="cmdGo({ dir = 'n' })">Leave</ui-button>
-    </div>
-  ]]
-
-  return roomLayout(page, html, pid)
-end
-
-function cmdChat(args)
-  if isPlayerDead() then return deadPlayerRedirect() end
-
-  local page = UI.currentPage()
-  local pid = UI.currentPid
-
-  addRoomMessage(page, string.format("%s says: %s", UI_STATE[pid].name, args.text))
-
-  UI.sendPageState(page, pid)
-  return UI.fullResponse()
-end
-
-function cmdDrinkFountain(args)
-  if isPlayerDead() then return deadPlayerRedirect() end
-
-  local page = UI.currentPage()
-  local pid = UI.currentPid
-
-  local state = UI_STATE[pid]
-  local chance = math.random(3)
-
-  if chance == 1 then
-    state.hp = math.min(state.hp + 1, state.maxHp)
-    addRoomMessage(page, string.format("%s drinks from the fountain and feels refreshed", state.name))
+  if parent.environment then
+    table.insert(parent.environment, envForParentToAdd)
   else
-    state.hp = math.min(state.hp - 3, 0)
-    addRoomMessage(page, string.format("%s drinks from the fountain and vomits on the ground", state.name))
-
-    if state.hp <= 0 then
-      killPerson(pid)
-      addRoomMessage(page, string.format("%s died after drinking from the fountain.", state.name))
-    end
+    parent.environment = { envForParentToAdd }
   end
 
-  UI.sendPageState(page, pid)
-  return UI.fullResponse()
-end
-
--- swim in fountain. 50/50 chance of loosing helth or gaining exp: (current level * 2) or gaining gold (current level * 8)
-
-function cmdSwimFountain(args)
-  if isPlayerDead() then return deadPlayerRedirect() end
-
-  local page = UI.currentPage()
-  local pid = UI.currentPid
-
-  local state = UI_STATE[pid]
-  local chance = math.random(3)
-
-  if chance < 2 then
-    state.hp = math.max(state.hp - 2, 0)
-    state.charm = math.max(state.charm - 1, 0)
-
-    addRoomMessage(page, string.format("%s gets a strange itching from swimming in the fountain!", state.name))
-
-    if state.hp <= 0 then
-      killPerson(pid)
-      addRoomMessage(page, string.format("%s died from swimming in the fountain", state.name))
-      UI.sendPageState(page)
-      return UI.fullResponse()
-    end
-  end
-
-  chance = math.random(2)
-
-  if chance == 1 then
-    state.exp = state.exp + state.level * 2
-    addRoomMessage(page, string.format("%s swims in the fountain and gains %d exp", state.name, state.level * 2))
-  else
-    local gainGold = 1 + math.random(state.level * 8)
-    state.gold = state.gold + gainGold
-    addRoomMessage(page, string.format("%s dives into the fountain and finds %d 🪙", state.name, gainGold))
-  end
-
-  UI.sendPageState(page, pid)
-  return UI.fullResponse()
-end
-
-function renderShopParts(pid, itemType)
-  -- filter item list according to its level vs user level
-  local player = UI_STATE[pid]
-  local items = {}
-
-  for _, item in ipairs(ShopItems) do
-    if
-        item.type == itemType and
-        item.price > 0 and
-        item.level >= player.level - 1 and
-        item.level <= player.level + 1
-    then
-      table.insert(items, item)
-    end
-  end
-
-  local numFields = 0
-
-  for _, field in ipairs(ShopItemTypes[itemType].fields) do
-    numFields = numFields + 1
-  end
-
-  -- table with name, fields and price
-
-  local table = [[
-    <table>
-      <tr>
-        <th class="px-2">Item</th>
-  ]]
-
-  for _, field in ipairs(ShopItemTypes[itemType].fields) do
-    table = table .. string.format('<th class="px-2">%s</th>', field.title)
-  end
-
-  table = table .. '<th class="px-2">Price 🪙</th></tr>'
-
-  for _, item in ipairs(items) do
-    table = table .. '<tr>'
-    table = table .. string.format('<td class="px-2">%s</td>', item.name)
-
-    for _, field in ipairs(ShopItemTypes[itemType].fields) do
-      table = table .. string.format('<td class="px-2">%d</td>', item[field.field])
-    end
-
-    table = table .. string.format('<td class="px-2">%d</td>', item.price)
-    table = table .. '</tr>'
-  end
-
-  table = table .. '</table>'
-
-  -- select item
-
-  local itemItems = ''
-  for _, item in ipairs(items) do
-    itemItems = itemItems .. string.format("'%s',", item.name)
-  end
-
-  local actions = string.format([[
-    <div>
-      <div>
-        <ui-input
-          ui-id="item"
-          ui-type="Select"
-          ui-required
-          label="Item"
-          :items="[%s]"
-        ></ui-input>
-      </div>
-      <div class="d-flex">
-      <ui-button
-        class="mr-2"
-        ui-run="cmdBuyItem({ item: $item })"
-        ui-valid="item"
-      >Buy</ui-button>
-      <ui-button
-        class="mr-2"
-        ui-run="cmdSellItem({ item: $item })"
-        ui-valid="item"
-      >Sell</ui-button>
-      <ui-button ui-run="cmdGo({ dir = 'n' })">Leave</ui-button>
-      </div>
-    </div>
-  ]], itemItems)
-
-  return { table = table, actions = actions }
-end
-
-function roomLayoutWeaponShop(page, origHtml, pid)
-  local shop = renderShopParts(pid, 'weapon')
-
-  page.customNavigation = shop.actions
-
-  local html = string.format([[
-    <p>
-      You are in the weapon shop. The smell of metal and oil fills the air.
-      Shops owner is here, looking at you with a smile of a maniac.
-      Here's what i have for you:
-    </p>
-    <div class="mt-2">%s</div>
-  ]], shop.table)
-
-  return roomLayout(page, html, pid)
-end
-
---[[
-
-Armor = {
-  { name = "Nothing", price = 0, defence = 0 },
-  { name = "Traveler's Robe", price = 200, defence = 1 },
-  ..
-}
-]]
---
-
-function roomLayoutArmorShop(page, origHtml, pid)
-  local shop = renderShopParts(pid, 'armor')
-
-  page.customNavigation = shop.actions
-
-  local html = string.format([[
-    <p>
-      You are in the armor shop. The smell of oil and leather fills the air.
-      The owner is here, polishing a breastplate.
-      Here's what i have for you:
-    </p>
-    <div class="mt-2">%s</div>
-  ]], shop.table)
-
-  return roomLayout(page, html, pid)
 end
 
 function createRoom(parentPagePath, direction, title, description, state)
@@ -1092,7 +901,7 @@ function putPersonToRoom(page, pid, fromDirection)
   person.path = page.path
 
   -- update breadcrumbs
-  if page.state.terrain and not page.state.noBreadcrumb then
+  if page.state.terrain and page.state.breadcrumb then
     UI_STATE[pid].breadcrumbs[page.state.terrain] = page.path
   end
 
@@ -1189,11 +998,8 @@ function pageOnPersonEnter(page, pid, fromDirection)
           spawnMonster(mob.level, page, mob)
         end
       end
-
     end
   end
-
-  -- roomUpdateState(page)
 end
 
 function pageOnPersonLeave(page, pid, toDirection)
@@ -1202,8 +1008,6 @@ function pageOnPersonLeave(page, pid, toDirection)
   else
 
   end
-
-  -- roomUpdateState(page)
 end
 
 function findPersonInRoom(page, pid)
@@ -1260,124 +1064,6 @@ end
 
 -- FROM HTML COMMANDS ---
 
-function cmdBuyItem(args)
-  local item = args.item
-  local pid = UI.currentPid
-  local player = UI_STATE[pid]
-  local page = UI.findPage(player.room)
-
-  local itemToBuy = nil
-  for _, shopItem in ipairs(ShopItems) do
-    if shopItem.name == item then
-      itemToBuy = shopItem
-      break
-    end
-  end
-
-  if not itemToBuy then
-    addRoomMessage(page, string.format("We dont have this here owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- if price is 0 - laugh at player
-  if itemToBuy.price == 0 then
-    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-
-  if player.gold < itemToBuy.price then
-    addRoomMessage(page,
-      string.format("You dont have enough gold to buy %s, owner says to %s", itemToBuy.name, player.name))
-    return UI.fullResponse()
-  end
-
-  -- check if player already has item of this type
-  local hasItem = player[itemToBuy.type] and player[itemToBuy.type].price > 0
-  -- if has owner demands to sell it first
-
-  if hasItem then
-    addRoomMessage(page,
-      string.format("You already have %s! Said owner to %s. Sell one first", itemToBuy.type, player.name))
-    return UI.fullResponse()
-  end
-
-  player[itemToBuy.type] = itemToBuy
-  player.gold = player.gold - itemToBuy.price
-
-  addRoomMessage(page, string.format("%s bought %s for %d 🪙", player.name, itemToBuy.name, itemToBuy.price))
-
-  return UI.fullResponse()
-end
-
-function cmdSellItem(args)
-  local item = args.item
-  local pid = UI.currentPid
-  local player = UI_STATE[pid]
-  local page = UI.findPage(player.room)
-
-  local itemToSell = nil
-  for _, shopItem in ipairs(ShopItems) do
-    if shopItem.name == item then
-      itemToSell = shopItem
-      break
-    end
-  end
-
-  if not itemToSell then
-    addRoomMessage(page, string.format("We dont buy such here owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- if price is 0 - laugh at player
-  if itemToSell.price == 0 then
-    addRoomMessage(page, string.format("You kidding me the owner says to %s", player.name))
-    return UI.fullResponse()
-  end
-
-  -- check if player has this item
-  local hasItem = player[itemToSell.type] and player[itemToSell.type].name == itemToSell.name
-
-  if not hasItem then
-    addRoomMessage(page, string.format("You dont have %s to sell, says owner to %s", itemToSell.name, player.name))
-    return UI.fullResponse()
-  end
-
-  player[itemToSell.type] = ShopItemTypes[itemToSell.type].none
-  player.gold = player.gold + itemToSell.price
-
-  addRoomMessage(page, string.format("%s sold %s for %d 🪙", player.name, itemToSell.name, itemToSell.price))
-
-  return UI.fullResponse()
-end
-
-function cmdHeal()
-  local state = UI_STATE[UI.currentPid]
-  local page = UI.findPage(state.path)
-
-  local hpToHeal = state.maxHp - state.hp
-  local costPerPoint = state.level * 10
-
-  local pointsCanBeHealed = math.min(hpToHeal, math.floor(state.gold / costPerPoint))
-  local cost = pointsCanBeHealed * costPerPoint
-
-  if pointsCanBeHealed <= 0 then
-    addRoomMessage(page, string.format("%s tried to heal, but didn't have enough gold", state.name))
-    roomUpdateState(page)
-    return UI.page({ path = state.path }) .. UI.pageState(page) .. UI.state()
-  end
-
-  UI.set({
-    hp = state.hp + pointsCanBeHealed,
-    gold = state.gold - cost,
-  })
-
-  addRoomMessage(page, string.format("%s healed %d hp for %d gold", state.name, pointsCanBeHealed, cost))
-  roomUpdateState(page)
-
-  return UI.page({ path = state.path }) .. UI.pageState(page) .. UI.state()
-end
-
 function isPlayerDead()
   return UI_STATE[UI.currentPid].hp <= 0
 end
@@ -1388,13 +1074,17 @@ function deadPlayerRedirect()
   });
 
   local spawnRoom = UI.findPage('/hospital')
+  if not spawnRoom then
+    spawnRoom = UI.findPage('/1000-1000-1000')
+  end
+
   local state = UI_STATE[UI.currentPid]
 
   putPersonToRoom(spawnRoom, UI.currentPid)
   addRoomMessage(spawnRoom, string.format("%s has been ressurected by the gods", state.name))
   roomUpdateState(spawnRoom)
 
-  return UI.page({ path = '/hospital' }) .. UI.pageState(spawnRoom) .. UI.state()
+  return UI.page({ path = spawnRoom.path }) .. UI.pageState(spawnRoom) .. UI.state()
 end
 
 function cmdBuild(args)
@@ -1420,7 +1110,16 @@ function cmdConfirmBuild(args)
   local parentPath = UI_STATE[UI.currentPid].prevPath
   local direction = UI_STATE[UI.currentPid].roomeEditDirection
 
-  createRoom(parentPath, direction, title, description)
+  local parentPage = UI.findPage(parentPath)
+  if not parentPage then return error("Parent room not found") end
+
+  local state = {
+    spawnMonstersLevel = parentPage.state.spawnMonstersLevel,
+    maxMonsters = parentPage.state.maxMonsters,
+    terrain = parentPage.state.terrain,
+  }
+
+  createRoom(parentPath, direction, title, description, state)
 
   UI_STATE[UI.currentPid].prevPath = nil
   UI_STATE[UI.currentPid].roomeEditDirection = nil

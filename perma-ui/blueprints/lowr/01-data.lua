@@ -38,6 +38,7 @@ Icons = {
   WindFace = "🌬️",
   Pill = "💊",
   Pharmacy = "⚕️",
+  Trophy = "🏆",
 }
 
 Nature = {
@@ -93,10 +94,10 @@ Medival = {
   Bow = "🏹",
   Shield = "🛡️",
   Horse = "🏇",
-  Archery = "🏹",
   Axe = "🪓",
   Mage = "🧙‍♂️",
   WomanMage = "🧙‍♀️",
+  Crown = "👑",
 }
 
 
@@ -138,6 +139,7 @@ ShopItems = {
   { level = 13, type = 'armor', name = "Mythril Plate", price = 40000000, defence = 400 },
   { level = 14, type = 'armor', name = "Golden Aegis", price = 100000000, defence = 600 },
   { level = 15, type = 'armor', name = "Mythical Armor", price = 400000000, defence = 1000 },
+  
   { level = 0, type = 'weapon', name = "Fists", price = 0, str = 0 },
   { level = 1, type = 'weapon', name = "Club", price = 200, str = 5 },
   { level = 2, type = 'weapon', name = "Knife", price = 1000, str = 10 },

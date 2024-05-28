@@ -1,15 +1,16 @@
 
 # TODO
 
-7. Hitpoints recover timer for everyone (up to 90%)
+x. welcome page / check firefox
+
+x. ARDNS name
 
 8. Flirt (charm stat + mob history)
  - nurse
  - barmaid
  - bard
 
-x. Slow state. Kill stats and separate history for people interaction
- (likes, flirt progress, kills stats)
+7. Hitpoints recover timer for everyone (up to 90%)
 
 10. Stale players sleep
 

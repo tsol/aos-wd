@@ -2,6 +2,9 @@
 UI_STATE = {}
 UI.logs = {}
 
+-- slow state with all additional details which are not needed for fast state and fast display
+MEM = {}
+
 function InitPlayerState(pid)
   return {
     name = "",
@@ -33,7 +36,7 @@ function InitPageState(override)
     roundStartTime = nil,
     spawnMonstersLevel = 0,
     maxMonsters = 3,
-    messages = {}, -- array of strings { text = "Large mosquito attacked Player by 3 hp with their Sucker", t = 1234567890 }
+    messages = {},
     maxMessages = 20,
     terrain = nil,
   }
@@ -62,7 +65,7 @@ UI_APP = {
         return room
       end,
       html = [[
-        <h1>The legend of the White Rabbit</h1>
+        <h1 class="mb-6">The legend of the White Rabbit</h1>
         <p>Enter your name:</p>
         <ui-input ui-id="name" ui-type="String" ui-required label="Your name" />
         <ui-input
@@ -78,30 +81,14 @@ UI_APP = {
     {
       path = '/1000-1000-1000',
       layout = roomLayout,
-      environment = {
-        {
-          title = "Fountain",
-          icon = Houses.Fountain,
-          path = "/fountain",
-        },
-        {
-          title = "Weapon Shop",
-          icon = Medival.Dagger,
-          path = "/weapon-shop",
-        },
-        {
-          title = "Armor Shop",
-          icon = Medival.Shield,
-          path = "/armor-shop",
-        },
-      },
+      environment = {},
       html = [[        
           You find yourself on the city central square.
           The sun is shining, the birds are singing, and the people are walking around.
         ]],
       title = "Central Square",
       exits = {},
-      state = InitPageState({ terrain = 'city' })
+      state = InitPageState({ terrain = 'city', breadcrumb = true })
     },
 
     {
@@ -118,68 +105,6 @@ UI_APP = {
         title = "Build new space",
         exits = {},
         state = InitPageState()
-    },
-
-    -- hospital
-    {
-      path = '/hospital',
-      layout = roomLayoutHospital,
-      environment = {},
-      html = '',
-      title = "Hospital",
-      exits = { n = '/1000-1000-1000' },
-      state = InitPageState({
-        terrain = 'hospital',
-        noBreadcrumb = false,
-        maxMonsters = 1,
-      })
-    },
-
-    -- weapon shop
-    {
-      path = '/weapon-shop',
-      layout = roomLayoutWeaponShop,
-      environment = {},
-      html = '',
-      title = "Weapon Shop",
-      exits = { n = '/1000-1000-1000' },
-      state = InitPageState({
-        terrain = 'weapons',
-        noBreadcrumb = true,
-        maxMonsters = 1,
-      })
-    },
-
-    -- armor shop
-    {
-      path = '/armor-shop',
-      layout = roomLayoutArmorShop,
-      environment = {},
-      html = [[
-
-      ]],
-      title = "Armor Shop",
-      exits = { n = '/1000-1000-1000' },
-      state = InitPageState({
-        terrain = 'armor',
-        noBreadcrumb = true,
-        maxMonsters = 1,
-      })
-    },
-
-    -- fountain
-    {
-      path = '/fountain',
-      layout = roomLayoutFountain,
-      environment = {},
-      html = '',
-      title = "Fountain",
-      exits = { n = '/1000-1000-1000' },
-      state = InitPageState({
-        terrain = 'fountain',
-        noBreadcrumb = true,
-        maxMonsters = 1,
-      })
     },
 
   },

@@ -75,14 +75,12 @@ export function parseObjects(text?: string) {
 }
 
 function isLuaObject(text: string) {
-  return text.match(/[\w-]+\s*=\s*"?[\w\d-]+"?/s);
+  return text.match(/[\w-]+\s*=\s*"?[\w\d_-]+"?/s);
 }
 
 function luaToJson(text: string) {
   return text
     .replace(/=\s*function: 0x[0-9a-f]+/g, '="function"')
-    .replace(/([-_\w\d]+)\s*=\s*/g, '"$1": ')
-    .replace(/([-_\w\d]+)\s*:/g, '"$1":')
     .replace(/:\[\]/g, ':{}')
 
     .replace(/^\s*\{\s*\{(.+)\s*\}\s*\}\s*$/s, '[ { $1 } ]');
@@ -115,6 +113,15 @@ export function parseLuaObject(text?: string) {
   if (isLuaObject(text)) {
     processedString = luaToJson(text);
   }
+
+  //     .replace(/([-_\w\d]+)\s*=\s*/g, '"$1": ')
+
+  // if variable name is not quoted, quote it
+  processedString = processedString
+    .replace(/([{,]\s*)([-_\w\d]+)\s*[:=]/g, '$1"$2":')
+
+
+  console.log('*** JSON?:', processedString);
 
   let parsed: any = undefined;
 
