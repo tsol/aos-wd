@@ -107,9 +107,11 @@ UI = {
 
   fullResponse = function(path, pid)
     local resPid = pid or UI.currentPid
-    local pidPath = UI_STATE[resPid].path
-    local newPage = UI.findPage(path or pidPath)
-    return UI.page({ path = path }) .. UI.pageState(newPage) .. UI.state(pid)
+
+    local resPageHtml = UI.page({ path = path, pid = resPid })
+    local newPage = UI.findPage(UI_STATE[resPid].path)
+
+    return resPageHtml .. UI.pageState(newPage) .. UI.state(pid)
   end,
 
   page = function(args)
@@ -279,11 +281,16 @@ UI = {
   onGetPage = function(msg)
     UI.sessionStart(msg)
     local path = msg.Tags.Path or '/'
+
+    local resPage = UI.page({ path = path })
+    local resPageState = UI.pageState(UI.currentPage())
+
     UI.reply(
-      UI.page({ path = path }) ..
-      UI.pageState(UI.findPage(path)) ..
+      resPage ..
+      resPageState ..
       UI.state()
     )
+
     UI.sessionEnd()
   end,
 
@@ -333,8 +340,8 @@ UI = {
     if command == "UI.set" then fn = UI.set end
 
     if not fn then
-      UI.log("UI.onRun", "function not found")
-      UI.reply(UI.renderError(404, "function not found in code"))
+      UI.log("UI.onRun", "function not found: " .. command)
+      UI.reply(UI.renderError(404, "function not found in code: " .. command))
       UI.sessionEnd()
       return
     end

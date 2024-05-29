@@ -30,6 +30,8 @@ import {
   VDialog,
   VDivider,
   VExpansionPanel,
+  VExpansionPanels,
+
   // VFileInput,
   // VFooter,
   // VForm,
@@ -82,6 +84,7 @@ import {
 import UiInput from '../components/ui-input.vue';
 import UiButton from '../components/ui-button.vue';
 import UiTimer from '../components/ui-timer.vue';
+import UiExpPanel from '../components/ui-exp-panel.vue';
 
 export interface InitVueParams {
   html: string;
@@ -116,6 +119,7 @@ export function initVue( params: InitVueParams ) {
       UiInput,
       UiButton,
       UiTimer,
+      UiExpPanel,
 
       VAlert,
       VApp,
@@ -142,6 +146,8 @@ export function initVue( params: InitVueParams ) {
       VDialog,
       VDivider,
       VExpansionPanel,
+      VExpansionPanels,
+
       // VFileInput,
       // VFooter,
       // VForm,

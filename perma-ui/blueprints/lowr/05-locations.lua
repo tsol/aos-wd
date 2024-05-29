@@ -68,10 +68,6 @@ function roomLayoutHallOfFame(page, origHtml, forPid)
   return roomLayout(page, html, pid)
 end
 
-
-
-
-
 -- Fountain ---------------------------------------------------------------
 
 function roomLayoutFountain(page, origHtml, forPid)
@@ -98,7 +94,6 @@ function roomLayoutFountain(page, origHtml, forPid)
 
   return roomLayout(page, html, pid)
 end
-
 
 function cmdChat(args)
   if isPlayerDead() then return deadPlayerRedirect() end
@@ -178,7 +173,6 @@ function cmdSwimFountain(args)
   return UI.fullResponse()
 end
 
-
 --- Hospital ---------------------------------------------------------------
 
 function roomLayoutHospital(page, origHtml, forPid)
@@ -244,7 +238,6 @@ function cmdHeal()
 
   return UI.page({ path = state.path }) .. UI.pageState(page) .. UI.state()
 end
-
 
 -- Shops -----------------------------------------------------------------
 
@@ -342,7 +335,6 @@ function cmdSellItem(args)
 
   return UI.fullResponse()
 end
-
 
 function renderShopParts(pid, itemType)
   -- filter item list according to its level vs user level
@@ -465,7 +457,277 @@ function roomLayoutArmorShop(page, origHtml, pid)
   return roomLayout(page, html, pid)
 end
 
+-- BalanceToPlayer key is walled pid, value is player pid
+-- Balances contains amount of GROG in wallet
 
+function getPlayerWallets(pid)
+  local wallets = {}
+  for wpid, ppid in pairs(BalanceToPlayer) do
+    if ppid == pid then
+      table.insert(wallets, { pid = wpid, balance = tonumber(Balances[wpid]) or 0 })
+    end
+  end
+  return wallets
+end
+
+function totalGoldSupply()
+  local total = 0
+  for i, p in pairs(UI_STATE) do
+    total = total + p.gold
+  end
+  return total
+end
+
+-- exchange rate between GROG token (TotalSupply) and in-game gold
+
+function exchangeGrogToGold()
+  local totalGold = totalGoldSupply()
+  local totalSupply = TotalSupply
+  return totalGold / totalSupply
+end
+
+function prettyExchangeRate(rate)
+  local rateStr = string.format("%.8f", rate)
+  return rateStr
+end
+
+BankDailyGoldWithdrawLimit = 500
+BankMinimalGrogAmount = 10
+BankCommission = 0.05
+
+function roomLayoutBank(page, origHtml, pid)
+  local player = UI_STATE[pid]
+
+  local html = string.format([[
+    <p class="mb-2">
+      As you approach the teller, you count coins in your pockets: %d 🪙
+    </p>
+  ]], player.gold)
+
+  local wallets = getPlayerWallets(pid)
+  local playersGrog = 0
+  for _, w in ipairs(wallets) do
+    playersGrog = playersGrog + w.balance
+  end
+
+  local totalGold = totalGoldSupply()
+  local totalSupplyGrog = TotalSupply
+
+  local rate = 1 / exchangeGrogToGold()
+  local prettyRate = prettyExchangeRate(rate)
+
+  page.state.rate = rate
+  page.state.limit = BankDailyGoldWithdrawLimit
+  page.state.minimalGold = math.floor( BankMinimalGrogAmount * rate )
+  page.state.commission = BankCommission
+
+  if #wallets == 0 then
+    html = html .. [[
+      <p class="mb-2">
+        Sir, would you like to open an account in Ye Olde GROG Bank today?
+      </p>
+      <ui-button ui-run="UI.page()">DONE</ui-button>
+    ]]
+  else
+
+    local walletsArray = ''
+    for _, w in ipairs(wallets) do
+      walletsArray = walletsArray .. string.format([[{ title: '%s [ %d ]', value: '%s'},]], w.pid, w.balance, w.pid )
+    end
+    
+    html = html .. string.format([[
+      <p class="mb-4">
+        Sir, you have <b class="text-green">%d</b> GROG in your %d account(s), and the daily gold withdrawal limit is <b class="text-green">%d</b> gold coins.
+        You'll be also pleased to know that there is <b class="text-green">%d</b> GROG in total supply. And the total gold in circulation is <b class="text-green">%d</b> coins.
+      </p>
+      <div class="mb-2">
+
+      <ui-input
+        ui-id="wallet"
+        ui-type="Select"
+        ui-required
+        label="Sellect your GROG account"
+        :items="[%s]"
+      />
+
+      <ui-input ui-id="amount" label="Amount of gold coins" ui-type="Int" ui-required></ui-input>
+      </div>
+
+      <pre>
+      
+ The exchange rate is <b class="text-green">%s</b> GROG per one gold coin.
+
+ Buy  {{ state.ui.amount || 0 }} 🪙 for {{ Math.floor((state.ui.amount || 0) * page.rate * (1 + page.commission)) }} GROG
+ Sell {{ state.ui.amount || 0 }} 🪙 for {{ Math.floor((state.ui.amount || 0) * page.rate * (1 - page.commission)) }} GROG
+
+      </pre>
+
+      <div class="mb-4">
+        <div v-if="state.ui.amount > page.limit">
+          <p class="text-red mb-2">You can't withdraw more than {{ page.limit }} gold coins per day</p>
+        </div>
+        <div v-else-if="state.ui.amount < page.minimalGold">
+          <p class="text-red mb-2">The minimal amount of gold per operation is {{ page.minimalGold }}</p>
+        </div>
+        <div v-else>
+          <ui-button v-if="Math.floor((state.ui.amount || 0) * page.rate * (1 + page.commission)) <= %d" class="mr-2" ui-run="cmdBuyGold({ amount = $amount, wallet = $wallet })" ui-valid="amount, wallet">Buy Gold</ui-button>
+          <ui-button v-if="state.ui.gold >= state.ui.amount" ui-run="cmdSellGold({ amount = $amount, wallet = $wallet })" ui-valid="amount, wallet">Sell Gold</ui-button>
+        </div>
+      </div>
+    ]],
+      playersGrog, #wallets, BankDailyGoldWithdrawLimit, totalSupplyGrog, totalGold, walletsArray, prettyRate, playersGrog
+    )
+  end
+
+  html = html .. string.format([[
+
+  <ui-exp-panel title="How to open account here?">
+    <p class="mb-2">
+      Execute this code from AO CLI under the process which will be used to mint GROG from CRED.
+    </p>
+    <div style="border: 1px solid gray" class="pa-4 mb-2">
+      Send({ Target = "]] .. ao.id .. [[", Action = "Wallet", Data = "%s" })
+    </div>
+    <p class="mb-2">
+      This will bind a process to your player. Next step will be to mint GROG from CRED.
+    </p>
+  </ui-exp-panel>
+
+  <ui-exp-panel title="How to min GROG?">
+    <p class="mb-2">
+      Execute this code from CRED bearing process to mint GROG from CRED (one to one).
+    </p>
+    <div style="border: 1px solid gray" class="pa-4 mb-2">
+      Send({ Target = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc", Action = "Transfer", Quantity = "1000", Recipient = "]] .. ao.id .. [[" })
+    </div>
+  </ui-exp-panel>
+  ]], pid)
+
+  page.customNavigation = [[
+    <div class="d-flex">
+    <ui-button ui-run="cmdGo({ dir = 'n' })">Leave</ui-button>
+    </div>
+  ]]
+
+  return roomLayout(page, html, pid)
+end
+
+function cmdBuyGold(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
+  local pid = UI.currentPid
+  local page = UI.currentPage()
+  local player = UI_STATE[pid]
+
+  local wallet = args.wallet
+  local amount = tonumber(args.amount)
+
+  local wallets = getPlayerWallets(pid)
+  local walletBalance = 0
+  for _, w in ipairs(wallets) do
+    if w.pid == wallet then
+      walletBalance = w.balance
+      break
+    end
+  end
+
+  local rate = 1 / exchangeGrogToGold()
+  local minimalGold = math.floor(BankMinimalGrogAmount * rate)
+
+  if amount < minimalGold then
+    addRoomMessage(page, string.format("Teller says to %s: We can't sell you less than %d gold coins", player.name, minimalGold))
+    return UI.fullResponse()
+  end
+
+  if amount > BankDailyGoldWithdrawLimit then
+    addRoomMessage(page, string.format("Teller says to %s: We have a withdrawal limit of %d gold coins per day", player.name, BankDailyGoldWithdrawLimit))
+    return UI.fullResponse()
+  end
+
+  if amount * rate > walletBalance then
+    addRoomMessage(page, string.format("%s does not have enough GROG in selected account to withdraw %d gold coins", player.name, amount))
+    return UI.fullResponse()
+  end
+
+  -- comission always taken from GROG not from gold
+  -- gold is exactly = amount
+
+  local grog = math.floor(amount * rate * (1 + BankCommission))
+
+  local status, err = pcall(tokenBurn, wallet, tostring(grog))
+  if not status then
+    addRoomMessage(page, string.format("Error: %s", err))
+    return UI.fullResponse()
+  end
+
+  player.gold = player.gold + amount
+  addRoomMessage(page, string.format("%s withdrew %d gold coins for %d GROG", player.name, amount, grog))
+
+  -- to bank
+  local cstatus, cerr = pcall(tokenMint, ao.id, tostring(grog))
+  if not cstatus then
+    UI.log("mintToBank", string.format("Error: %s", cerr))
+  end
+
+  return UI.fullResponse()
+end
+
+
+function cmdSellGold(args)
+  if isPlayerDead() then return deadPlayerRedirect() end
+
+  local pid = UI.currentPid
+  local page = UI.currentPage()
+  local player = UI_STATE[pid]
+
+  local wallet = args.wallet
+  local amount = tonumber(args.amount)
+
+  local rate = 1 / exchangeGrogToGold()
+  local minimalGold = math.floor(BankMinimalGrogAmount * rate)
+
+  if amount < minimalGold then
+    addRoomMessage(page, string.format("Teller says to %s: We can' buy less than %d gold coins", player.name, minimalGold))
+    return UI.fullResponse()
+  end
+
+  if amount > BankDailyGoldWithdrawLimit then
+    addRoomMessage(page, string.format("Teller says to %s: We have an operation limit of %d gold coins per day", player.name, BankDailyGoldWithdrawLimit))
+    return UI.fullResponse()
+  end
+
+  if amount > player.gold then
+    addRoomMessage(page, string.format("Teller says to %s: seems like you dont have %s gold coins to sell!", player.name, amount))
+    return UI.fullResponse()
+  end
+
+  local grog = math.floor(amount * rate * (1 - BankCommission))
+
+  -- if grog is more than bank has - error
+  local totalSupply = tonumber(Balances[ao.id] or 0)
+  if grog > totalSupply then
+    addRoomMessage(page, string.format("Teller says to %s: We dont have enough GROG to buy %d gold coins", player.name, amount))
+    return UI.fullResponse()
+  end
+
+  -- from bank
+  local cstatus, cerr = pcall(tokenBurn, ao.id, tostring(grog))
+  if not cstatus then
+    UI.log("burnFromBank", string.format("Error: %s", cerr))
+    addRoomMessage(page, "Teller says to %s: We have some technical issues, please come back later")
+  end
+
+  local status, err = pcall(tokenMint, wallet, tostring(grog))
+  if not status then
+    addRoomMessage(page, string.format("Error: %s", err))
+    return UI.fullResponse()
+  end
+
+  player.gold = player.gold - amount
+  addRoomMessage(page, string.format("%s sold %d gold coins for %d GROG", player.name, amount, grog))
+
+  return UI.fullResponse()
+end
 
 -- Placement
 
@@ -485,6 +747,10 @@ addPlace('Central Square', '/armor-shop', 'Armor Shop', ShopItemTypes.armor.icon
 
 addPlace('Historic District', '/hall-of-fame', 'Hall of Fame', Icons.Trophy, roomLayoutHallOfFame, {
   terrain = 'hall-of-fame',
+})
+
+addPlace('Historic District', '/bank', 'Ye Olde Bank', Houses.Bank, roomLayoutBank, {
+  terrain = 'bank',
 })
 
 addPlace('Central Square', '/fountain', 'Fountain', Houses.Fountain, roomLayoutFountain, {

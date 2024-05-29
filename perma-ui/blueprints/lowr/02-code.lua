@@ -747,8 +747,13 @@ function addPlace(parentTitle, pagePath, title, icon, layout, stateOverride)
 
   -- check that such place already exists
   local found = UI.findPage(pagePath)
-  if found then return UI.log('addPlace', 'already exists: ' .. pagePath) end
-
+  if found then
+    -- update title, icon, layoutFn
+    found.title = title
+    found.icon = icon
+    found.layout = layout
+    return ''
+  end
 
   local defaultState = {
     terrain = pagePath,
@@ -796,6 +801,34 @@ function addPlace(parentTitle, pagePath, title, icon, layout, stateOverride)
     table.insert(parent.environment, envForParentToAdd)
   else
     parent.environment = { envForParentToAdd }
+  end
+
+end
+
+function removePlace(placePath)
+  local found = nil
+  for i, page in ipairs(UI_APP.PAGES) do
+    if page.path == placePath then
+      found = i
+      break
+    end
+  end
+
+  if not found then return UI.log('removePlace', 'not found: ' .. placePath) end
+
+  table.remove(UI_APP.PAGES, found)
+
+  -- find in all pages environment and remove from there
+
+  for _, page in ipairs(UI_APP.PAGES) do
+    if page.environment then
+      for i, env in ipairs(page.environment) do
+        if env.path == placePath then
+          table.remove(page.environment, i)
+          break
+        end
+      end
+    end
   end
 
 end
@@ -1178,10 +1211,15 @@ function cmdGo(args)
 
   local exit = personGo(direction, UI.currentPid)
   local newPage = UI.findPage(exit)
+  local pageHtml = UI.page({ path = exit })
+  local pageState = UI.pageState(newPage)
+
+  -- UI.log("cmdGo", "to: " .. exit )
+  -- UI.log("cmdGo", ps )
 
   return
-      UI.page({ path = exit }) ..
-      UI.pageState(newPage) ..
+      pageHtml ..
+      pageState ..
       UI.state()
 end
 
