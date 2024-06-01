@@ -4,7 +4,7 @@ import { type State, widget } from "./lib/ui-state-parser";
 import { parseMessagesToState } from "../core/parser";
 
 import { useAO } from "./lib/useAO";
-import { useWallet} from "../core/useWallet";
+import { useWallet } from "../core/useWallet";
 import { useUI } from "./lib/useUI";
 
 import { ref, watch, computed } from "vue";
@@ -25,12 +25,11 @@ const state = computed({
 });
 
 var PID = ''; getProcessPid().then(pid => PID = pid);
-
-const aww = useWallet(); 
-
 const appId = ref<HTMLDivElement | undefined>();
 
+const aww = useWallet();
 let ao: ReturnType<typeof useAO> | undefined = undefined;
+let ui: ReturnType<typeof useUI> | undefined = undefined;
 
 
 async function getProcessPid() {
@@ -43,61 +42,67 @@ async function getProcessPid() {
     processId = window.location.pathname.split('/')[1]
   }
 
-  if (! processId || processId.length !== 43) {
-    console.error('invalid pid:', processId);
+  if (!processId || processId.length !== 43) {
+    console.error('bad pid from url:', processId);
     processId = '6qxtA3JeLEqUYRrt8WjFGn2AOVySg9UpjzPORyws3pg';
   }
 
   return processId;
 }
 
+function createUI() {
 
-watch( [aww.ourPID, appId], () => {
-  
-  console.log('init watch', aww.ourPID.value, appId.value);
-
-  if (!aww.ourPID.value) {
-    aww.arConnect();
-    return;
-  }
-
-  if (!aww.ourPID.value || !appId.value) return;
-
-  console.log('*** REINITIALIZING ***');
-
-  if (ao) { ao.stopLive(); }
-
-  ao = useAO(PID, aww.ourPID.value, 
-    (msg: Edge) => parseMessagesToState([widget], widgetsState, undefined, msg, aww.ourPID.value)
-  );
-
-  const ui = useUI(
+ console.log('createUI');
+ return useUI(
     appId,
     state,
     (tags: Tag[]) => {
-  
-      // console.log('Sending message:', tags);
 
       const dataTagIndex = tags.findIndex(t => t.name === 'Data');
       const data = dataTagIndex !== -1 ? tags[dataTagIndex].value : '';
       const tagsWithoutData = tags.filter((_, i) => i !== dataTagIndex);
 
-      // ao?.evaluate(data, tagsWithoutData);
-
       ao?.evaluate(PID, data, tagsWithoutData).then((result) => {
-        // console.log('evaluate result:', result);
-        parseMessagesToState([widget], widgetsState, undefined, {
+        result && parseMessagesToState([widget], widgetsState, undefined, {
           cursor: '',
-          node: result 
+          node: result
         }, aww.ourPID.value)
       });
 
     }
   );
+}
 
-  ui.init();
-  ao.startLive();
+watch([aww.ourPID, appId], () => {
+
+  console.log('index watch ourPid / appId', aww.ourPID.value, appId.value);
+
+  if (!aww.ourPID.value && !appId.value) return;
+
+  if (appId.value) {
+
+    if (!ui) ui = createUI();
+    ui.renderHtml();
+
+  }
   
+  if (!aww.ourPID.value) {
+    aww.init();
+    return;
+  }
+
+  console.log('*** REINITIALIZING ***');
+
+  if (ao) { ao.stopLive(); }
+
+  ao = useAO(PID, aww.ourPID.value,
+    (msg: Edge) => parseMessagesToState([widget], widgetsState, undefined, msg, aww.ourPID.value)
+  );
+
+  ao.startLive();
+
+  ui?.getRootPage();
+
 });
 
 function uiInit(el: HTMLDivElement) {

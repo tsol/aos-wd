@@ -27,8 +27,6 @@ local utils = {
   end
 }
 
-BalanceToPlayer = BalanceToPlayer or {}
-
 Denomination = Denomination or 3 -- match CRED
 
 -- Minting
@@ -41,7 +39,7 @@ Balances = Balances or { [ao.id] = utils.toBalanceValue(0) }
 TotalSupply = TotalSupply or utils.toBalanceValue(0)
 Name = Name or 'GROG Coin'
 Ticker = Ticker or 'GROG'
-Logo = Logo or 'SBCCXwwecBlDqRLUjb8dYABExTJXLieawf7m2aBJ-KY'
+Logo = 'vwPg7nLQ2MgZbhdeKyV2FATXdQLwVzVH2pgffKZQOB4'
 
 Handlers.add('info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(msg)
   ao.send({
@@ -147,11 +145,9 @@ function tokenMint(pid, quantity)
   if not Balances[ao.id] then Balances[ao.id] = "0" end
 
   -- check MaxMint
-  
 
   Balances[pid] = utils.add(Balances[pid], quantity)
   TotalSupply = utils.add(TotalSupply, quantity)
-
 end
 
 
@@ -237,12 +233,6 @@ end
 
 function mintFromCred(m)
 
-  if not BalanceToPlayer[ m.Sender ] then
-    UI.log('mint', m)
-    sendMoneyBack(m, "NO_WALLET: Wallet process needs to be registered first")
-    return
-  end
-
   local amount = tonumber(m.Quantity)
 
   if (Minted + amount) > MaxMint then
@@ -262,28 +252,6 @@ function mintFromCred(m)
 
 end
 
-function registerWalletProcess(m)
-  local pid = m.Data
-  local from = m.From
-
-  if not UI_STATE[ pid ] then
-    ao.send({ Target = from, Data = "NO_PLAYER: Player not found in the game" })
-    return
-  end
-
-  BalanceToPlayer[ from ] = pid
-  ao.send({ Target = from, Data = "WALLET_BOUND: Wallet process bound to player" })
-end
-
-Handlers.add('registerWallet',
-  Handlers.utils.hasMatchingTag('Action', 'Wallet'),
-  function(m)
-    local status, err = pcall(registerWalletProcess, m)
-    if not status then
-      UI.log("RegisterWallet", err)
-    end
-  end
-)
 
 Handlers.prepend(
   "Mint",

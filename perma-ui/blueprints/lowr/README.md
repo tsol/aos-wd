@@ -1,9 +1,15 @@
 
 # TODO
 
-x. welcome page / check firefox
+x. Build a room
 
-x. ARDNS name
+ - terrain permits
+ - permits shop
+ - modify terain parameters on build - maxMonsters etc
+ - join rooms
+ - create locations not just rooms
+
+x. ARDNS name (write to discord after release)
 
 8. Flirt (charm stat + mob history)
  - nurse
@@ -15,10 +21,6 @@ x. ARDNS name
 10. Stale players sleep
 
 11. Get a room in the inn
-
-19. Balance money?
-20. Token / staking / minting ?
-21. Bank to transfer gold / tokens?
 
 22. Quests
  - Engine

@@ -13,12 +13,12 @@ const props = defineProps<{
   state: State;
 }>();
 
-const { ourPID } = useWallet();
+const { ourPID, init } = useWallet();
 
 const process = useProcess(props.pid);
 const appId = ref<HTMLDivElement | undefined>();
 
-const { init } = useUI(
+const ui = useUI(
   appId,
   toRef(props, 'state'),
   (tags: Tag[]) => {
@@ -31,8 +31,10 @@ const { init } = useUI(
   }
 );
 
+init();
+
 watch( ourPID, () => {
-  if (ourPID.value) init();
+  if (ourPID.value) ui.getRootPage();
 }, { immediate: true });
 
 

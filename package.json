@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "@permaweb/aoconnect": "^0.0.51",
+    "@permaweb/aoconnect": "^0.0.55",
     "@pinia/nuxt": "^0.5.1",
     "@types/lodash.clonedeep": "^4.5.9",
     "@xterm/xterm": "^5.5.0",

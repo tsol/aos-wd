@@ -1,6 +1,6 @@
-import type { State } from "~/widgets/ui/ui";
+import type { State } from "../../lib/ui-state-parser";
 import type { InitVueParams } from "../../lib/vue-init";
-import { parseLuaObject } from "~/core/parser";
+import { parseLuaObject } from "../../../core/parser";
 
 type RunCommandParams = {
   aoSendMsg: InitVueParams['aoSendMsg'];

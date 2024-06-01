@@ -1,9 +1,14 @@
 --- UI_APP --------------------
-UI_STATE = {}
+UI_STATE = UI_STATE or {}
 UI.logs = {}
 
 -- slow state with all additional details which are not needed for fast state and fast display
-MEM = {}
+MEM = MEM or {}
+
+function _RESET() -- dont do this in production
+  UI_STATE = {}
+  MEM = {}
+end
 
 function InitPlayerState(pid)
   return {

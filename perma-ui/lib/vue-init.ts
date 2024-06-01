@@ -31,6 +31,9 @@ import {
   VDivider,
   VExpansionPanel,
   VExpansionPanels,
+  VExpansionPanelText,
+  VExpansionPanelTitle,
+  VExpandTransition,
 
   // VFileInput,
   // VFooter,
@@ -85,6 +88,7 @@ import UiInput from '../components/ui-input.vue';
 import UiButton from '../components/ui-button.vue';
 import UiTimer from '../components/ui-timer.vue';
 import UiExpPanel from '../components/ui-exp-panel.vue';
+import type { useWallet } from '~/core/useWallet';
 
 export interface InitVueParams {
   html: string;
@@ -92,6 +96,7 @@ export interface InitVueParams {
   pageStateRef: Ref<any>;
   loadingRef: Ref<boolean>;
   aoSendMsg: (tags: Tag[]) => void;
+  wallet?: ReturnType<typeof useWallet>;
 }
 
 export function initVue( params: InitVueParams ) {
@@ -112,8 +117,6 @@ export function initVue( params: InitVueParams ) {
   </v-app>
   `;
 
-
-  
   const vueApp = createApp({
     components: {
       UiInput,
@@ -147,7 +150,10 @@ export function initVue( params: InitVueParams ) {
       VDivider,
       VExpansionPanel,
       VExpansionPanels,
-
+  VExpansionPanelText,
+  VExpansionPanelTitle,
+  VExpandTransition,
+  
       // VFileInput,
       // VFooter,
       // VForm,
@@ -203,6 +209,7 @@ export function initVue( params: InitVueParams ) {
         page: params.pageStateRef,
         loading: params.loadingRef,
         aoSendMsg: params.aoSendMsg,
+        wallet: params.wallet,
       };
     },
     template: html,

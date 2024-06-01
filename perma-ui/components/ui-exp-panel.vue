@@ -1,18 +1,20 @@
 <!-- wrap for v-expansion-panels + v-expansion-pannel -->
 <template>
-  <v-expansion-panels>
-    <v-expansion-panel>
-      <v-expansion-panel-title>
+  <VExpansionPanels>
+    <VExpansionPanel>
+      <VExpansionPanelTitle>
         <slot name="title">{{ title }}</slot>
-      </v-expansion-panel-title>
-      <v-expansion-panel-text>
+      </VExpansionPanelTitle>
+      <VExpansionPanelText>
         <slot />
-      </v-expansion-panel-text>
-    </v-expansion-panel>
-  </v-expansion-panels>
+      </VExpansionPanelText>
+    </VExpansionPanel>
+  </VExpansionPanels>
 </template>
 
 <script lang="ts" setup>
+
+import { VExpansionPanel, VExpansionPanelTitle, VExpansionPanelText, VExpansionPanels } from 'vuetify/components';
 
 const props = defineProps<{
   title: string

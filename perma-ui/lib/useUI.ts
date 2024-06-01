@@ -1,6 +1,7 @@
 import type { State } from "./ui-state-parser";
 import { initVue } from "./vue-init";
 import { computed, watch, nextTick } from "vue";
+import { useWallet } from '../../core/useWallet';
 
 export type AoSendMsgFunc = (tags: Tag[]) => void;
 
@@ -38,9 +39,9 @@ export function useUI(
   });
 
 
-  function init() {
+  function getRootPage() {
 
-    console.log('useUI-init');
+    console.log('useUI-getRootPage');
 
     state.value.noonceSent = undefined;
     state.value.noonceRecieved = undefined;
@@ -55,22 +56,16 @@ export function useUI(
   };
 
 
-  watch([() => state.value?.html, appId], () => {
+  function renderHtml() {
+ 
+    console.log('useUI-renderHtml, appId:', !!appId.value, 'sent:', state.value.noonceSent, 'recieved:', state.value.noonceRecieved, 'loading:', loading.value);
 
-    // console.log('useUI-watch state.html=', state.value?.html, ' appId = ', appId.value);
+    if (!appId.value) return;
 
-    if (state.value?.html === undefined || !appId.value)
-      return;
-
+    const currentHtml = appId.value?.innerHTML;
+    const html = state.value?.html || currentHtml || "Waiting for html...";
+      
     if (vueApp) vueApp.unmount();
-
-    // <v-app theme="dark">
-    // <v-main>
-    const html = `
-      ${state.value.html || "Waiting for html..."}
-      `;
-    // </v-main>
-    // </v-app>
 
     nextTick(() => {
       vueApp = initVue({
@@ -79,16 +74,27 @@ export function useUI(
         pageStateRef,
         loadingRef: loading,
         aoSendMsg,
+        wallet: useWallet(),
       });
       vueApp.mount(appId.value!);
       // console.log('**** mounted vueApp: ', vueApp, 'on appId:', appId.value!);
     });
 
+
+  }
+
+  watch([() => state.value?.html, appId], () => {
+
+    // console.log('useUI-watch-state/html', state.value?.html, appId.value);
+    renderHtml();
+
   }, { immediate: true, deep: true });
+
 
   return {
     aoSendMsg,
     loading,
-    init,
+    getRootPage,
+    renderHtml,
   };
 }
