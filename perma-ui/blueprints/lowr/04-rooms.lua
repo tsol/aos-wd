@@ -1,3 +1,5 @@
+INIT_MODE = true
+
 -- CITY
 CentralHub = '/1000-1000-1000'
 
@@ -36,12 +38,12 @@ Forest1 = createRoom(CentralHub, 'n', 'Northen Gates', [[
     Behind city's Northen gates there is a path going along the city walls.
     All kind of bad people are known to lurk outside the city.
     North of here you see a dense forest.
-]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1 })
+]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1, maxMonstersStr = 5 })
 
 
 C = createRoom(Forest1, 'e', 'Eastern trail', [[
     The path along the city walls leads to the east and west.
-]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1 })
+]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1, maxMonstersStr = 9 })
 
 createRoom(C, 'e', 'Eastern Clif', [[
     The path among the rocks becomes narrower to the east and finally
@@ -52,7 +54,7 @@ createRoom(C, 'e', 'Eastern Clif', [[
 C = createRoom(Forest1, 'w', 'Western trail', [[
   The path among the rocks becomes narrower to the west.
   A lot of torn bags and broken weapons are scattered along the sides.
-]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1 })
+]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 1, maxMonsters = 1, maxMonstersStr = 9 })
 
 C = createRoom(C, 'w', 'Western trail', [[
     At the end of the path to the west there is sort of some gates made
@@ -362,3 +364,4 @@ createRoom(C, 'w', 'Hellfire Hollow', [[
     A hollow where the ground is a raging inferno. The heat is unbearable, and the air is filled with the smell of burning wood and sulfur.
 ]], { terrain = 'forest', breadcrumb = true, spawnMonstersLevel = 15, maxMonsters = 3 })
 
+INIT_MODE = false

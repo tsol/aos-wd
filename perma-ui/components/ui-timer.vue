@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { runCommand } from './shared/runCommand';
 import type { InitVueParams } from '../lib/vue-init';
 

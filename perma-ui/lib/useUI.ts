@@ -85,7 +85,7 @@ export function useUI(
 
   watch([() => state.value?.html, appId], () => {
 
-    // console.log('useUI-watch-state/html', state.value?.html, appId.value);
+    console.log('useUI-watch-state/html', state.value?.html, appId.value);
     renderHtml();
 
   }, { immediate: true, deep: true });

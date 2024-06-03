@@ -345,7 +345,7 @@ function renderShopParts(pid, itemType)
     if
         item.type == itemType and
         item.price > 0 and
-        item.level >= player.level - 1 and
+        item.level >= 1 and
         item.level <= player.level + 1
     then
       table.insert(items, item)
@@ -496,7 +496,7 @@ function roomLayoutBank(page, origHtml, pid)
   if not Balances[pid] then
     Balances[pid] = "0"
   end
-  
+
   local playersGrog = tonumber(Balances[pid] or 0)
 
   local totalGold = totalGoldSupply()
@@ -602,6 +602,11 @@ function cmdBuyGold(args)
   -- gold is exactly = amount
 
   local grog = math.floor(amount * rate * (1 + BankCommission))
+
+  if ( grog < BankMinimalGrogAmount ) then
+    addRoomMessage(page, string.format("Teller says to %s: We can't sell you less than %d GROG", player.name, BankMinimalGrogAmount))
+    return UI.fullResponse()
+  end
 
   local status, err = pcall(tokenBurn, pid, tostring(grog))
   if not status then

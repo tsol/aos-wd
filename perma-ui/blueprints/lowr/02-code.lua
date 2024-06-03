@@ -1,6 +1,11 @@
 DIRECTIONS = { n = { 0, -1, 0 }, s = { 0, 1, 0 }, e = { 1, 0, 0 }, w = { -1, 0, 0 } }
 OPOSITES = { n = 's', s = 'n', e = 'w', w = 'e' }
 ROUND_TIMEOUT = 30 -- seconds
+INIT_MODE = false
+
+Timers = Timers or {
+  TransferInactive = UI.now,
+}
 
 Monsters = Monsters or {
   { level = 1, name = "Large Mosquito", str = 2, exp = 2, hp = 3, gold = 46, weapon = "Blood Sucker" },
@@ -23,7 +28,7 @@ MEM = MEM or {}
 }
 
 ]]
-   --
+--
 
 function error(msg)
   UI.reply(UI.renderError(500, msg))
@@ -65,7 +70,7 @@ function addRoomMessage(page, text)
   -- UI.sendPageState(page)
 end
 
-function spawnMonster(level, roomPage, forceMonster)
+function spawnMonster(level, roomPage, forceMonster, maxMonstersStr)
   local pid = forceMonster and forceMonster.pid or 'mob-' .. math.random(1000, 9999)
 
   local monstersOfLevel = {}
@@ -73,7 +78,7 @@ function spawnMonster(level, roomPage, forceMonster)
 
   if not monster then
     for _, m in ipairs(Monsters) do
-      if m.level == level then
+      if m.level == level and (not maxMonstersStr or m.str <= maxMonstersStr) then
         table.insert(monstersOfLevel, m)
       end
     end
@@ -166,8 +171,8 @@ end
 
 function killPerson(pid, killedByPid)
   local wasMonster = UI_STATE[pid].isMonster
-  local expGain = wasMonster and UI_STATE[pid].exp or 25
-  local goldGain = math.floor(UI_STATE[pid].gold * 0.9)
+  local expGain = wasMonster and UI_STATE[pid].exp or Globals.MonsterExpGain
+  local goldGain = math.floor(UI_STATE[pid].gold * Globals.GoldOnKillXfer)
 
   if killedByPid then
     UI.set({
@@ -604,6 +609,8 @@ function roomLayoutPeople(page)
       </div>
   ]], personName(page.state.fight), target)
 
+  local activityFilterTime = UI.now - Globals.HideInactivePeopleTimeout
+
   return string.format([[
       <div v-if="page.fight">
           <div v-for="person in (page.people || []).filter((p) => p.pid === state.ui.pid)" :key="person.pid" class="d-flex align-center">
@@ -637,7 +644,9 @@ function roomLayoutPeople(page)
       </div>
       <div v-else>
           <div v-for="person in (page.people || [])" :key="person.pid">
-            %s is here with a {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+            <div v-if="person.isMonster || (person.actTime && (person.actTime > ]] .. activityFilterTime .. [[))">
+              %s is here with their {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
+            </div>
           </div>
       </div>
       ]], personLine, personLine, ROUND_TIMEOUT * 1000, personName())
@@ -802,7 +811,6 @@ function addPlace(parentTitle, pagePath, title, icon, layout, stateOverride)
   else
     parent.environment = { envForParentToAdd }
   end
-
 end
 
 function removePlace(placePath)
@@ -830,7 +838,25 @@ function removePlace(placePath)
       end
     end
   end
+end
 
+function updateRoom(page, title, description, state)
+  page.title = title or page.title
+  page.html = description or page.html
+
+  if not page.state then
+    page.state = {}
+  end
+
+  if state then
+    for k, v in pairs(state) do
+      if k ~= 'people' then
+        page.state[k] = v
+      end
+    end
+  end
+
+  return page.path
 end
 
 function createRoom(parentPagePath, direction, title, description, state)
@@ -843,7 +869,7 @@ function createRoom(parentPagePath, direction, title, description, state)
   if not parent then return error("Parent room not found") end
 
   local parentExit = parent.exits[direction]
-  if parentExit then return error("Parent exit already exists") end
+  if not INIT_MODE and parentExit then return error("Exit already exists") end
 
   -- parse parent coordinates
   local x, y, z = parentPagePath:match('(%d+)-(%d+)-(%d+)')
@@ -854,13 +880,18 @@ function createRoom(parentPagePath, direction, title, description, state)
 
   -- check if exits
   local found = UI.findPage(path)
-  if found then return error("Room already exists") end
+  if found then
+    if INIT_MODE then
+      return updateRoom(found, title, description, state)
+    end
+    return error("Room already exists")
+  end
 
   -- create new page
   local page = {
     path = path,
     layout = roomLayout,
-    state = InitPageState(),
+    state = InitPageState({ builtBy = UI.currentPid }),
     title = title,
     html = description,
     exits = { [OPOSITES[direction]] = parentPagePath }
@@ -882,7 +913,59 @@ function createRoom(parentPagePath, direction, title, description, state)
   return path
 end
 
---
+function fixPeopleStatesInAllRooms()
+ 
+  for _, page in ipairs(UI_APP.PAGES) do
+ 
+    if not page.state then
+      page.state = {}
+    end
+
+    if not page.state.people then
+      page.state.people = {}
+    end
+
+    for pid, person in pairs(UI_STATE) do
+
+      if person.path == page.path then
+        local found = false
+        for _, personInRoom in ipairs(page.state.people) do
+          if personInRoom.pid == pid then
+            found = true
+            break
+          end
+        end
+        if not found then
+          putPersonToRoom(page, pid)
+        end
+      end
+    end
+  end
+end
+
+function createStandaloneRoom(path, title, html, state, exits)
+  local found = UI.findPage(path)
+  if found then return updateRoom(found, title, html, state) end
+
+  local page = {
+    path = path,
+    layout = roomLayout,
+    state = InitPageState(),
+    title = title,
+    html = html,
+    exits = exits or {}
+  }
+
+  UI_APP.PAGES[#UI_APP.PAGES + 1] = page
+
+  if state then
+    for k, v in pairs(state) do
+      page.state[k] = v
+    end
+  end
+
+  return path
+end
 
 function removePersonFromRoom(page, pid, toDirection)
   if not page.state.people then return end
@@ -1009,7 +1092,7 @@ function pageOnPersonEnter(page, pid, fromDirection)
 
       if monstersInRoom < maxMonsters then
         if level and level ~= 0 then
-          spawnMonster(level, page)
+          spawnMonster(level, page, nil, page.state.maxMonstersStr)
           monstersInRoom = monstersInRoom + 1
         end
       end
@@ -1098,6 +1181,13 @@ end
 -- FROM HTML COMMANDS ---
 
 function isPlayerDead()
+  -- safe call runTimers
+  local status, err = pcall(runTimers)
+  if not status then
+    UI.log("TimersError", err)
+  end
+
+  UI_STATE[UI.currentPid].actTime = UI.now
   return UI_STATE[UI.currentPid].hp <= 0
 end
 
@@ -1268,3 +1358,56 @@ Handlers.add(
     end
   end
 )
+
+-- Timers
+
+function runTimers()
+  for name, timer in pairs(TimersFunctions) do
+    if Timers[name] + timer.interval < UI.now then
+      timer.fn()
+      Timers[name] = UI.now
+    end
+  end
+end
+
+function incrementHpUpToLimit(pid)
+  local person = UI_STATE[pid]
+  -- increment by 5% but not less than 1
+  if person.hp < person.maxHp * 0.9 then
+    local increment = math.max(1, math.floor(person.maxHp * 0.05))
+    UI.set({ hp = person.hp + increment }, pid)
+  end
+end
+
+function transferInactivePeople()
+
+  local toRoom = UI.findPage(Globals.TransferInactivePeopleTo)
+  if not toRoom then
+    UI.log("inact_xfer", "Destination room not found: " .. Globals.TransferInactivePeopleTo)
+    return
+  end
+
+  for pid, state in pairs(UI_STATE) do
+    if not state.isMonster and (not state.actTime or state.actTime < UI.now - Globals.TransferInactivePeopleTimeout) then
+      local page = UI.findPage(state.room)
+      if page and page.path ~= Globals.TransferInactivePeopleTo then
+        UI.log("inact_xfer", state.name )
+        removePersonFromRoom(page, pid)
+        addRoomMessage(page, state.name .. " slowly walked away yawning")
+        putPersonToRoom(toRoom, pid)
+        addRoomMessage(toRoom, state.name .. " crawled in here from " .. page.title .. " and fell asleep")
+      else
+        UI.log("inact_xfer", state.name .. " already in " .. Globals.TransferInactivePeopleTo)
+        incrementHpUpToLimit(pid)
+      end
+    end
+  end
+end
+
+TimersFunctions = {
+  TransferInactive = {
+    fn = transferInactivePeople,
+    interval = 600000,
+  },
+}
+

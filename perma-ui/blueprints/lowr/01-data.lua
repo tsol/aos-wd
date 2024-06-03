@@ -1,3 +1,13 @@
+
+Globals = {
+  MaxMint = 1000000000,
+  MonsterExpGain = 25,
+  GoldOnKillXfer = 0.65,
+  HideInactivePeopleTimeout = 1000000,
+  TransferInactivePeopleTimeout = 3 * 60 * 60 * 1000,-- 3 hours
+  TransferInactivePeopleTo = "/999-1000-1000",
+}
+
 Houses = {
   House = "🏠",
   Garden = "🏡",
@@ -169,7 +179,12 @@ Bosses = {
   { level = 9,  name = "Lorel",       exp = 1000000,  hp = 1200,  str = 500,  weapon = "Doombringer" },
   { level = 10, name = "Gandaalf",    exp = 4000000,  hp = 1800,  str = 800,  weapon = "Eternal Flame" },
   { level = 11, name = "Torquen",     exp = 10000000, hp = 2500,  str = 1200, weapon = "Soul Reaver" },
-  { level = 12, name = "Master Yoga", exp = 10000000, hp = 15000, str = 2000, weapon = "Lightsabre" }
+  { level = 12, name = "Master Yoga", exp = 24000000, hp = 3000, str = 1500, weapon = "Lightsabre" },
+
+  { level = 13, name = "Kuklachev",   exp = 48000000, hp = 3700, str = 1900, weapon = "Furry whip" },
+  { level = 14, name = "Kha-Thor",    exp = 99000000, hp = 4500, str = 2300, weapon = "Worthy Battlette" },
+  { level = 15, name = "Azrael",      exp = 153000000, hp = 5000, str = 2500, weapon = "Scythe of Doom" }
+
 }
 
 
@@ -196,8 +211,14 @@ Monsters = {
   { level = 1,  name = "Large Mosquito",             str = 3,    exp = 2,        hp = 3,     gold = 46,      weapon = "Blood Sucker" },
   { level = 1,  name = "Large Rat",                  str = 3,    exp = 2,        hp = 4,     gold = 32,      weapon = "Sharp Teeth" },
   { level = 1,  name = "Rude boy",                   str = 4,    exp = 3,        hp = 7,     gold = 7,       weapon = "Cudgel" },
+  { level = 1,  name = "Dumpster Racoon",            str = 4,    exp = 3,        hp = 4,     gold = 5,       weapon = "Clean paws" },
   { level = 1,  name = "Old Man",                    str = 5,    exp = 5,        hp = 13,    gold = 73,      weapon = "Cane" },
   { level = 1,  name = "Crazy Old Bitch",            str = 5,    exp = 5,        hp = 18,    gold = 20,      weapon = "Shoe" },
+  { level = 1,  name = "Wild Dog",                   str = 5,    exp = 5,        hp = 8,     gold = 11,      weapon = "Slightly Tilted Head" },
+  { level = 1,  name = "Homeless Dude",              str = 5,    exp = 4,        hp = 7,     gold = 8,       weapon = "Shopping cart" },
+  { level = 1,  name = "Meth Addict",                str = 5,    exp = 8,        hp = 12,    gold = 0,       weapon = "Bad teeth" },
+  { level = 1,  name = "A pimp",                     str = 5,    exp = 9,        hp = 14,    gold = 50,      weapon = "Pocket knife" },
+
   { level = 1,  name = "Small Thief",                str = 6,    exp = 5,        hp = 9,     gold = 56,      weapon = "Small Dagger" },
   { level = 1,  name = "Ugly Old Hag",               str = 6,    exp = 6,        hp = 9,     gold = 109,     weapon = "Garlic Breath" },
   { level = 1,  name = "Evil Wretch",                str = 7,    exp = 6,        hp = 12,    gold = 76,      weapon = "Finger Nail" },
@@ -319,9 +340,23 @@ Monsters = {
   { level = 12, name = "Corinthian Giant",           str = 2400, exp = 60333,    hp = 2544,  gold = 336643,  weapon = "De-rooted Tree" },
   { level = 12, name = "Mutated Black Widow",        str = 2575, exp = 98993,    hp = 1276,  gold = 434370,  weapon = "Venom Bite" },
 
-  -- level 13, 14
+  { level = 13, name = "Infernal Beast",               str = 2789, exp = 129332,    hp = 5421,  gold = 557444,  weapon = "Flame Breath" },
+  { level = 13, name = "Nightmare Phantom",            str = 2955, exp = 137655,    hp = 4722,  gold = 483777,  weapon = "Ethereal Claws" },
+  { level = 13, name = "Dread Sorcerer",               str = 3100, exp = 142876,    hp = 3985,  gold = 502333,  weapon = "Dark Incantation" },
+  { level = 13, name = "Hellhound",                    str = 3222, exp = 149999,    hp = 4378,  gold = 523899,  weapon = "Inferno Bite" },
+  { level = 13, name = "Void Assassin",                str = 3450, exp = 158787,    hp = 4873,  gold = 598774,  weapon = "Shadow Daggers" },
+  { level = 13, name = "Gargantuan Troll",             str = 3680, exp = 165432,    hp = 5264,  gold = 645544,  weapon = "Club Smash" },
+  { level = 13, name = "Vampire Lord",                 str = 3890, exp = 172333,    hp = 4855,  gold = 583455,  weapon = "Blood Drain" },
 
-  { level = 15, name = "The White Rabbit",           str = 3000, exp = 10000000, hp = 15000, gold = 1000000, weapon = "Bunny tail" }
+  { level = 14, name = "Demonic Overlord",             str = 4125, exp = 189456,    hp = 6222,  gold = 698877,  weapon = "Hellfire Whip" },
+  { level = 14, name = "Ancient Dragon",               str = 4300, exp = 198765,    hp = 6589,  gold = 723999,  weapon = "Dragon Flame" },
+  { level = 14, name = "Nether Wraith",                str = 4555, exp = 205444,    hp = 5844,  gold = 669833,  weapon = "Soul Siphon" },
+  { level = 14, name = "Celestial Warrior",            str = 4777, exp = 218777,    hp = 6722,  gold = 788444,  weapon = "Heavenly Sword" },
+  { level = 14, name = "Lich King",                    str = 4950, exp = 229332,    hp = 5938,  gold = 745111,  weapon = "Death Staff" },
+  { level = 14, name = "Thunder Giant",                str = 5200, exp = 239876,    hp = 7111,  gold = 799333,  weapon = "Lightning Hammer" },
+  { level = 14, name = "Spectral Reaper",              str = 5455, exp = 249777,    hp = 7333,  gold = 824999,  weapon = "Ethereal Scythe" },
+
+  { level = 15, name = "The White Rabbit",           str = 6000, exp = 10000000, hp = 15000, gold = 1000000, weapon = "Bunny tail" }
 
 }
 
