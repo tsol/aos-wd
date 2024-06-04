@@ -103,7 +103,7 @@ function cmdChat(args)
 
   addRoomMessage(page, string.format("%s says: %s", UI_STATE[pid].name, args.text))
 
-  UI.sendPageState(page, pid)
+  UI.sendPageState(page, psfActiveNotMe)
   return UI.fullResponse()
 end
 
@@ -129,7 +129,7 @@ function cmdDrinkFountain(args)
     end
   end
 
-  UI.sendPageState(page, pid)
+  UI.sendPageState(page, psfActiveNotMe)
   return UI.fullResponse()
 end
 
@@ -153,7 +153,7 @@ function cmdSwimFountain(args)
     if state.hp <= 0 then
       killPerson(pid)
       addRoomMessage(page, string.format("%s died from swimming in the fountain", state.name))
-      UI.sendPageState(page)
+      UI.sendPageState(page, psfActiveNotMe)
       return UI.fullResponse()
     end
   end
@@ -169,7 +169,7 @@ function cmdSwimFountain(args)
     addRoomMessage(page, string.format("%s dives into the fountain and finds %d 🪙", state.name, gainGold))
   end
 
-  UI.sendPageState(page, pid)
+  UI.sendPageState(page, psfActiveNotMe)
   return UI.fullResponse()
 end
 

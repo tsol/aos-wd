@@ -186,20 +186,18 @@ UI = {
     return json.encode(res)
   end,
 
-  sendPageState = function(page, exceptPid)
-    local state = UI.pageState(page)
-    if not state then return end
+  sendPageState = function(page, filterFn)
+    local pstate = UI.pageState(page)
+    if not pstate then return end
 
-    for pid, _ in pairs(UI_STATE) do
-      -- check that pid length is 43 characters
-      local pidIsUser = string.len(pid) == 43
-      if pid ~= exceptPid and pidIsUser and UI_STATE[pid].path == page.path then
-        ao.send({ Target = pid, Action = "UI_RESPONSE", Data = state .. UI.state(pid) })
+    for pid, ustate in pairs(UI_STATE) do
+      local filterPass = not filterFn or (filterFn and filterFn(pid, ustate))
+      if ustate.path == page.path and filterPass then
+        ao.send({ Target = pid, Action = "UI_RESPONSE", Data = pstate .. UI.state(pid) })
       end
     end
 
     return true
-
   end,
 
   renderHtml = function(html, force)

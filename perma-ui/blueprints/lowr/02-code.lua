@@ -58,6 +58,27 @@ function memAddKillCount(pid)
   MEM[pid].kills = MEM[pid].kills + 1
 end
 
+-- room messaging filters
+
+function psfActivePlayers(pid, state)
+  if not string.len(pid) == 43 then return false end
+
+  if not state.actTime or (state.actTime < UI.now - Globals.HideInactivePeopleTimeout) then
+    return false
+  end
+
+  return true
+end
+
+function psfExceptSelf(pid, state)
+  return pid ~= UI.currentPid
+end
+
+function psfActiveNotMe(pid, state)
+  return psfActivePlayers(pid, state) and psfExceptSelf(pid, state)
+end
+
+
 function addRoomMessage(page, text)
   if not page.state.messages then page.state.messages = {} end
 
@@ -67,7 +88,6 @@ function addRoomMessage(page, text)
     table.remove(page.state.messages)
   end
 
-  -- UI.sendPageState(page)
 end
 
 function spawnMonster(level, roomPage, forceMonster, maxMonstersStr)
@@ -406,7 +426,7 @@ function roomUpdateState(page)
     page.state.roundStartTime = nil
   end
 
-  UI.sendPageState(page)
+  UI.sendPageState(page, psfActivePlayers)
   page.state.beingUpdated = false
 end
 
@@ -982,7 +1002,7 @@ function removePersonFromRoom(page, pid, toDirection)
   pageOnPersonLeave(page, pid, toDirection)
 
   if wasUpdate then
-    UI.sendPageState(page)
+    UI.sendPageState(page, psfActivePlayers)
   end
 
   return wasUpdate
@@ -1023,7 +1043,7 @@ function putPersonToRoom(page, pid, fromDirection)
 
   pageOnPersonEnter(page, pid, fromDirection)
 
-  UI.sendPageState(page)
+  UI.sendPageState(page, psfActivePlayers)
 
   return true
 end
@@ -1181,7 +1201,7 @@ end
 -- FROM HTML COMMANDS ---
 
 function isPlayerDead()
-  -- safe call runTimers
+
   local status, err = pcall(runTimers)
   if not status then
     UI.log("TimersError", err)
@@ -1364,8 +1384,8 @@ Handlers.add(
 function runTimers()
   for name, timer in pairs(TimersFunctions) do
     if Timers[name] + timer.interval < UI.now then
-      timer.fn()
       Timers[name] = UI.now
+      timer.fn()
     end
   end
 end
@@ -1375,6 +1395,7 @@ function incrementHpUpToLimit(pid)
   -- increment by 5% but not less than 1
   if person.hp < person.maxHp * 0.9 then
     local increment = math.max(1, math.floor(person.maxHp * 0.05))
+    UI.log("auto_heal", person.name .. " +hp " .. increment .. " pid: " .. pid)
     UI.set({ hp = person.hp + increment }, pid)
   end
 end
@@ -1387,19 +1408,37 @@ function transferInactivePeople()
     return
   end
 
+  local maxMovesPerRun = 3
+  local count = 0
+
   for pid, state in pairs(UI_STATE) do
+
     if not state.isMonster and (not state.actTime or state.actTime < UI.now - Globals.TransferInactivePeopleTimeout) then
-      local page = UI.findPage(state.room)
-      if page and page.path ~= Globals.TransferInactivePeopleTo then
-        UI.log("inact_xfer", state.name )
-        removePersonFromRoom(page, pid)
-        addRoomMessage(page, state.name .. " slowly walked away yawning")
-        putPersonToRoom(toRoom, pid)
-        addRoomMessage(toRoom, state.name .. " crawled in here from " .. page.title .. " and fell asleep")
-      else
-        UI.log("inact_xfer", state.name .. " already in " .. Globals.TransferInactivePeopleTo)
-        incrementHpUpToLimit(pid)
-      end
+
+        if state.path ~= Globals.TransferInactivePeopleTo then
+
+          if count >= maxMovesPerRun then break end
+
+          local page = UI.findPage(state.path)
+
+          if not page then
+            UI.log("inact_xfer", "Page not found: " .. state.path .. " for " .. pid)
+            break
+          end
+
+          UI.log("inact_xfer", state.name)
+
+          removePersonFromRoom(page, pid)
+          addRoomMessage(page, state.name .. " slowly walked away yawning")
+          putPersonToRoom(toRoom, pid)
+          addRoomMessage(toRoom, state.name .. " crawled in here from " .. page.title .. " and fell asleep")
+   
+          count = count + 1
+
+        else
+          incrementHpUpToLimit(pid)
+        end
+
     end
   end
 end
