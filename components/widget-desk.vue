@@ -11,33 +11,15 @@
           {{ shortenCutMiddle(pid, mdAndUp ? 30 : 9) }}
         </ClickToClipboard>
       </div>
-      
-      <v-icon
-        title="ao.link"
-        size="small"
-        class="ml-2"
-        color="green"
-        @click="openUrl(`https://ao.link/entity/${pid}`)"
-        
-      >mdi-link-variant</v-icon>
-      
-      <v-icon
-        title="ar-io.dev"
-        size="small"
-        class="ml-1"
-        color="green"
-        @click="openUrl(`https://ar-io.dev/${pid}`)"
-        
-      >mdi-emoticon-devil-outline</v-icon>
 
-     
-      <v-icon
-        title="arweave.app"
-        size="small"
-        class="ml-1"
-        color="green"
-        @click="openUrl(`https://arweave.app/tx/${pid}`)"
-      >mdi-weather-cloudy</v-icon>
+      <v-icon title="ao.link" size="small" class="ml-2" color="green"
+        @click="openUrl(`https://ao.link/entity/${pid}`)">mdi-link-variant</v-icon>
+
+      <v-icon title="ar-io.dev" size="small" class="ml-1" color="green"
+        @click="openUrl(`https://ar-io.dev/${pid}`)">mdi-emoticon-devil-outline</v-icon>
+
+      <v-icon title="arweave.app" size="small" class="ml-1" color="green"
+        @click="openUrl(`https://arweave.app/tx/${pid}`)">mdi-weather-cloudy</v-icon>
 
       <v-divider class="ml-2 mr-2"></v-divider>
 
@@ -49,7 +31,6 @@
 
     <v-row>
 
-      <!-- <v-col v-for="column in maxColumns" :key="column" :class="`v-col-md-${12 / maxColumns}`"> -->
       <v-col v-for="(column, index) in maxColumns" :key="column"
         :class="`v-col-md-${12 / maxColumns} ${index < maxColumns - 1 ? 'border-right' : ''}`">
 
@@ -120,11 +101,14 @@
 const openUrl = (url: string) => window.open(url, '_blank');
 
 import { type BrodcastMsg } from '~/composables/useProcesses';
-import { parseLuaObject } from '~/lib/parser';
 import type { StoredSnippet, StoredWidget } from '~/store/persist';
+import type { WidgetDefinition } from '~/models/widgets';
+
+import { parseMessagesToState } from '~/core/parser';
 import { getWidgetDefinition } from '~/widgets/';
 import { shortenCutMiddle } from '~/lib/utils';
 import { useDisplay } from 'vuetify';
+import { useWallet } from '~/core/useWallet';
 
 const { mdAndUp } = useDisplay();
 
@@ -139,29 +123,14 @@ process.addListener({ client: 'Parser', handler: listen });
 
 const { snippetLoading, snippetMenu, runSnippet, snippetID } = useSnippets(process);
 
-// const processName = computed(() => {
-//   let res = '';
-//   if (props.pid === process.name.value || !process.name.value) res = props.pid;
-//   else res = `${props.pid} - ${process.name.value}`;
-//   return shortenCutMiddle(res, mdAndUp.value ? 40 : 15);
-// });
-
-
 const maxColumns = computed(() => {
   return Math.max(...process.widgets.value.map((widget) => {
     return widget.column || 1;
   }));
 });
 
-function listen(text: BrodcastMsg[]) {
-  if (!text.length) return;
-  text.forEach((msg) => {
-    parseProcess(msg.data);
-  });
-}
-
 onMounted(() => {
-  console.log('** Mounting ' + props.pid + ' **');
+  // console.log('** Mounting ' + props.pid + ' **');
   process.addListener({ client: 'Parser', handler: listen });
 
   process.widgets.value?.forEach(w => {
@@ -174,7 +143,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  console.log('** Unmounting ' + props.pid + ' **');
+  // console.log('** Unmounting ' + props.pid + ' **');
   snippetsTimer.onUnmounted();
   process.removeListener(listen);
 });
@@ -198,40 +167,38 @@ function createSnippet(widgetName: string) {
     data: '-- New Snippet\r\nHandlers.list',
   };
 
-  // console.log('createSnippet', snippet);
-
   process.addSnippet(widgetName, snippet);
 
 }
 
-function parseProcess(output: string) {
+function listen(msgs: BrodcastMsg[]) {
+  if (!msgs.length) return;
 
-  process.widgets.value.forEach((widget) => {
-    const wd = getWidgetDefinition(widget.name);
+  const widgetDefinitions = process.widgets.value.map((w) => {
+    const wd = getWidgetDefinition(w.name);
     if (!wd) {
-      console.error(`No widget definition found for ${widget.name}`);
-      process.removeWidget(widget.name);
-      return;
+      console.error(`No widget definition found for ${w.name}`);
+      process.removeWidget(w.name);
+      return undefined;
     }
+    return wd;
+  }).filter((wd) => wd) as unknown as WidgetDefinition<any>[];
 
-    wd.parsers.forEach((parser) => {
-      if (parser.mode === 'store') {
-        const object = parseLuaObject(output);
-        if (!object) return;
-        const variable = parser.variable as any;
-        const zodType = (wd.types as any)[variable];
-        if (!zodType) throw new Error(`No type found for ${variable}`);
-        const parsed = zodType.safeParse(object);
-        if (parsed.success) {
-          process.setStateVariable(wd.name, variable, parsed.data);
-        }
-      }
+  // console.log('** Parser messages: **', msgs);
 
-    });
-
+  msgs.forEach((bmsg) => {
+    if (bmsg.msg) {
+      parseMessagesToState(
+        widgetDefinitions,
+        process.state,
+        bmsg.data,
+        bmsg.msg,
+        useWallet().ourPID.value,
+      );
+    }
   });
-
 }
+
 
 function moveLeft(widget: StoredWidget) {
   widget.column = Math.max((widget.column || 1) - 1, 1);
@@ -276,4 +243,3 @@ function moveDown(widget: StoredWidget) {
 }
 
 </script>
-~/composables/useProcesses~/models/widgets~/widgets/utils~/widgets/arena

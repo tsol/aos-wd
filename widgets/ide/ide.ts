@@ -2,18 +2,18 @@ import { z } from 'zod';
 import type { WidgetDefinition } from '~/models/widgets';
 
 type State = {
+  balance: string;
 }
 
-import ViewComponent from './console.vue';
+import ViewComponent from './ide.vue';
 
 const widget: WidgetDefinition<State> = {
-  name: 'Console',
+  name: 'Ide',
   component: ViewComponent,
   types: {
+    balance: z.string()
   },
   parsers: [
-  ],
-  handlers: [
   ],
   snippets: [
   ],

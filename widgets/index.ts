@@ -1,29 +1,17 @@
-import { widget as BotWidget } from '~/widgets/botgame';
-import { widget as UtilWidget } from '~/widgets/utils';
-import { widget as ArenaWidget } from '~/widgets/arena';
-import { widget as ConsoleWidget } from '~/widgets/console';
-import { widget as IdeWidget } from '~/widgets/ide';
+import { widget as BotWidget } from '~/widgets/botgame/botgame';
+import { widget as UtilWidget } from '~/widgets/utils/utils';
+import { widget as ArenaWidget } from '~/widgets/arena/arena';
+import { widget as ConsoleWidget } from '~/widgets/console/console';
+import { widget as IdeWidget } from '~/widgets/ide/ide';
+import { widget as UIWidget } from '~/widgets/ui/ui';
+
 import type { StoredSnippet, StoredWidget } from '~/store/persist';
 
-export const widgets = [BotWidget, UtilWidget, ArenaWidget, ConsoleWidget, IdeWidget];
+export const widgets = [BotWidget, UtilWidget, ArenaWidget, ConsoleWidget, IdeWidget, UIWidget];
 
 export function getWidgetDefinition(name: string) {
   return widgets.find(w => w.name === name);
 }
-
-/*
-export type StoredSnippet = {
-  name: string;
-  code: string;
-}
-
-export type StoredWidget = {
-  name: string;
-  column?: number;
-  colWidth?: number;
-  snippets?: StoredSnippet[];
-}
-*/
 
 export function createWidget(name: string): StoredWidget | null {
   const widget = getWidgetDefinition(name);

@@ -6,17 +6,23 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "build:ui": "vite build --outDir ./dist --minify",
+    "build:ui-old2": "vite build --outDir ./dist-ui --entry ./perma-ui/index.ts --minify",
+    "build:ui-old": "vue-cli-service build --target lib --formats umd-min --name ui ./perma-ui/index.ts",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "@permaweb/aoconnect": "^0.0.51",
+    "@permaweb/aoconnect": "^0.0.55",
     "@pinia/nuxt": "^0.5.1",
+    "@types/lodash.clonedeep": "^4.5.9",
     "@xterm/xterm": "^5.5.0",
     "arweave-wallet-connector": "^1.0.2",
+    "lodash.clonedeep": "^4.5.0",
     "lodash.debounce": "^4.0.8",
+    "lodash.replace": "^4.1.4",
     "luaparse": "^0.3.1",
     "nuxt": "^3.11.2",
     "p5": "^1.9.2",
@@ -38,6 +44,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "vite-plugin-string": "^1.2.3",
     "vite-plugin-vuetify": "^2.0.3",
-    "vuetify": "^3.5.14"
+    "vuetify": "^3.5.14",
+    "zlib": "^1.0.5"
   }
 }

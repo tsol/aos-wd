@@ -48,15 +48,7 @@ export const useSnippets = (process: ReturnType<typeof useProcess>) => {
   
   
   async function runSnippet(snippet: StoredSnippet) {
-  
-    if (snippet.pid && snippet.tags) {
-      snippetLoading[snippetID(snippet)] = true;
-      const data = evaluateSnippetTemplate(snippet);
-      const res = await process.rundry(snippet.pid, snippet.tags, data);
-      snippetLoading[snippetID(snippet)] = false;
-      return res;
-    }
-  
+    
     if (!snippet.data) return undefined;
   
     const data = evaluateSnippetTemplate(snippet);

@@ -1,5 +1,5 @@
 import p5 from "p5";
-import type { State } from '../botgame';
+import type { State } from './botgame';
 
 export function Renderer() {
   let p5Instance: p5 | null = null;

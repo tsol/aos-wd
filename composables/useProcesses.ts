@@ -1,6 +1,10 @@
 import { loadBlueprint } from "~/lib/ao/commands/blueprints";
-import { evaluate } from "~/lib/ao/evaluate";
-import { live } from "~/lib/ao/live";
+import { evaluate } from "~/core/ao/evaluate";
+import { live } from "~/core/ao/live";
+
+import { textFromMsg } from "~/core/ao/helpers";
+import type { Edge } from "~/core/ao/ao.models";
+
 import { findPid, processesList } from "~/lib/ao/query";
 import { register } from "~/lib/ao/register";
 import { usePersistStore } from "~/store/persist";
@@ -9,12 +13,10 @@ import { dryrun } from "@permaweb/aoconnect";
 import { shortenCutMiddle } from "~/lib/utils";
 import { startMonitor, stopMonitor } from "~/lib/ao/cron";
 
-console.log('useProcesses: init');
-
 export type Tag = { name: string, value: string };
 
 export type BrodcastMsg = {
-  tags: Tag[],
+  msg?: Edge,
   data: string,
   type: 'dryrun' | 'live' | 'evaluate' | 'internal'
   forClient?: string;
@@ -73,7 +75,7 @@ export const useProcesses = () => {
     return getRunning(pid)?.listeners.map(l => l.client);
   }
 
-  async function command(pid: string, text: string) {
+  async function command(pid: string, text: string, tags?: Tag[]) {
 
     const loadBlueprintExp = /\.load-blueprint\s+(\w*)/;
 
@@ -81,8 +83,7 @@ export const useProcesses = () => {
       const bpName = text.match(/\.load-blueprint\s+(\w*)/)?.[1];
       if (!bpName) throw new Error('No blueprint name provided');
       text = await loadBlueprint(bpName);
-      // output.value.push('loading ' + bpName + '...');
-      broadcast(pid, [{ data: 'loading ' + bpName + '...', tags: [], type: 'internal' }]);
+      broadcast(pid, [{ data: 'loading ' + bpName + '...', type: 'internal' }]);
     }
 
     if (pid?.length !== 43) {
@@ -92,11 +93,19 @@ export const useProcesses = () => {
 
 
     try {
-      const result = await evaluate(pid, text);
-      // output.value = [ ...output.value, ...String(result).split('\n') ];
-      const msgs = String(result).split('\n').map((line) => ({ data: line, tags: [], type: 'evaluate' } as BrodcastMsg));
+      const result = await evaluate(pid, text, tags);
+
+      if (result.Output?.data?.prompt) {
+        usePrompt().value = result.Output?.data?.prompt;
+      }
+  
+      const output = result.Output?.data?.output || undefined;
+ 
+      const msgs = [{ data: String(output), type: 'evaluate' } as BrodcastMsg];
       broadcast(pid, msgs);
+
     } catch (e: any) {
+      console.error(e);
       useToast().error(e.message);
     }
 
@@ -104,7 +113,7 @@ export const useProcesses = () => {
 
   async function startProcess(pid: string, name?: string) {
 
-    console.log('starting live ', pid);
+    // console.log('starting live ', pid);
     let runningProcess = getRunning(pid);
 
     if (runningProcess) {
@@ -126,11 +135,32 @@ export const useProcesses = () => {
         console.log('no pid');
         return;
       }
-      const msgs = await live(pid);
 
-      const bmsgs = msgs?.map((line) => ({ data: line, tags: [], type: 'live' } as BrodcastMsg));
+      const cursor = toRef(persist.getAllCursors[pid]);
+      const msgs = await live(pid, cursor);
+      persist.updateCursor(pid, cursor.value);
 
-      if (bmsgs?.length) broadcast(pid, bmsgs);
+      try {
+        const bmsgs = msgs?.map((msg) => {
+          const text = textFromMsg(msg);
+          const bm = {
+            data: typeof text === 'string' ? text.trim() : '',
+            msg: msg,
+            type: 'live'
+          } as BrodcastMsg;
+
+          return bm;
+        });
+
+        if (bmsgs?.length) broadcast(pid, bmsgs);
+
+      }
+      catch (e: any) {
+        console.log('---------------------------------------------');
+        console.error(e);
+        console.log('msgs:', msgs);
+      }
+
 
     }, 3000);
   }
@@ -151,7 +181,7 @@ export const useProcesses = () => {
     return undefined
   }
 
-  async function rundry(ownerPid: string, toPid: string, tags: Tag[], data = "") {
+  async function rundry(ownerPid: string, toPid: string, data = "", tags: Tag[] = []) {
 
     const evaluatedTags = tags.map((tag) => {
       const newTag = { ...tag };
@@ -168,9 +198,10 @@ export const useProcesses = () => {
         tags: evaluatedTags,
         data,
       });
+      
       const forMeLines = result.Messages
         .filter((msg: any) => msg.Target === ownerPid)
-        .map((msg: any) => ({ data: msg.Data, tags: msg.Tags, type: 'dryrun' } as BrodcastMsg));
+        .map((msg: any) => ({ data: msg.Data, msg, type: 'dryrun' } as BrodcastMsg));
 
       broadcast(ownerPid, forMeLines);
 

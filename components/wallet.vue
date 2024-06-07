@@ -23,7 +23,23 @@
 </template>
 
 <script lang="ts" setup>
-import { useWallet } from '~/composables/useWallet';
-const { connected, arConnect, arDisconnect } = useWallet();
+import { useWallet } from '~/core/useWallet';
+import { usePersistStore } from '~/store/persist';
+
+const { connected, arConnect, arDisconnect } = useWallet(
+  updateListOfProcesses
+);
+
+async function updateListOfProcesses() {
+
+    const persistStore = usePersistStore();
+    const processes = await useProcesses().queryAllProcessesWithNames();
+
+    if (processes.length > 0) {
+      processes.forEach((p) => {
+        persistStore.addProcess(p, false);
+      });
+    }
+}
 
 </script>

@@ -1,5 +1,4 @@
-
-import { z } from 'zod';
+import type { BaseWidgetDefinition } from "~/core/core.models";
 
 export type Snippet = {
   name: string;
@@ -8,38 +7,13 @@ export type Snippet = {
   data?: string;
 }
 
-export type ParseHandler<STATE> = {
-  history: boolean;
-} & ( {
-  mode: 'handler';
-  handler: (state: STATE, ...args: any[]) => STATE;
-} | {
-  mode: 'regex';
-  regex: RegExp;
-  variables: (keyof STATE)[];
-} | {
-  mode: 'store';
-  variable: keyof STATE;
-}
-);
-
 export type LuaHandler = {
   name: string;
   code: string;
 }
 
-type ZodTypes<T> = {
-  [P in keyof T]: z.ZodType<T[P]>;
-};
-
-export type WidgetDefinition<STATE> = {
-
+export type WidgetDefinition<STATE> = BaseWidgetDefinition<STATE> & {
   component: any;
-
-  name: string;
-  types: ZodTypes<STATE>;
-  parsers: ParseHandler<STATE>[];
-  handlers: LuaHandler[];
   snippets: Snippet[];
 }
 
