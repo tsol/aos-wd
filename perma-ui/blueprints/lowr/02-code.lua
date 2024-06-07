@@ -664,12 +664,18 @@ function roomLayoutPeople(page)
       </div>
       <div v-else>
           <div v-for="person in (page.people || [])" :key="person.pid">
-            <div v-if="person.isMonster || (person.actTime && (person.actTime > ]] .. activityFilterTime .. [[))">
+            <div
+              v-if="!person.isMonster && (! person.actTime || (person.actTime < ]] .. activityFilterTime .. [[))"
+              class="text-grey"
+            >
+              %s is sleeping here
+            </div>
+            <div v-else>
               %s is here with their {{ { Apple: '🍎', Banana: '🍌', Cherry: '🍒', Mango: '🥭', Watermelon: '🍉', Pineapple: '🍍', Strawberry: '🍓', Kiwi: '🥝', Grapes: '🍇', Orange: '🍊', Peach: '🍑', Pear: '🍐', Plum: '🍑', Lemon: '🍋', Lime: '🍈', Coconut: '🥥', Pomegranate: '🥭', Blueberry: '🫐', Raspberry: '🍇', Blackberry: '🫐', Cranberry: '🍒', Gooseberry: '🍇', Apricot: '🍑', Papaya: '🥭' }[person.fruit] || person.fruit }}
             </div>
-          </div>
+            </div>
       </div>
-      ]], personLine, personLine, ROUND_TIMEOUT * 1000, personName())
+      ]], personLine, personLine, ROUND_TIMEOUT * 1000, personName(), personName())
 end
 
 function roomLayoutMessages(page)
@@ -1031,7 +1037,8 @@ function putPersonToRoom(page, pid, fromDirection)
 
   local person = createRoomPersonEntry(pid)
 
-  table.insert(page.state.people, person)
+  -- table.insert(page.state.people, person)
+  table.insert(page.state.people, 1, person)
 
   person.room = page.path
   person.path = page.path
