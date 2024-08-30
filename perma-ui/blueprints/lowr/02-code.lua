@@ -37,7 +37,8 @@ end
 
 function memInit(pid)
   MEM[pid] = MEM[pid] or {
-    kills = 0
+    kills = 0,
+    bankOps = {},
   }
 end
 
@@ -53,10 +54,61 @@ function memRemove(pid)
   MEM[pid] = nil
 end
 
-function memAddKillCount(pid)
+function memIncrement(pid, key)
   memInit(pid)
-  MEM[pid].kills = MEM[pid].kills + 1
+  MEM[pid][key] = (MEM[pid][key] or 0) + 1
 end
+
+function memAddTimedRecord(pid, key, object)
+  memInit(pid)
+  MEM[pid][key] = MEM[pid][key] or {}
+  table.insert(MEM[pid][key], { o = object, t = UI.now })
+end
+
+function memGetLastRecords(pid, key, count)
+  memInit(pid)
+  local records = MEM[pid][key] or {}
+  local res = {}
+  for i = #records, 1, -1 do
+    table.insert(res, records[i])
+    if #res >= count then
+      break
+    end
+  end
+  return res
+end
+
+function memGetLastPeriodRecords(pid, key, milliseconds)
+  memInit(pid)
+  local period = milliseconds or 12 * 60 * 60 * 1000
+  local records = MEM[pid][key] or {}
+  local res = {}
+  for i = #records, 1, -1 do
+    if records[i].t + period < UI.now then
+      break
+    end
+    table.insert(res, records[i])
+  end
+  return res
+end
+
+function memTruncateRecords(pid, key, count)
+  memInit(pid)
+  MEM[pid][key] = MEM[pid][key] or {}
+  while #MEM[pid][key] > count do
+    table.remove(MEM[pid][key], 1)
+  end
+end
+
+function memTruncatePeriodRecords(pid, key, milliseconds)
+  memInit(pid)
+  local period = milliseconds or 12 * 60 * 60 * 1000
+  MEM[pid][key] = MEM[pid][key] or {}
+  while #MEM[pid][key] > 0 and MEM[pid][key][1].t + period < UI.now do
+    table.remove(MEM[pid][key], 1)
+  end
+end
+
 
 -- room messaging filters
 
@@ -200,7 +252,7 @@ function killPerson(pid, killedByPid)
       exp = (UI_STATE[killedByPid].exp or 0) + expGain,
     }, killedByPid)
     checkLevelUp(killedByPid)
-    memAddKillCount(killedByPid)
+    memIncrement(killedByPid, 'kills')
   end
 
   local page = UI.findPage(UI_STATE[pid].room)

@@ -3,9 +3,13 @@ Globals = {
   MaxMint = 1000000000,
   MonsterExpGain = 25,
   GoldOnKillXfer = 0.65,
-  HideInactivePeopleTimeout = 1000000,
+  HideInactivePeopleTimeout = 1000000, -- 16 minutes (sleep)
   TransferInactivePeopleTimeout = 3 * 60 * 60 * 1000,-- 3 hours
   TransferInactivePeopleTo = "/999-1000-1000",
+  BankMinimalGrogAmount = 10,
+  BankCommission = 0.05,
+  BankDailyGoldWithdrawLimit = 0.01, -- of total gold supply
+  BankLimitPeriod = 12 * 60 * 60 * 1000, -- 12 hours
 }
 
 Houses = {

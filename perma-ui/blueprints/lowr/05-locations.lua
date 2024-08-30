@@ -459,10 +459,6 @@ end
 
 -- Bank ------------------------------------------------------------------
 
-BankDailyGoldWithdrawLimit = 500
-BankMinimalGrogAmount = 10
-BankCommission = 0.05
-
 function totalGoldSupply()
   local total = 0
   for i, p in pairs(UI_STATE) do
@@ -483,6 +479,21 @@ function prettyExchangeRate(rate)
   local rateStr = string.format("%.8f", rate)
   return rateStr
 end
+
+function bankGetGoldBought(pid)
+  local records = memGetLastPeriodRecords(pid, "bank", Globals.BankLimitPeriod)
+  local sum = 0
+  for _, entry in ipairs(records) do
+    local record = entry.o
+    if record.op == 'buy' then
+      sum = sum + tonumber(record.gold)
+    else
+      sum = sum - tonumber(record.gold)
+    end
+  end
+  return sum
+end
+
 
 function roomLayoutBank(page, origHtml, pid)
   local player = UI_STATE[pid]
@@ -505,10 +516,12 @@ function roomLayoutBank(page, origHtml, pid)
   local rate = 1 / exchangeGrogToGold()
   local prettyRate = prettyExchangeRate(rate)
 
+  local goldLimit = math.floor(Globals.BankDailyGoldWithdrawLimit * totalGold)
+
   page.state.rate = rate
-  page.state.limit = BankDailyGoldWithdrawLimit
-  page.state.minimalGold = math.floor( BankMinimalGrogAmount * rate )
-  page.state.commission = BankCommission
+  page.state.limit = goldLimit
+  page.state.minimalGold = math.floor( Globals.BankMinimalGrogAmount * (1 / rate) )
+  page.state.commission = Globals.BankCommission
 
   html = html .. string.format([[
     <p class="mb-4">
@@ -530,10 +543,7 @@ Sell {{ state.ui.amount || 0 }} 🪙 for {{ Math.floor((state.ui.amount || 0) * 
     </pre>
 
     <div class="mb-4">
-      <div v-if="state.ui.amount > page.limit">
-        <p class="text-red mb-2">You can't withdraw more than {{ page.limit }} gold coins per day</p>
-      </div>
-      <div v-else-if="state.ui.amount < page.minimalGold">
+      <div v-if="state.ui.amount < page.minimalGold">
         <p class="text-red mb-2">The minimal amount of gold per operation is {{ page.minimalGold }}</p>
       </div>
       <div v-else>
@@ -542,7 +552,7 @@ Sell {{ state.ui.amount || 0 }} 🪙 for {{ Math.floor((state.ui.amount || 0) * 
       </div>
     </div>
   ]],
-    playersGrog, BankDailyGoldWithdrawLimit, totalSupplyGrog, totalGold, prettyRate, playersGrog
+    playersGrog, goldLimit, totalSupplyGrog, totalGold, prettyRate, playersGrog
   )
 
   html = html .. string.format([[
@@ -581,15 +591,19 @@ function cmdBuyGold(args)
   end
 
   local rate = 1 / exchangeGrogToGold()
-  local minimalGold = math.floor(BankMinimalGrogAmount * rate)
+  local minimalGold = math.floor(Globals.BankMinimalGrogAmount * rate)
+  local goldLimit = math.ceil(Globals.BankDailyGoldWithdrawLimit * totalGoldSupply())
 
   if amount < minimalGold then
     addRoomMessage(page, string.format("Teller says to %s: We can't sell you less than %d gold coins", player.name, minimalGold))
     return UI.fullResponse()
   end
 
-  if amount > BankDailyGoldWithdrawLimit then
-    addRoomMessage(page, string.format("Teller says to %s: We have a withdrawal limit of %d gold coins per day", player.name, BankDailyGoldWithdrawLimit))
+  local goldBought = bankGetGoldBought(pid)
+  local goldRemains = math.max(0, goldLimit - goldBought)
+
+  if amount > goldRemains then
+    addRoomMessage(page, string.format("Teller says to %s: We have a withdrawal limit of %d gold coins per day (%d remains)", player.name, goldLimit, goldRemains))
     return UI.fullResponse()
   end
 
@@ -601,10 +615,10 @@ function cmdBuyGold(args)
   -- comission always taken from GROG not from gold
   -- gold is exactly = amount
 
-  local grog = math.floor(amount * rate * (1 + BankCommission))
+  local grog = math.floor(amount * rate * (1 + Globals.BankCommission))
 
-  if ( grog < BankMinimalGrogAmount ) then
-    addRoomMessage(page, string.format("Teller says to %s: We can't sell you less than %d GROG", player.name, BankMinimalGrogAmount))
+  if ( grog < Globals.BankMinimalGrogAmount ) then
+    addRoomMessage(page, string.format("Teller says to %s: We can't sell you less than %d GROG", player.name, Globals.BankMinimalGrogAmount))
     return UI.fullResponse()
   end
 
@@ -613,6 +627,9 @@ function cmdBuyGold(args)
     addRoomMessage(page, string.format("Error: %s", err))
     return UI.fullResponse()
   end
+
+  memAddTimedRecord(pid, "bank", { op = 'buy', gold = amount })
+  memTruncatePeriodRecords(pid, "bank", Globals.BankLimitPeriod)
 
   player.gold = player.gold + amount
   addRoomMessage(page, string.format("%s withdrew %d gold coins for %d GROG", player.name, amount, grog))
@@ -637,15 +654,19 @@ function cmdSellGold(args)
   local amount = tonumber(args.amount)
 
   local rate = 1 / exchangeGrogToGold()
-  local minimalGold = math.floor(BankMinimalGrogAmount * rate)
+  local minimalGold = math.floor(Globals.BankMinimalGrogAmount * rate)
+  local goldLimit = math.ceil(Globals.BankDailyGoldWithdrawLimit * totalGoldSupply())
 
   if amount < minimalGold then
     addRoomMessage(page, string.format("Teller says to %s: We can' buy less than %d gold coins", player.name, minimalGold))
     return UI.fullResponse()
   end
 
-  if amount > BankDailyGoldWithdrawLimit then
-    addRoomMessage(page, string.format("Teller says to %s: We have an operation limit of %d gold coins per day", player.name, BankDailyGoldWithdrawLimit))
+  local goldSold = 0 - bankGetGoldBought(pid)
+  local goldRemains = math.max(0, goldLimit - goldSold)
+
+  if amount > goldRemains then
+    addRoomMessage(page, string.format("Teller says to %s: We have an operation limit of %d gold coins per day (%d remains)", player.name, goldLimit, goldRemains))
     return UI.fullResponse()
   end
 
@@ -654,7 +675,7 @@ function cmdSellGold(args)
     return UI.fullResponse()
   end
 
-  local grog = math.floor(amount * rate * (1 - BankCommission))
+  local grog = math.floor(amount * rate * (1 - Globals.BankCommission))
 
   -- if grog is more than bank has - error
   local totalSupply = tonumber(Balances[ao.id] or 0)
@@ -675,6 +696,9 @@ function cmdSellGold(args)
     addRoomMessage(page, string.format("Error: %s", err))
     return UI.fullResponse()
   end
+
+  memAddTimedRecord(pid, "bank", { op = 'sell', gold = amount })
+  memTruncatePeriodRecords(pid, "bank", Globals.BankLimitPeriod)
 
   player.gold = player.gold - amount
   addRoomMessage(page, string.format("%s sold %d gold coins for %d GROG", player.name, amount, grog))

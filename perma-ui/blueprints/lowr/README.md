@@ -3,22 +3,57 @@
 
 x. Build a room
 
- - terrain permits
- - permits shop
- - modify terain parameters on build - maxMonsters etc
- - join rooms
+ - modify terain parameters on build/edit
+   - maxMonsters
+   - terrain
+   - monsterSpawnLevel
+   - custom monsters/mobs library
+
+ - join rooms / destroy connection (if you are owner)
+ - destroy room (if you are owner)
+ 
  - create locations not just rooms
+   - same as rooms but with more parameters:
+   - emoji icon
+   - no directional exits
+   - layout mode - hospital, residental, shop, inn, fountain, church, etc
+
+ - location ownership (room owner)
+   room can be bought over with more money, then invested in it by previous owner
+   if owner is not active for 3 days - room can be bought over
 
 x. ARDNS name (write to discord after release)
 
-8. Flirt (charm stat + mob history)
- - nurse
- - barmaid
- - bard
+x. Monster protect exit mode
 
-7. Hitpoints recover timer for everyone (up to 90%)
+x. Custom monsters/mobs to your room
 
-10. Stale players sleep
+x. Person's page - facinity
+- click on person name - go to their page
+- actions - flirt
+- see items for sale - buy interface
+- actions - charm (only mobs/monsters)
+  when charmed - set mode:
+   - follow master
+   - protect master (attack anyone who attacks me)
+   - attack by partial name array 'frog|punk'
+   - never attack by partial name array 'frog|punk'
+   - protect room/entry ('Temple Gates|Temple') or ('n|s|e|w')
+   - sell items
+   - always run from fight
+   - go route ('City Center|City Hall|City Market') or ('n|s|e|w')
+
+ - action give item
+ - action take item
+
+* You can't charm a mob through flirt if you killed one before
+* To do make monster type forgive you - you need level * 1000 gold and
+prey for forgiveness in the church of rabbit's witnnesses
+
+
+
+8. Flirt (charm stat +flirt history in MEM)
+ - nurse, bard - any person not in the fight (personal page)
 
 11. Get a room in the inn
 
